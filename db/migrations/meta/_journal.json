@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792462680369,
+      "tag": "20261020021800_woozy_dragon_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792479481081,
+      "tag": "20261020065801_zippy_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792667268294,
+      "tag": "20261022110748_smooth_jackpot",
+      "breakpoints": true
+    }
+  ]
+}
