@@ -12,12 +12,6 @@
       icons: ["M12 3 3.5 7.6v8.8L12 21l8.5-4.6V7.6z", "M3.5 7.6 12 12.2l8.5-4.6", "M12 12.2V21", "M7.7 5.3l8.5 4.6"],
     },
     {
-      href: "/explore",
-      label: "Explore",
-      // 方位磁石: 外側の円と、斜めの針
-      icons: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M15.6 8.4l-2 5.2-5.2 2 2-5.2z"],
-    },
-    {
       href: "/profile",
       label: "Profile",
       // ユーザー: 頭と肩
@@ -25,7 +19,7 @@
     },
   ];
 
-  // /explore の配下なども「Explore」を選択中にする
+  // /profile の配下なども選択中にする
   const isActive = (href: string) =>
     href === "/" ? router.path === "/" : router.path.startsWith(href);
 

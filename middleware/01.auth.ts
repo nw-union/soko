@@ -6,7 +6,7 @@ import { isHttpUrl } from "../src/lib/url";
 declare module "void" {
   interface CloudContextVariables {
     // 全ページで useShared() から参照できるログインユーザー（画面表示に必要な最小限）
-    shared: { auth: { user: { name: string; email: string; color: string; image: string | null } | null } };
+    shared: { auth: { user: { name: string; color: string; image: string | null } | null } };
   }
 }
 
@@ -17,7 +17,6 @@ export default defineMiddleware(async (c, next) => {
       user: user
         ? {
             name: user.name,
-            email: user.email,
             color: resolveColor(user.color, user.id),
             // 画像の URL。http(s) 以外は使わない
             image: user.image && isHttpUrl(user.image) ? user.image : null,

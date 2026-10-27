@@ -1,9 +1,7 @@
 CREATE TABLE `invites` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`token_hash` text NOT NULL,
-	`name` text NOT NULL,
-	`email` text NOT NULL,
-	`color` text,
+	`inviter_user_id` text,
 	`expires_at` text,
 	`used_at` text,
 	`used_by_user_id` text,
@@ -11,39 +9,25 @@ CREATE TABLE `invites` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `invites_token_hash_unique` ON `invites` (`token_hash`);--> statement-breakpoint
-CREATE UNIQUE INDEX `invites_email_pending_unique` ON `invites` (`email`) WHERE "invites"."used_at" IS NULL;--> statement-breakpoint
+CREATE TABLE `playlist_videos` (
+	`playlist_id` integer NOT NULL,
+	`video_id` integer NOT NULL,
+	`position` integer DEFAULT 0 NOT NULL,
+	PRIMARY KEY(`playlist_id`, `video_id`),
+	FOREIGN KEY (`playlist_id`) REFERENCES `playlists`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`video_id`) REFERENCES `videos`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `playlist_videos_video_idx` ON `playlist_videos` (`video_id`);--> statement-breakpoint
 CREATE TABLE `playlists` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`title` text NOT NULL,
-	`author` text DEFAULT '' NOT NULL,
-	`url` text NOT NULL,
-	`thumbnail` text NOT NULL,
+	`playlist_id` text NOT NULL,
+	`name` text DEFAULT '' NOT NULL,
 	`position` integer DEFAULT 0 NOT NULL,
 	`created_at` text DEFAULT (datetime('now')) NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `playlists_url_unique` ON `playlists` (`url`);--> statement-breakpoint
-CREATE TABLE `podcasts` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`title` text NOT NULL,
-	`author` text DEFAULT '' NOT NULL,
-	`url` text NOT NULL,
-	`artwork` text NOT NULL,
-	`position` integer DEFAULT 0 NOT NULL,
-	`created_at` text DEFAULT (datetime('now')) NOT NULL
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `podcasts_url_unique` ON `podcasts` (`url`);--> statement-breakpoint
-CREATE TABLE `social_links` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`label` text NOT NULL,
-	`url` text NOT NULL,
-	`icon` text DEFAULT 'link' NOT NULL,
-	`position` integer DEFAULT 0 NOT NULL,
-	`created_at` text DEFAULT (datetime('now')) NOT NULL
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `social_links_url_unique` ON `social_links` (`url`);--> statement-breakpoint
+CREATE UNIQUE INDEX `playlists_playlist_id_unique` ON `playlists` (`playlist_id`);--> statement-breakpoint
 CREATE TABLE `videos` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`youtube_id` text NOT NULL,
@@ -51,7 +35,7 @@ CREATE TABLE `videos` (
 	`duration_seconds` integer,
 	`description` text,
 	`published_at` text,
-	`position` integer DEFAULT 0 NOT NULL,
+	`tags` text DEFAULT '[]' NOT NULL,
 	`created_at` text DEFAULT (datetime('now')) NOT NULL
 );
 --> statement-breakpoint
@@ -113,7 +97,8 @@ CREATE TABLE `user` (
 	`image` text,
 	`createdAt` integer NOT NULL,
 	`updatedAt` integer NOT NULL,
-	`color` text
+	`color` text,
+	`inviteLimit` integer
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint

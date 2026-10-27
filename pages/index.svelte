@@ -2,36 +2,15 @@
   import type { Props } from "./index.server";
   import VideoTile from "../src/lib/VideoTile.svelte";
 
-  let { videos }: Props = $props();
-
-  // タグで絞り込む。選んだタグをすべて持つ動画だけを出す（AND）
-  let selected = $state<string[]>([]);
-
-  // 全動画のタグ。付いている動画が多い順、同数なら名前順
-  const allTags = $derived.by(() => {
-    const counts = new Map<string, number>();
-    for (const video of videos) for (const tag of video.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja")).map(([tag]) => tag);
-  });
-
-  const shown = $derived(videos.filter((video) => selected.every((tag) => video.tags.includes(tag))));
-
-  // 最新の 3 件（投稿日時の新しい順。日時のない動画は最後）
-  const latest = $derived(
-    [...videos].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 3),
-  );
-
-  const toggleTag = (tag: string) => {
-    selected = selected.includes(tag) ? selected.filter((t) => t !== tag) : [...selected, tag];
-  };
+  let { playlists }: Props = $props();
 
   // 再生中の動画。入っている間だけ埋め込みプレイヤーを出す
-  let playing = $state<Props["videos"][number] | null>(null);
+  let playing = $state<Props["playlists"][number]["videos"][number] | null>(null);
   let dialog = $state<HTMLDialogElement>();
   // 概要欄は最初は数行だけ見せて、「もっと見る」で全文にする
   let expanded = $state(false);
 
-  const play = (video: Props["videos"][number]) => {
+  const play = (video: Props["playlists"][number]["videos"][number]) => {
     playing = video;
     expanded = false;
     dialog?.showModal();
@@ -44,47 +23,20 @@
   };
 </script>
 
-{#if videos.length === 0}
+{#if playlists.length === 0}
   <p class="empty">Not Found</p>
 {:else}
-  <!-- 最新の 3 件。いつも大きなタイルで並べる -->
-  <h1 class="first">New</h1>
-  <ul class="tiles">
-    {#each latest as video (video.id)}
-      <li>
-        <VideoTile url={video.url} thumbnail={video.thumbnail} title={video.title} duration={video.duration} onplay={() => play(video)} />
-      </li>
-    {/each}
-  </ul>
-
-  <h1>All</h1>
-
-  {#if allTags.length > 0}
-    <ul class="tags" aria-label="タグで絞り込む">
-      {#each allTags as tag (tag)}
-        <li>
-          <button type="button" class="tag" class:active={selected.includes(tag)} aria-pressed={selected.includes(tag)} onclick={() => toggleTag(tag)}>
-            #{tag}
-          </button>
-        </li>
-      {/each}
-      {#if selected.length > 0}
-        <li><button type="button" class="tag clear" onclick={() => (selected = [])}>クリア</button></li>
-      {/if}
-    </ul>
-  {/if}
-
-  {#if shown.length === 0}
-    <p class="empty">Not Found</p>
-  {:else}
+  <!-- プレイリストごとに、最新の動画を並べる -->
+  {#each playlists as list (list.id)}
+    <h1>{list.name || "Playlist"}</h1>
     <ul class="tiles">
-      {#each shown as video (video.id)}
+      {#each list.videos as video (video.id)}
         <li>
           <VideoTile url={video.url} thumbnail={video.thumbnail} title={video.title} duration={video.duration} onplay={() => play(video)} />
         </li>
       {/each}
     </ul>
-  {/if}
+  {/each}
 {/if}
 
 <!-- 背景（::backdrop）のクリックは dialog 自身へのクリックになるので、そこで閉じる -->
@@ -131,42 +83,9 @@
     font-size: 1.4rem;
   }
 
-  /* 2 つ目の見出し。上に間隔を空ける（Explore の見出しと同じ） */
-  h1:not(.first) {
+  /* 2 つ目以降の見出しは、上に間隔を空ける */
+  h1:not(:first-child) {
     margin-top: 2rem;
-  }
-
-  /* タグのチップ。選ぶと白く光る */
-  .tags {
-    list-style: none;
-    margin: 0 0 1rem;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .tag {
-    padding: 0.4rem 0.8rem;
-    border: 1px solid rgb(255 255 255 / 0.3);
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.12);
-    color: #fff;
-    font: 600 0.8rem/1 system-ui, sans-serif;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .tag.active {
-    border-color: transparent;
-    background: #fff;
-    color: #1a1a1a;
-  }
-
-  .tag.clear {
-    border-style: dashed;
-    background: transparent;
-    opacity: 0.8;
   }
 
   .tiles {
@@ -174,7 +93,7 @@
     margin: 0;
     padding: 0;
     display: grid;
-    /* 最大 2 列。16rem に満たない幅では 1 列にする（Explore の YouTube Playlist と同じ） */
+    /* 最大 2 列。16rem に満たない幅では 1 列にする */
     grid-template-columns: repeat(auto-fill, minmax(min(100%, max(16rem, calc((100% - 1rem) / 2))), 1fr));
     gap: 1rem;
   }

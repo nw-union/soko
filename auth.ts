@@ -6,6 +6,26 @@ import { db, sql } from "void/db";
 // src/lib/color.ts の isHexColor と同じ判定。auth.ts は Void の CLI からも読み込まれ、
 // 拡張子なしの相対 import を解決できないため、ここでは import せずに持つ
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+// src/lib/profile.ts の NAME_MAX と同じにすること
+const NAME_MAX = 30;
+// 登録時のメールアドレスは、ブラウザ（pages/login.svelte）が作る使い捨ての <UUID>@nwu.invalid だけ
+const SIGNUP_EMAIL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@nwu\.invalid$/;
+
+// 登録・更新で本人が送ってくる名前とイメージカラーを確かめ、名前は前後の空白を除いて返す。
+// color は style に埋め込まれるので、形式が正しいものだけ保存する。画像（image）はまだ設定できない
+function validateProfile<T extends Record<string, unknown>>(data: T): T {
+  const { name, color, image } = data;
+  if (name !== undefined && (typeof name !== "string" || !name.trim() || name.trim().length > NAME_MAX)) {
+    throw new APIError("BAD_REQUEST", { message: `名前は 1〜${NAME_MAX} 文字で入力してください` });
+  }
+  if (color !== undefined && color !== null && (typeof color !== "string" || !HEX_COLOR.test(color))) {
+    throw new APIError("BAD_REQUEST", { message: "カラーコードは #rrggbb の形式で入力してください" });
+  }
+  if (image !== undefined && image !== null) {
+    throw new APIError("BAD_REQUEST", { message: "画像は設定できません" });
+  }
+  return typeof name === "string" ? { ...data, name: name.trim() } : data;
+}
 
 // ---- 招待トークン ----
 // 新規登録は、メンバーが発行した招待（invites テーブル）のトークンを持っている人だけができる。
@@ -51,45 +71,62 @@ async function claimInvite(request: Request | undefined): Promise<string> {
 
 export default defineAuth(({ defaults }) => {
   return {
-  ...defaults,
-  // ログインはパスキーだけ。メール + パスワードは、招待コードでの登録時にユーザーを作るためだけに使う
-  // （パスワードはブラウザが捨てるランダムな値で、誰も知らない）
-  emailAndPassword: { enabled: true },
-  databaseHooks: {
+    ...defaults,
+    // ログインはパスキーだけ。メール + パスワードは、招待コードでの登録時にユーザーを作るためだけに使う
+    // （パスワードはブラウザが捨てるランダムな値で、誰も知らない）
+    emailAndPassword: { enabled: true },
+    // イメージカラー（#rrggbb）。プロフィールで本人が変更できる
     user: {
-      create: {
-        // 招待がないと新規ユーザーは作れない
-        before: async (_user, ctx) => {
-          await claimInvite(ctx?.request);
+      additionalFields: {
+        color: { type: "string", required: false },
+        // 発行できる招待の数。本人は変えられない（input: false）。増やすときは DB を直接更新する。
+        // 初期値は src/lib/invite.ts の DEFAULT_INVITE_LIMIT と同じにすること
+        inviteLimit: { type: "number", required: false, defaultValue: 3, input: false },
+      },
+    },
+    databaseHooks: {
+      user: {
+        update: {
+          before: async (data) => ({ data: validateProfile(data) }),
         },
-        after: async (user, ctx) => {
-          const token = normalizeToken(readCookie(ctx?.request, INVITE_COOKIE) ?? "");
-          await db.run(
-            sql`UPDATE invites SET used_by_user_id = ${user.id} WHERE token_hash = ${await hashToken(token)}`,
-          );
+        create: {
+          // 招待がないと新規ユーザーは作れない。入力が正しくないときに招待を無駄にしないよう、先に確かめる
+          before: async (user, ctx) => {
+            if (!SIGNUP_EMAIL.test(user.email)) throw new APIError("BAD_REQUEST", { message: "登録できません" });
+            const data = validateProfile(user);
+            await claimInvite(ctx?.request);
+            return { data };
+          },
+          after: async (user, ctx) => {
+            const token = normalizeToken(readCookie(ctx?.request, INVITE_COOKIE) ?? "");
+            await db.run(
+              sql`UPDATE invites SET used_by_user_id = ${user.id} WHERE token_hash = ${await hashToken(token)}`,
+            );
+            // 使い終わった招待の Cookie は消す
+            ctx?.setCookie(INVITE_COOKIE, "", { path: "/", maxAge: 0 });
+          },
         },
       },
     },
-  },
-  hooks: {
-    before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path !== "/passkey/delete-passkey") return;
-      // 最後のパスキーを削除するとログインできなくなるため、サーバー側でも拒否する
-      const session = await getSessionFromCtx(ctx);
-      if (!session) return; // 未ログイン時はエンドポイント側の認証で弾かれる
-      const count = await ctx.context.adapter.count({
-        model: "passkey",
-        where: [{ field: "userId", value: session.user.id }],
-      });
-      if (count <= 1) {
-        throw new APIError("BAD_REQUEST", { message: "最後のパスキーは削除できません（ログインできなくなります）" });
-      }
-    }),
-  },
-  plugins: [
-    ...(defaults.plugins ?? []),
-    // 登録後（ユーザー作成・ログインした後）に、パスキーを追加する
-    passkey({ rpName: "NWU" }),
-  ],
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== "/passkey/delete-passkey") return;
+        // 最後のパスキーを削除するとログインできなくなるため、サーバー側でも拒否する
+        const session = await getSessionFromCtx(ctx);
+        if (!session) return; // 未ログイン時はエンドポイント側の認証で弾かれる
+        const count = await ctx.context.adapter.count({
+          model: "passkey",
+          where: [{ field: "userId", value: session.user.id }],
+        });
+        if (count <= 1) {
+          throw new APIError("BAD_REQUEST", { message: "最後のパスキーは削除できません（ログインできなくなります）" });
+        }
+      }),
+    },
+    plugins: [
+      ...(defaults.plugins ?? []),
+      // 登録後（ユーザー作成・ログインした後）に、パスキーを追加する
+      passkey({ rpName: "NWU" }),
+    ],
   };
 });

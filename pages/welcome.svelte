@@ -7,6 +7,7 @@
   import { useRouter, useShared } from "@void/svelte";
   import Stage from "../src/lib/Stage.svelte";
   import { authClient } from "../src/lib/auth-client";
+  import { NAME_MAX } from "../src/lib/profile";
 
   const router = useRouter();
   const user = useShared().auth.user!;
@@ -53,7 +54,7 @@
 
     <form onsubmit={submit}>
       <label for="name">名前</label>
-      <input id="name" bind:value={name} maxlength="100" required autocomplete="nickname" />
+      <input id="name" bind:value={name} maxlength={NAME_MAX} required autocomplete="nickname" />
       <button class="btn primary" disabled={pending || !name.trim()}>
         {pending ? "設定しています…" : "パスキーを設定して始める"}
       </button>

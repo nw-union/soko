@@ -1,12 +1,16 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { db, sql } from "void/db";
-import { formatToken, generateToken, hashToken, INVITE_DAYS, INVITE_LIMIT } from "../../src/lib/invite";
+import { formatToken, generateToken, hashToken, DEFAULT_INVITE_LIMIT, INVITE_DAYS } from "../../src/lib/invite";
 
 // 数えるのは「使用済み」か「まだ使える」もの。期限切れで未使用の招待は枠が戻る
 const COUNTED = sql`NOT (used_at IS NULL AND expires_at IS NOT NULL AND expires_at <= datetime('now'))`;
 
 type Row = { id: number; created_at: string; expires_at: string | null; used_at: string | null; used_by_name: string | null };
+
+// そのユーザーの招待の上限（user.inviteLimit）。値がなければ初期値
+const limitOf = (userId: string) =>
+  sql`COALESCE((SELECT inviteLimit FROM user WHERE id = ${userId}), ${DEFAULT_INVITE_LIMIT})`;
 
 // 自分が発行した招待の一覧と、あと何回発行できるか
 export const GET = defineHandler(async (c) => {
@@ -16,12 +20,13 @@ export const GET = defineHandler(async (c) => {
     FROM invites i LEFT JOIN user u ON u.id = i.used_by_user_id
     WHERE i.inviter_user_id = ${user.id}
     ORDER BY i.id DESC`);
-  const used = await db.all<{ n: number }>(
-    sql`SELECT COUNT(*) AS n FROM invites WHERE inviter_user_id = ${user.id} AND ${COUNTED}`,
-  );
+  const [count] = await db.all<{ used: number; limit: number }>(sql`
+    SELECT (SELECT COUNT(*) FROM invites WHERE inviter_user_id = ${user.id} AND ${COUNTED}) AS used,
+      ${limitOf(user.id)} AS "limit"`);
+  const limit = count?.limit ?? DEFAULT_INVITE_LIMIT;
   return {
-    limit: INVITE_LIMIT,
-    remaining: Math.max(0, INVITE_LIMIT - (used[0]?.n ?? 0)),
+    limit,
+    remaining: Math.max(0, limit - (count?.used ?? 0)),
     invites: rows.map((row) => ({
       id: row.id,
       createdAt: row.created_at,
@@ -40,9 +45,9 @@ export const POST = defineHandler(async (c) => {
   const result = await db.run(sql`
     INSERT INTO invites (token_hash, inviter_user_id, expires_at)
     SELECT ${await hashToken(token)}, ${user.id}, datetime('now', ${`+${INVITE_DAYS} days`})
-    WHERE (SELECT COUNT(*) FROM invites WHERE inviter_user_id = ${user.id} AND ${COUNTED}) < ${INVITE_LIMIT}`);
+    WHERE (SELECT COUNT(*) FROM invites WHERE inviter_user_id = ${user.id} AND ${COUNTED}) < ${limitOf(user.id)}`);
   if (!result.meta?.changes) {
-    return c.json({ message: `招待は ${INVITE_LIMIT} 回までしか発行できません` }, 409);
+    return c.json({ message: `招待の発行上限に達しています` }, 409);
   }
   return { token: formatToken(token), days: INVITE_DAYS };
 });

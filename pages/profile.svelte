@@ -3,6 +3,8 @@
   import { useRouter, useShared } from "@void/svelte";
   import Avatar from "../src/lib/Avatar.svelte";
   import { authClient } from "../src/lib/auth-client";
+  import { isHexColor } from "../src/lib/color";
+  import { NAME_MAX } from "../src/lib/profile";
 
   // アプリのページはログイン必須（middleware/01.auth.ts）なので、user は必ずある
   const user = useShared().auth.user!;
@@ -11,6 +13,35 @@
   async function signOut() {
     await authClient.signOut();
     router.visit("/");
+  }
+
+  // ---- 名前・イメージカラーの変更 ----
+  let nameInput = $state(user.name);
+  let colorInput = $state(user.color);
+  let profileError = $state("");
+  let saving = $state(false);
+  let editing = $state(false);
+  const colorValid = $derived(isHexColor(colorInput));
+
+  function cancelEdit() {
+    editing = false;
+    profileError = "";
+    nameInput = user.name;
+    colorInput = user.color;
+  }
+
+  async function saveProfile(event: SubmitEvent) {
+    event.preventDefault();
+    profileError = "";
+    saving = true;
+    const { error: err } = await authClient.updateUser({ name: nameInput.trim(), color: colorInput.toLowerCase() });
+    saving = false;
+    if (err) {
+      profileError = err.message ?? "プロフィールを保存できませんでした";
+      return;
+    }
+    // 共有データ（useShared）は取り直さないと変わらないので、ページごと読み込み直す
+    window.location.reload();
   }
 
   type PasskeyItem = { id: string; name?: string | null; createdAt: Date | string };
@@ -102,16 +133,39 @@
 <h1>You</h1>
 
 <div class="grid">
-  <!-- アイコン・名前・メールアドレス -->
-  <section class="tile glass wide profile">
-    <Avatar name={user.name} color={user.color} image={user.image} size={4.5} />
-    <div class="who">
-      <p class="name">{user.name}</p>
-      {#if !user.email.endsWith("@nwu.invalid")}
-        <p class="email">{user.email}</p>
-      {/if}
-      <p class="code">{user.color}</p>
-    </div>
+  <!-- アイコン・名前・イメージカラー -->
+  <section class="tile glass wide profile" class:editing>
+    {#if !editing}
+      <Avatar name={user.name} color={user.color} image={user.image} size={4.5} />
+      <div class="who">
+        <p class="name">{user.name}</p>
+        <p class="code">{user.color}</p>
+      </div>
+      <button type="button" class="edit-btn" onclick={() => (editing = true)} aria-label="プロフィールを編集" title="編集">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="m14.5 7.5 3 3" /></svg>
+      </button>
+    {:else}
+      <form class="edit" onsubmit={saveProfile}>
+        {#if profileError}
+          <p role="alert" class="error">{profileError}</p>
+        {/if}
+        <label>
+          <span>名前</span>
+          <input type="text" bind:value={nameInput} maxlength={NAME_MAX} required />
+        </label>
+        <label>
+          <span>カラーコード</span>
+          <div class="color-row">
+            <input type="color" value={colorValid ? colorInput : "#000000"} oninput={(e) => (colorInput = e.currentTarget.value)} aria-label="色を選ぶ" />
+            <input type="text" bind:value={colorInput} placeholder="#rrggbb" maxlength="7" spellcheck="false" />
+          </div>
+        </label>
+        <div class="row">
+          <button type="submit" class="btn" disabled={saving || !colorValid || !nameInput.trim()}>保存</button>
+          <button type="button" class="btn" onclick={cancelEdit}>キャンセル</button>
+        </div>
+      </form>
+    {/if}
   </section>
 
   <!-- パスキーは追加・削除できる -->
@@ -201,6 +255,7 @@
   }
 
   .profile {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -213,13 +268,6 @@
   .name {
     margin: 0;
     font: 700 1.25rem/1.25 system-ui, sans-serif;
-    overflow-wrap: anywhere;
-  }
-
-  .email {
-    margin: 0.2rem 0 0;
-    font: 400 0.85rem/1.3 system-ui, sans-serif;
-    opacity: 0.75;
     overflow-wrap: anywhere;
   }
 
@@ -307,6 +355,86 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  .profile.editing {
+    display: block;
+  }
+
+  /* 右上の鉛筆ボタン */
+  .edit-btn {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border: 1px solid rgb(255 255 255 / 0.3);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .edit-btn:active {
+    background: rgb(255 255 255 / 0.22);
+  }
+
+  .edit-btn svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .edit {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .edit label {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .edit label > span {
+    font: 600 0.75rem/1 system-ui, sans-serif;
+    opacity: 0.7;
+  }
+
+  .edit input[type="text"] {
+    min-width: 0;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid rgb(255 255 255 / 0.3);
+    border-radius: 0.7rem;
+    background: rgb(255 255 255 / 0.1);
+    color: #fff;
+    font: 500 1rem/1.2 system-ui, sans-serif;
+  }
+
+  .color-row {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .color-row input[type="text"] {
+    flex: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .color-row input[type="color"] {
+    width: 2.6rem;
+    padding: 0;
+    border: 1px solid rgb(255 255 255 / 0.3);
+    border-radius: 0.7rem;
+    background: none;
+    cursor: pointer;
   }
 
   .btn:disabled {
