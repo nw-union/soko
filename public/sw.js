@@ -10,7 +10,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+      await Promise.all(
+        keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+      );
       await self.clients.claim();
     })(),
   );
@@ -43,7 +45,9 @@ async function networkFirst(request) {
   try {
     const response = await fetch(request);
     // ログイン中のレスポンスは no-store で返ってくる。ユーザー情報を含みうるので保存しない
-    const noStore = (response.headers.get("cache-control") ?? "").includes("no-store");
+    const noStore = (response.headers.get("cache-control") ?? "").includes(
+      "no-store",
+    );
     if (response.ok && !noStore) cache.put(request, response.clone());
     return response;
   } catch (error) {

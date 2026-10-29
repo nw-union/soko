@@ -2,7 +2,16 @@
   "version": 1,
   "source": {},
   "resolved": {
-    "account_id": "22658afabd9aaa23e4fc71d3f62c5814"
+    "account_id": "de4fb9e6068c5316ec2332e738698b44",
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "soko-db",
+        "database_id": "80ac3304-0d44-455d-8bbe-169fa7a1c6c8",
+        "migrations_dir": "./db/migrations"
+      }
+    ],
+    "name": "soko"
   },
-  "text": "{\n  \"account_id\": \"22658afabd9aaa23e4fc71d3f62c5814\"\n}\n"
+  "text": "{\n  \"account_id\": \"de4fb9e6068c5316ec2332e738698b44\",\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"database_id\": \"80ac3304-0d44-455d-8bbe-169fa7a1c6c8\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"name\": \"soko\"\n}\n"
 }

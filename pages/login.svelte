@@ -1,6 +1,6 @@
 <script module lang="ts">
-  // ログイン前後の画面はタブバー付きの共通レイアウトを使わない
-  export const layout = false;
+// ログイン前後の画面はタブバー付きの共通レイアウトを使わない
+export const layout = false;
 </script>
 
 <script lang="ts">
@@ -109,7 +109,7 @@
         maxlength="19"
         required
       />
-      <button class="btn" disabled={pending !== null || token.replace(/-/g, "").length !== 16}>
+      <button type="submit" class="btn" disabled={pending !== null || token.replace(/-/g, "").length !== 16}>
         {pending === "signup" ? "確認しています…" : "登録する"}
       </button>
       <small>メンバーから受け取った招待コードを入力すると、名前とパスキーを設定できます。</small>

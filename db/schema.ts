@@ -43,7 +43,10 @@ export const playlistVideos = sqliteTable(
     // プレイリスト内での並び（YouTube 上の順、0 始まり）
     position: integer("position").notNull().default(0),
   },
-  (table) => [primaryKey({ columns: [table.playlistId, table.videoId] }), index("playlist_videos_video_idx").on(table.videoId)],
+  (table) => [
+    primaryKey({ columns: [table.playlistId, table.videoId] }),
+    index("playlist_videos_video_idx").on(table.videoId),
+  ],
 );
 
 // 招待。メンバーが発行し（1 人 3 回まで）、新規の人は「トークン」を入力して名前とパスキーを設定し、登録する。

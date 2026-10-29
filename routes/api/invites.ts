@@ -1,12 +1,24 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { db, sql } from "void/db";
-import { formatToken, generateToken, hashToken, DEFAULT_INVITE_LIMIT, INVITE_DAYS } from "../../src/lib/invite";
+import {
+  formatToken,
+  generateToken,
+  hashToken,
+  DEFAULT_INVITE_LIMIT,
+  INVITE_DAYS,
+} from "../../src/lib/invite";
 
 // 数えるのは「使用済み」か「まだ使える」もの。期限切れで未使用の招待は枠が戻る
 const COUNTED = sql`NOT (used_at IS NULL AND expires_at IS NOT NULL AND expires_at <= datetime('now'))`;
 
-type Row = { id: number; created_at: string; expires_at: string | null; used_at: string | null; used_by_name: string | null };
+type Row = {
+  id: number;
+  created_at: string;
+  expires_at: string | null;
+  used_at: string | null;
+  used_by_name: string | null;
+};
 
 // そのユーザーの招待の上限（user.inviteLimit）。値がなければ初期値
 const limitOf = (userId: string) =>
@@ -56,7 +68,8 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   const id = Number(c.req.query("id"));
-  if (!Number.isInteger(id)) return c.json({ message: "id が正しくありません" }, 400);
+  if (!Number.isInteger(id))
+    return c.json({ message: "id が正しくありません" }, 400);
   await db.run(
     sql`DELETE FROM invites WHERE id = ${id} AND inviter_user_id = ${user.id} AND used_at IS NULL`,
   );

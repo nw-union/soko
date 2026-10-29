@@ -10,11 +10,17 @@ export const INVITE_DAYS = 7;
 // 紛らわしい文字（0 O 1 I L）を除いた 31 文字。16 文字で約 80 ビット
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-export const normalizeToken = (raw: string) => raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+export const normalizeToken = (raw: string) =>
+  raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 export async function hashToken(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export function generateToken(): string {
@@ -24,4 +30,5 @@ export function generateToken(): string {
 }
 
 // 画面に出す形（XXXX-XXXX-XXXX-XXXX）
-export const formatToken = (token: string) => token.match(/.{1,4}/g)?.join("-") ?? "";
+export const formatToken = (token: string) =>
+  token.match(/.{1,4}/g)?.join("-") ?? "";

@@ -19,7 +19,9 @@ export type FetchedVideo = {
 // 数字だけのものは YouTube もタグとして扱わない。大文字小文字だけが違うものは、先に出た方にまとめる
 export const extractHashtags = (description: string): string[] => {
   const seen = new Map<string, string>();
-  for (const m of description.matchAll(/(?:^|\s)#([\p{L}\p{N}_]{1,30})(?![\p{L}\p{N}_])/gu)) {
+  for (const m of description.matchAll(
+    /(?:^|\s)#([\p{L}\p{N}_]{1,30})(?![\p{L}\p{N}_])/gu,
+  )) {
     const tag = m[1];
     if (/^\p{N}+$/u.test(tag)) continue;
     const key = tag.toLowerCase();
@@ -32,24 +34,43 @@ export const extractHashtags = (description: string): string[] => {
 export const parseIsoDuration = (iso: string): number | null => {
   const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso);
   if (!m) return null;
-  const seconds = Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0);
+  const seconds =
+    Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0);
   return seconds > 0 ? seconds : null;
 };
 
-const call = async <T>(path: string, params: Record<string, string>, key: string): Promise<T> => {
-  const res = await fetch(`${API}/${path}?${new URLSearchParams({ ...params, key })}`);
-  if (!res.ok) throw new Error(`YouTube API ${path}: ${res.status} ${await res.text()}`);
+const call = async <T>(
+  path: string,
+  params: Record<string, string>,
+  key: string,
+): Promise<T> => {
+  const res = await fetch(
+    `${API}/${path}?${new URLSearchParams({ ...params, key })}`,
+  );
+  if (!res.ok)
+    throw new Error(`YouTube API ${path}: ${res.status} ${await res.text()}`);
   return (await res.json()) as T;
 };
 
 // プレイリストの動画 ID（全ページ）。限定公開のプレイリストも、ID がわかれば API キーで取れる（非公開は不可）
-export const fetchPlaylistVideoIds = async (playlistId: string, key: string): Promise<string[]> => {
+export const fetchPlaylistVideoIds = async (
+  playlistId: string,
+  key: string,
+): Promise<string[]> => {
   const ids: string[] = [];
   let pageToken: string | undefined;
   do {
-    const res = await call<{ items: { contentDetails: { videoId: string } }[]; nextPageToken?: string }>(
+    const res = await call<{
+      items: { contentDetails: { videoId: string } }[];
+      nextPageToken?: string;
+    }>(
       "playlistItems",
-      { part: "contentDetails", playlistId, maxResults: "50", ...(pageToken ? { pageToken } : {}) },
+      {
+        part: "contentDetails",
+        playlistId,
+        maxResults: "50",
+        ...(pageToken ? { pageToken } : {}),
+      },
       key,
     );
     ids.push(...res.items.map((item) => item.contentDetails.videoId));
@@ -67,18 +88,26 @@ type VideoItem = {
 
 // 動画 ID から詳細を引き、表示対象だけを返す。
 // 非公開は除外、限定公開とライブは含める。ショートと埋め込み不可（アプリ内で再生できない）は除外する
-export const fetchVideos = async (ids: string[], key: string): Promise<FetchedVideo[]> => {
+export const fetchVideos = async (
+  ids: string[],
+  key: string,
+): Promise<FetchedVideo[]> => {
   const result: FetchedVideo[] = [];
   for (let i = 0; i < ids.length; i += 50) {
     const res = await call<{ items: VideoItem[] }>(
       "videos",
-      { part: "snippet,contentDetails,status", id: ids.slice(i, i + 50).join(",") },
+      {
+        part: "snippet,contentDetails,status",
+        id: ids.slice(i, i + 50).join(","),
+      },
       key,
     );
     for (const item of res.items) {
-      if (item.status.privacyStatus === "private" || !item.status.embeddable) continue;
+      if (item.status.privacyStatus === "private" || !item.status.embeddable)
+        continue;
       const durationSeconds = parseIsoDuration(item.contentDetails.duration);
-      if (durationSeconds !== null && durationSeconds <= SHORT_MAX_SECONDS) continue;
+      if (durationSeconds !== null && durationSeconds <= SHORT_MAX_SECONDS)
+        continue;
       result.push({
         youtubeId: item.id,
         title: item.snippet.title,

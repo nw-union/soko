@@ -1,19 +1,24 @@
 <script lang="ts">
-  // 丸いアイコン。枠の色がユーザーのイメージカラー。
-  // image（URL）があればその画像、なければ（読み込みに失敗したときも）名前の頭文字を入れる
-  let {
-    name,
-    color,
-    image = null,
-    size = 3,
-  }: { name: string; color: string; image?: string | null; size?: number } = $props();
+// 丸いアイコン。枠の色がユーザーのイメージカラー。
+// image（URL）があればその画像、なければ（読み込みに失敗したときも）名前の頭文字を入れる
+let {
+	name,
+	color,
+	image = null,
+	size = 3,
+}: {
+	name: string;
+	color: string;
+	image?: string | null;
+	size?: number;
+} = $props();
 
-  // サロゲートペアの絵文字なども 1 文字として扱う
-  const initial = $derived([...name.trim()][0]?.toUpperCase() ?? "?");
+// サロゲートペアの絵文字なども 1 文字として扱う
+const initial = $derived([...name.trim()][0]?.toUpperCase() ?? "?");
 
-  // 画像が読み込めなかった URL。別の URL に変わったら、また試す
-  let failed = $state<string | null>(null);
-  const src = $derived(image && image !== failed ? image : null);
+// 画像が読み込めなかった URL。別の URL に変わったら、また試す
+let failed = $state<string | null>(null);
+const src = $derived(image && image !== failed ? image : null);
 </script>
 
 <span class="avatar" style="--ring: {color}; --size: {size}rem" aria-hidden="true">

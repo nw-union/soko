@@ -18,34 +18,45 @@ const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const TOKEN_LENGTH = 16;
 
 function fail(message) {
-  console.error(`エラー: ${message}`);
-  process.exit(1);
+	console.error(`エラー: ${message}`);
+	process.exit(1);
 }
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
 const option = (name) => {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 ? args[i + 1] : undefined;
+	const i = args.indexOf(`--${name}`);
+	return i >= 0 ? args[i + 1] : undefined;
 };
 
 const days = Number(option("days") ?? 7);
 const remote = flag("remote");
 
-if (!Number.isInteger(days) || days < 0 || days > 365) fail("--days は 0〜365 の整数で指定してください");
+if (!Number.isInteger(days) || days < 0 || days > 365)
+	fail("--days は 0〜365 の整数で指定してください");
 
-const token = Array.from({ length: TOKEN_LENGTH }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
+const token = Array.from(
+	{ length: TOKEN_LENGTH },
+	() => ALPHABET[randomInt(ALPHABET.length)],
+).join("");
 // auth.ts の normalizeToken / hashToken と同じ処理（大文字にして英数字だけ残し、SHA-256）
 const tokenHash = createHash("sha256").update(token).digest("hex");
 
 const sql =
-  "INSERT INTO invites (token_hash, expires_at) VALUES (" +
-  [`'${tokenHash}'`, days > 0 ? `datetime('now', '+${days} days')` : "NULL"].join(", ") +
-  ")";
+	"INSERT INTO invites (token_hash, expires_at) VALUES (" +
+	[
+		`'${tokenHash}'`,
+		days > 0 ? `datetime('now', '+${days} days')` : "NULL",
+	].join(", ") +
+	")";
 
-const result = spawnSync("bunx", ["void", "db", "execute", ...(remote ? ["--remote"] : []), sql], {
-  stdio: ["ignore", "inherit", "inherit"],
-});
+const result = spawnSync(
+	"bunx",
+	["void", "db", "execute", ...(remote ? ["--remote"] : []), sql],
+	{
+		stdio: ["ignore", "inherit", "inherit"],
+	},
+);
 if (result.status !== 0) fail("DB への登録に失敗しました");
 
 const shown = token.match(/.{4}/g).join("-");

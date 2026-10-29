@@ -1,66 +1,68 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
-  import "./glass.css";
-  import sokoPng from "../assets/nwu-soko.png";
-  import sokoWebp from "../assets/nwu-soko.webp";
-  import sokoWidePng from "../assets/nwu-soko-wide.png";
-  import sokoWideWebp from "../assets/nwu-soko-wide.webp";
-  // 18x24 の極小画像（約 1KB）。?inline で data URI として HTML に埋め込まれ、追加リクエストが要らない
-  import placeholder from "../assets/nwu-soko-lqip.png?inline";
+import { onMount, type Snippet } from "svelte";
+import "./glass.css";
+import sokoPng from "../assets/nwu-soko.png";
+import sokoWebp from "../assets/nwu-soko.webp";
+import sokoWidePng from "../assets/nwu-soko-wide.png";
+import sokoWideWebp from "../assets/nwu-soko-wide.webp";
+// 18x24 の極小画像（約 1KB）。?inline で data URI として HTML に埋め込まれ、追加リクエストが要らない
+import placeholder from "../assets/nwu-soko-lqip.png?inline";
 
-  let { children }: { children?: Snippet } = $props();
-  let canvas: HTMLCanvasElement;
+let { children }: { children?: Snippet } = $props();
+let canvas: HTMLCanvasElement;
 
-  // 小さな canvas にランダムなノイズを描き、CSS で画面全体に引き伸ばして
-  // フィルムグレインとして重ねる（毎フレーム全画面を描くより軽い）。
-  // 粒の大きさは画面サイズによらず一定（約 1.5px）になるよう、canvas の解像度を画面幅に合わせる。
-  // スマホ（幅 390px 前後）で 256px 四方だった時の粒感を基準にしている
-  onMount(() => {
-    const cell = 1.5;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    let image: ImageData;
-    let data: Uint32Array;
+// 小さな canvas にランダムなノイズを描き、CSS で画面全体に引き伸ばして
+// フィルムグレインとして重ねる（毎フレーム全画面を描くより軽い）。
+// 粒の大きさは画面サイズによらず一定（約 1.5px）になるよう、canvas の解像度を画面幅に合わせる。
+// スマホ（幅 390px 前後）で 256px 四方だった時の粒感を基準にしている
+onMount(() => {
+	const cell = 1.5;
+	const context = canvas.getContext("2d");
+	if (!context) return;
+	// 下の関数宣言の中では null チェックの絞り込みが効かないので、型を確定させた変数に入れ直す
+	const ctx: CanvasRenderingContext2D = context;
+	let image: ImageData;
+	let data: Uint32Array;
 
-    function resize() {
-      canvas.width = Math.max(1, Math.round(innerWidth / cell));
-      canvas.height = Math.max(1, Math.round(innerHeight / cell));
-      image = ctx!.createImageData(canvas.width, canvas.height);
-      data = new Uint32Array(image.data.buffer);
-      draw();
-    }
+	function resize() {
+		canvas.width = Math.max(1, Math.round(innerWidth / cell));
+		canvas.height = Math.max(1, Math.round(innerHeight / cell));
+		image = ctx.createImageData(canvas.width, canvas.height);
+		data = new Uint32Array(image.data.buffer);
+		draw();
+	}
 
-    function draw() {
-      for (let i = 0; i < data.length; i++) {
-        const v = (Math.random() * 255) | 0;
-        // ABGR（リトルエンディアン）: 不透明度は固定、明るさだけランダム
-        data[i] = (0xff << 24) | (v << 16) | (v << 8) | v;
-      }
-      ctx!.putImageData(image, 0, 0);
-    }
+	function draw() {
+		for (let i = 0; i < data.length; i++) {
+			const v = (Math.random() * 255) | 0;
+			// ABGR（リトルエンディアン）: 不透明度は固定、明るさだけランダム
+			data[i] = (0xff << 24) | (v << 16) | (v << 8) | v;
+		}
+		ctx.putImageData(image, 0, 0);
+	}
 
-    resize();
-    addEventListener("resize", resize);
-    // 動きを抑えたい設定のユーザーには静止したノイズだけ見せる
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches)
-      return () => removeEventListener("resize", resize);
+	resize();
+	addEventListener("resize", resize);
+	// 動きを抑えたい設定のユーザーには静止したノイズだけ見せる
+	if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+		return () => removeEventListener("resize", resize);
 
-    let raf = 0;
-    let last = 0;
-    function loop(now: number) {
-      // 約 10fps。フィルムっぽいカクついた揺らぎにする
-      if (now - last > 100) {
-        draw();
-        last = now;
-      }
-      raf = requestAnimationFrame(loop);
-    }
-    raf = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(raf);
-      removeEventListener("resize", resize);
-    };
-  });
+	let raf = 0;
+	let last = 0;
+	function loop(now: number) {
+		// 約 10fps。フィルムっぽいカクついた揺らぎにする
+		if (now - last > 100) {
+			draw();
+			last = now;
+		}
+		raf = requestAnimationFrame(loop);
+	}
+	raf = requestAnimationFrame(loop);
+	return () => {
+		cancelAnimationFrame(raf);
+		removeEventListener("resize", resize);
+	};
+});
 </script>
 
 <div class="stage">

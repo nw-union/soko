@@ -1,14 +1,14 @@
 <script lang="ts">
-  import Stage from "../src/lib/Stage.svelte";
-  import TabBar from "../src/lib/TabBar.svelte";
-  import { registerServiceWorker } from "../src/lib/pwa";
-  import { onMount } from "svelte";
-  // 見出し用フォント（自前配信。Google Fonts への通信はなく、サービスワーカーでキャッシュされる）
-  import "@fontsource-variable/orbitron";
+import Stage from "../src/lib/Stage.svelte";
+import TabBar from "../src/lib/TabBar.svelte";
+import { registerServiceWorker } from "../src/lib/pwa";
+import { onMount } from "svelte";
+// 見出し用フォント（自前配信。Google Fonts への通信はなく、サービスワーカーでキャッシュされる）
+import "@fontsource-variable/orbitron";
 
-  let { children } = $props();
+let { children } = $props();
 
-  onMount(registerServiceWorker);
+onMount(registerServiceWorker);
 </script>
 
 <!--

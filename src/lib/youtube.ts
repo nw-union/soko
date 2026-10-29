@@ -6,7 +6,8 @@ export const isYoutubeId = (value: string) => YOUTUBE_ID.test(value);
 export const watchUrl = (id: string) => `https://www.youtube.com/watch?v=${id}`;
 
 // hqdefault は 4:3 で上下に黒帯が入っているが、16:9 の枠に cover で入れると黒帯が切れてちょうど収まる
-export const thumbnailUrl = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+export const thumbnailUrl = (id: string) =>
+  `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 
 // アプリ内で再生する埋め込みプレイヤー。nocookie ドメインで、再生後に関連動画を出さない
 export const embedUrl = (id: string) =>

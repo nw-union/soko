@@ -1,133 +1,161 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { useRouter, useShared } from "@void/svelte";
-  import Avatar from "../src/lib/Avatar.svelte";
-  import { authClient } from "../src/lib/auth-client";
-  import { isHexColor } from "../src/lib/color";
-  import { NAME_MAX } from "../src/lib/profile";
+import { onMount } from "svelte";
+import { useRouter, useShared } from "@void/svelte";
+import Avatar from "../src/lib/Avatar.svelte";
+import { authClient } from "../src/lib/auth-client";
+import { isHexColor } from "../src/lib/color";
+import { NAME_MAX } from "../src/lib/profile";
 
-  // アプリのページはログイン必須（middleware/01.auth.ts）なので、user は必ずある
-  const user = useShared().auth.user!;
-  const router = useRouter();
+// アプリのページはログイン必須（middleware/01.auth.ts）なので、user は必ずある
+const user = useShared().auth.user;
+if (!user) throw new Error("ログインしていません");
+const router = useRouter();
 
-  async function signOut() {
-    await authClient.signOut();
-    router.visit("/");
-  }
+async function signOut() {
+	await authClient.signOut();
+	router.visit("/");
+}
 
-  // ---- 名前・イメージカラーの変更 ----
-  let nameInput = $state(user.name);
-  let colorInput = $state(user.color);
-  let profileError = $state("");
-  let saving = $state(false);
-  let editing = $state(false);
-  const colorValid = $derived(isHexColor(colorInput));
+// ---- 名前・イメージカラーの変更 ----
+let nameInput = $state(user.name);
+let colorInput = $state(user.color);
+let profileError = $state("");
+let saving = $state(false);
+let editing = $state(false);
+const colorValid = $derived(isHexColor(colorInput));
 
-  function cancelEdit() {
-    editing = false;
-    profileError = "";
-    nameInput = user.name;
-    colorInput = user.color;
-  }
+function cancelEdit() {
+	editing = false;
+	profileError = "";
+	nameInput = user.name;
+	colorInput = user.color;
+}
 
-  async function saveProfile(event: SubmitEvent) {
-    event.preventDefault();
-    profileError = "";
-    saving = true;
-    const { error: err } = await authClient.updateUser({ name: nameInput.trim(), color: colorInput.toLowerCase() });
-    saving = false;
-    if (err) {
-      profileError = err.message ?? "プロフィールを保存できませんでした";
-      return;
-    }
-    // 共有データ（useShared）は取り直さないと変わらないので、ページごと読み込み直す
-    window.location.reload();
-  }
+async function saveProfile(event: SubmitEvent) {
+	event.preventDefault();
+	profileError = "";
+	saving = true;
+	const { error: err } = await authClient.updateUser({
+		name: nameInput.trim(),
+		color: colorInput.toLowerCase(),
+	});
+	saving = false;
+	if (err) {
+		profileError = err.message ?? "プロフィールを保存できませんでした";
+		return;
+	}
+	// 共有データ（useShared）は取り直さないと変わらないので、ページごと読み込み直す
+	window.location.reload();
+}
 
-  type PasskeyItem = { id: string; name?: string | null; createdAt: Date | string };
-  let passkeys = $state<PasskeyItem[]>([]);
-  let error = $state("");
+type PasskeyItem = {
+	id: string;
+	name?: string | null;
+	createdAt: Date | string;
+};
+let passkeys = $state<PasskeyItem[]>([]);
+let error = $state("");
 
-  async function loadPasskeys() {
-    const { data, error: err } = await authClient.passkey.listUserPasskeys();
-    if (err) error = err.message ?? "パスキー一覧の取得に失敗しました";
-    else passkeys = data ?? [];
-  }
+async function loadPasskeys() {
+	const { data, error: err } = await authClient.passkey.listUserPasskeys();
+	if (err) error = err.message ?? "パスキー一覧の取得に失敗しました";
+	else passkeys = data ?? [];
+}
 
-  async function addPasskey() {
-    error = "";
-    const result = await authClient.passkey.addPasskey({ name: `パスキー ${passkeys.length + 1}` });
-    if (result?.error) {
-      // 同じ端末に同じアカウントのパスキーは 2 つ作れない（その場合のメッセージは英語で返ってくる）
-      error = /previously registered/i.test(result.error.message ?? "")
-        ? "この端末には、すでにパスキーが登録されています。別の端末や別のパスワードマネージャーで追加してください"
-        : "パスキーの追加に失敗しました";
-    }
-    await loadPasskeys();
-  }
+async function addPasskey() {
+	error = "";
+	const result = await authClient.passkey.addPasskey({
+		name: `パスキー ${passkeys.length + 1}`,
+	});
+	if (result?.error) {
+		// 同じ端末に同じアカウントのパスキーは 2 つ作れない（その場合のメッセージは英語で返ってくる）
+		error = /previously registered/i.test(result.error.message ?? "")
+			? "この端末には、すでにパスキーが登録されています。別の端末や別のパスワードマネージャーで追加してください"
+			: "パスキーの追加に失敗しました";
+	}
+	await loadPasskeys();
+}
 
-  async function deletePasskey(id: string) {
-    if (passkeys.length <= 1) {
-      error = "最後のパスキーは削除できません（ログインできなくなります）";
-      return;
-    }
-    if (!confirm("このパスキーを削除しますか？")) return;
-    error = "";
-    const { error: err } = await authClient.passkey.deletePasskey({ id });
-    if (err) error = err.message ?? "パスキーの削除に失敗しました";
-    await loadPasskeys();
-  }
+async function deletePasskey(id: string) {
+	if (passkeys.length <= 1) {
+		error = "最後のパスキーは削除できません（ログインできなくなります）";
+		return;
+	}
+	if (!confirm("このパスキーを削除しますか？")) return;
+	error = "";
+	const { error: err } = await authClient.passkey.deletePasskey({ id });
+	if (err) error = err.message ?? "パスキーの削除に失敗しました";
+	await loadPasskeys();
+}
 
-  // ---- 招待コード ----
-  type InviteItem = { id: number; createdAt: string; expiresAt: string | null; usedAt: string | null; usedByName: string | null };
-  let invites = $state<InviteItem[]>([]);
-  let remaining = $state(0);
-  let limit = $state(3);
-  let inviteError = $state("");
-  let issued = $state<string | null>(null);
-  let copied = $state(false);
+// ---- 招待コード ----
+type InviteItem = {
+	id: number;
+	createdAt: string;
+	expiresAt: string | null;
+	usedAt: string | null;
+	usedByName: string | null;
+};
+let invites = $state<InviteItem[]>([]);
+let remaining = $state(0);
+let limit = $state(3);
+let inviteError = $state("");
+let issued = $state<string | null>(null);
+let copied = $state(false);
 
-  // SQLite の日時は UTC の "YYYY-MM-DD HH:MM:SS"
-  const parseUtc = (value: string) => new Date(`${value.replace(" ", "T")}Z`);
-  const isExpired = (invite: InviteItem) => !invite.usedAt && !!invite.expiresAt && parseUtc(invite.expiresAt) <= new Date();
+// SQLite の日時は UTC の "YYYY-MM-DD HH:MM:SS"
+const parseUtc = (value: string) => new Date(`${value.replace(" ", "T")}Z`);
+const isExpired = (invite: InviteItem) =>
+	!invite.usedAt &&
+	!!invite.expiresAt &&
+	parseUtc(invite.expiresAt) <= new Date();
 
-  async function loadInvites() {
-    const res = await fetch("/api/invites");
-    if (!res.ok) return;
-    const data = (await res.json()) as { limit: number; remaining: number; invites: InviteItem[] };
-    limit = data.limit;
-    remaining = data.remaining;
-    invites = data.invites;
-  }
+async function loadInvites() {
+	const res = await fetch("/api/invites");
+	if (!res.ok) return;
+	const data = (await res.json()) as {
+		limit: number;
+		remaining: number;
+		invites: InviteItem[];
+	};
+	limit = data.limit;
+	remaining = data.remaining;
+	invites = data.invites;
+}
 
-  async function issueInvite() {
-    inviteError = "";
-    copied = false;
-    const res = await fetch("/api/invites", { method: "POST" });
-    const data = (await res.json().catch(() => null)) as { token?: string; message?: string } | null;
-    if (!res.ok || !data?.token) inviteError = data?.message ?? "招待コードを発行できませんでした";
-    else issued = data.token;
-    await loadInvites();
-  }
+async function issueInvite() {
+	inviteError = "";
+	copied = false;
+	const res = await fetch("/api/invites", { method: "POST" });
+	const data = (await res.json().catch(() => null)) as {
+		token?: string;
+		message?: string;
+	} | null;
+	if (!res.ok || !data?.token)
+		inviteError = data?.message ?? "招待コードを発行できませんでした";
+	else issued = data.token;
+	await loadInvites();
+}
 
-  // 発行したコードは、その場で 1 回しか見られない。リンクで渡せば入力の手間もない
-  const inviteLink = (token: string) => `${window.location.origin}/login?invite=${token}`;
+// 発行したコードは、その場で 1 回しか見られない。リンクで渡せば入力の手間もない
+const inviteLink = (token: string) =>
+	`${window.location.origin}/login?invite=${token}`;
 
-  async function copy(text: string) {
-    await navigator.clipboard.writeText(text);
-    copied = true;
-  }
+async function copy(text: string) {
+	await navigator.clipboard.writeText(text);
+	copied = true;
+}
 
-  async function revokeInvite(id: number) {
-    if (!confirm("この招待を取り消しますか？")) return;
-    await fetch(`/api/invites?id=${id}`, { method: "DELETE" });
-    await loadInvites();
-  }
+async function revokeInvite(id: number) {
+	if (!confirm("この招待を取り消しますか？")) return;
+	await fetch(`/api/invites?id=${id}`, { method: "DELETE" });
+	await loadInvites();
+}
 
-  onMount(() => {
-    loadPasskeys();
-    loadInvites();
-  });
+onMount(() => {
+	loadPasskeys();
+	loadInvites();
+});
 </script>
 
 <h1>You</h1>
@@ -193,12 +221,13 @@
       <p role="alert" class="error">{inviteError}</p>
     {/if}
     {#if issued}
+      {@const code = issued}
       <div class="issued">
-        <p class="token">{issued}</p>
+        <p class="token">{code}</p>
         <p class="note">このコードは今しか表示されません。ログイン画面の「初めての方」で入力するよう伝えてください（有効期限 7 日）。</p>
         <div class="row">
-          <button type="button" class="btn small" onclick={() => copy(issued!)}>コードをコピー</button>
-          <button type="button" class="btn small" onclick={() => copy(inviteLink(issued!))}>リンクをコピー</button>
+          <button type="button" class="btn small" onclick={() => copy(code)}>コードをコピー</button>
+          <button type="button" class="btn small" onclick={() => copy(inviteLink(code))}>リンクをコピー</button>
           {#if copied}<small>コピーしました</small>{/if}
         </div>
       </div>

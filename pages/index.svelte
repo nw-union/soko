@@ -1,26 +1,26 @@
 <script lang="ts">
-  import type { Props } from "./index.server";
-  import VideoTile from "../src/lib/VideoTile.svelte";
+import type { Props } from "./index.server";
+import VideoTile from "../src/lib/VideoTile.svelte";
 
-  let { playlists }: Props = $props();
+let { playlists }: Props = $props();
 
-  // 再生中の動画。入っている間だけ埋め込みプレイヤーを出す
-  let playing = $state<Props["playlists"][number]["videos"][number] | null>(null);
-  let dialog = $state<HTMLDialogElement>();
-  // 概要欄は最初は数行だけ見せて、「もっと見る」で全文にする
-  let expanded = $state(false);
+// 再生中の動画。入っている間だけ埋め込みプレイヤーを出す
+let playing = $state<Props["playlists"][number]["videos"][number] | null>(null);
+let dialog = $state<HTMLDialogElement>();
+// 概要欄は最初は数行だけ見せて、「もっと見る」で全文にする
+let expanded = $state(false);
 
-  const play = (video: Props["playlists"][number]["videos"][number]) => {
-    playing = video;
-    expanded = false;
-    dialog?.showModal();
-  };
+const play = (video: Props["playlists"][number]["videos"][number]) => {
+	playing = video;
+	expanded = false;
+	dialog?.showModal();
+};
 
-  // 閉じたら iframe ごと外して、音を止める
-  const close = () => {
-    dialog?.close();
-    playing = null;
-  };
+// 閉じたら iframe ごと外して、音を止める
+const close = () => {
+	dialog?.close();
+	playing = null;
+};
 </script>
 
 {#if playlists.length === 0}
@@ -40,6 +40,7 @@
 {/if}
 
 <!-- 背景（::backdrop）のクリックは dialog 自身へのクリックになるので、そこで閉じる -->
+<!-- biome-ignore lint/a11y/useKeyWithClickEvents: キーボードでは dialog 標準の Esc で閉じられる -->
 <dialog
   bind:this={dialog}
   class="player"

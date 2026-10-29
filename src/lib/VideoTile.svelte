@@ -1,20 +1,25 @@
 <script lang="ts">
+// YouTube の動画のタイル（ホーム用）。左にサムネイル（右下に動画時間）、右にタイトル。
+// 押すと onplay でアプリ内再生にする。修飾キー付きや JS が動かない場合は、そのまま YouTube へ
+let {
+	url,
+	thumbnail,
+	title,
+	duration,
+	onplay,
+}: {
+	url: string;
+	thumbnail: string;
+	title: string;
+	duration: string | null;
+	onplay: () => void;
+} = $props();
 
-  // YouTube の動画のタイル（ホーム用）。左にサムネイル（右下に動画時間）、右にタイトル。
-  // 押すと onplay でアプリ内再生にする。修飾キー付きや JS が動かない場合は、そのまま YouTube へ
-  let {
-    url,
-    thumbnail,
-    title,
-    duration,
-    onplay,
-  }: { url: string; thumbnail: string; title: string; duration: string | null; onplay: () => void } = $props();
-
-  const click = (e: MouseEvent) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-    e.preventDefault();
-    onplay();
-  };
+const click = (e: MouseEvent) => {
+	if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+	e.preventDefault();
+	onplay();
+};
 </script>
 
 <a class="tile glass tile-link" href={url} target="_blank" rel="noopener noreferrer" onclick={click}>

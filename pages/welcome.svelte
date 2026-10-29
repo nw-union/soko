@@ -1,6 +1,6 @@
 <script module lang="ts">
-  // ログイン前後の画面はタブバー付きの共通レイアウトを使わない
-  export const layout = false;
+// ログイン前後の画面はタブバー付きの共通レイアウトを使わない
+export const layout = false;
 </script>
 
 <script lang="ts">
@@ -10,7 +10,8 @@
   import { NAME_MAX } from "../src/lib/profile";
 
   const router = useRouter();
-  const user = useShared().auth.user!;
+  const user = useShared().auth.user;
+  if (!user) throw new Error("ログインしていません");
 
   let name = $state(user.name);
   let error = $state("");
@@ -55,7 +56,7 @@
     <form onsubmit={submit}>
       <label for="name">名前</label>
       <input id="name" bind:value={name} maxlength={NAME_MAX} required autocomplete="nickname" />
-      <button class="btn primary" disabled={pending || !name.trim()}>
+      <button type="submit" class="btn primary" disabled={pending || !name.trim()}>
         {pending ? "設定しています…" : "パスキーを設定して始める"}
       </button>
       <small>次回からは、パスキー（指紋・顔認証など）でログインできます。</small>

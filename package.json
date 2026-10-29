@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "fmt": "biome format --write .",
+    "lint": "biome lint --write ."
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.11",
@@ -15,11 +17,12 @@
     "svelte": "^5.57.2"
   },
   "devDependencies": {
-    "void": "^1.1.12",
-    "vite": "npm:@voidzero-dev/vite-plus-core@^1.3.0",
+    "@biomejs/biome": "^2.3.8",
+    "@void/svelte": "1.3.0",
     "typescript": "^7.0.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^1.3.0",
     "vite-plus": "^1.3.0",
-    "@void/svelte": "1.1.12"
+    "void": "^1.3.0"
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@^1.3.0"

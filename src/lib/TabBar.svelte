@@ -1,30 +1,40 @@
 <script lang="ts">
-  import { Link, useRouter } from "@void/svelte";
+import { Link, useRouter } from "@void/svelte";
 
-  const router = useRouter();
+const router = useRouter();
 
-  // 文字は出さず、アイコンだけ。読み上げ用の名前（label）は aria-label に入れる
-  const tabs = [
-    {
-      href: "/",
-      label: "ホーム",
-      // ダンボール箱: 外形、上面のふた、中央の折り目、ガムテープ
-      icons: ["M12 3 3.5 7.6v8.8L12 21l8.5-4.6V7.6z", "M3.5 7.6 12 12.2l8.5-4.6", "M12 12.2V21", "M7.7 5.3l8.5 4.6"],
-    },
-    {
-      href: "/profile",
-      label: "Profile",
-      // ユーザー: 頭と肩
-      icons: ["M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M4 20a8 8 0 0 1 16 0"],
-    },
-  ];
+// 文字は出さず、アイコンだけ。読み上げ用の名前（label）は aria-label に入れる
+const tabs = [
+	{
+		href: "/",
+		label: "ホーム",
+		// ダンボール箱: 外形、上面のふた、中央の折り目、ガムテープ
+		icons: [
+			"M12 3 3.5 7.6v8.8L12 21l8.5-4.6V7.6z",
+			"M3.5 7.6 12 12.2l8.5-4.6",
+			"M12 12.2V21",
+			"M7.7 5.3l8.5 4.6",
+		],
+	},
+	{
+		href: "/profile",
+		label: "Profile",
+		// ユーザー: 頭と肩
+		icons: ["M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M4 20a8 8 0 0 1 16 0"],
+	},
+];
 
-  // /profile の配下なども選択中にする
-  const isActive = (href: string) =>
-    href === "/" ? router.path === "/" : router.path.startsWith(href);
+// /profile の配下なども選択中にする
+const isActive = (href: string) =>
+	href === "/" ? router.path === "/" : router.path.startsWith(href);
 
-  // 選択中のタブの位置。ガラスの「つや玉」がこの位置へ滑って移動する
-  const activeIndex = $derived(Math.max(0, tabs.findIndex((tab) => isActive(tab.href))));
+// 選択中のタブの位置。ガラスの「つや玉」がこの位置へ滑って移動する
+const activeIndex = $derived(
+	Math.max(
+		0,
+		tabs.findIndex((tab) => isActive(tab.href)),
+	),
+);
 </script>
 
 <nav class="tabbar" aria-label="メインメニュー" style="--count: {tabs.length}; --i: {activeIndex}">
