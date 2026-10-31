@@ -8,6 +8,20 @@
       "when": 1793116606867,
       "tag": "20261027155646_wonderful_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793290575694,
+      "tag": "20261029161615_many_puppet_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793372333027,
+      "tag": "20261030145853_crazy_goliath",
+      "breakpoints": true
     }
   ]
 }

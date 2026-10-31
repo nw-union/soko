@@ -1,5 +1,6 @@
 import { defineMiddleware } from "void";
 import { getUser } from "void/auth";
+import { db, sql } from "void/db";
 import { resolveColor } from "../src/lib/color";
 import { isHttpUrl } from "../src/lib/url";
 
@@ -44,8 +45,13 @@ export default defineMiddleware(async (c, next) => {
     path === "/welcome" ||
     path.startsWith("/api/") ||
     isFile;
-  if (!user && !isPublic && c.req.method === "GET") {
-    return c.redirect("/login");
+  if (!isPublic && c.req.method === "GET") {
+    if (!user) return c.redirect("/login");
+    // パスキーがログインの唯一の手段。まだ作っていない（登録の途中の）人は、作るまで /welcome から出さない
+    const [row] = await db.all<{ count: number }>(
+      sql`SELECT COUNT(*) AS count FROM passkey WHERE userId = ${user.id}`,
+    );
+    if (!row?.count) return c.redirect("/welcome");
   }
   await next();
 });

@@ -9,4 +9,4 @@ export const loader = defineHandler(async (c) => {
   return {};
 });
 
-export const head = defineHead(() => ({ title: "Welcome | NWU" }));
+export const head = defineHead(() => ({ title: "Welcome | Soko" }));

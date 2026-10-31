@@ -15,8 +15,40 @@ export const videos = sqliteTable("videos", {
   publishedAt: text("published_at"),
   // 概要欄のハッシュタグ（# なし）の JSON 配列。絞り込みに使う。crons/sync-videos.ts が埋める
   tags: text("tags").notNull().default("[]"),
+  // 新着通知を送った（送らないと決めた）日時。空なら未通知。src/lib/push-notify.ts が埋める
+  notifiedAt: text("notified_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
+
+// ユーザーごとの視聴記録。再生したとき・YouTube で開いたときに、routes/api/watches.ts が入れる。行がなければ未視聴。
+// 動画は同期で消えて入り直すと id が変わるので、記録が残るよう youtube_id で持つ。ユーザー削除時は auth.ts で消す
+export const videoWatches = sqliteTable(
+  "video_watches",
+  {
+    userId: text("user_id").notNull(),
+    youtubeId: text("youtube_id").notNull(),
+    watchedAt: text("watched_at").notNull().default(sql`(datetime('now'))`),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.youtubeId] })],
+);
+
+// 新着動画のプッシュ通知の購読。端末（ブラウザ）ごとに 1 行。endpoint は購読ごとに一意。
+// 送れなくなった購読（404 / 410）は、送るときに消す。ユーザー削除時は auth.ts で消す
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // 購読したユーザーの ID（user.id）
+    userId: text("user_id").notNull(),
+    // プッシュサービス（FCM・APNs など）の URL
+    endpoint: text("endpoint").notNull().unique(),
+    // 暗号化に使う、端末の公開鍵と認証用の乱数（base64url）
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  },
+  (table) => [index("push_subscriptions_user_idx").on(table.userId)],
+);
 
 // 動画を取得する YouTube のプレイリスト。crons/sync-videos.ts は、ここに登録されたプレイリストの動画を取得する
 export const playlists = sqliteTable("playlists", {

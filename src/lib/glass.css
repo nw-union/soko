@@ -42,3 +42,15 @@
       0 12px 28px rgb(0 0 0 / 0.38);
   }
 }
+
+/* 「視差効果を減らす」設定のときは、押下・ホバーでタイルを動かさない */
+@media (prefers-reduced-motion: reduce) {
+  .tile-link {
+    transition: none;
+  }
+
+  .tile-link:active,
+  .tile-link:hover {
+    transform: none;
+  }
+}

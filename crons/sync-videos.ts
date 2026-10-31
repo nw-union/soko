@@ -2,19 +2,15 @@ import { defineScheduled } from "void";
 import { db, inArray, sql } from "void/db";
 import { env } from "void/env";
 import { playlists, playlistVideos, videos } from "@schema";
+import { notifyNewVideos } from "../src/lib/push-notify";
+import { chunk, toVideoRow } from "../src/lib/video-sync";
 import { fetchPlaylistVideoIds, fetchVideos } from "../src/lib/youtube-api";
 
-// 6 時間ごとに、playlists に登録されたプレイリストの動画を videos に反映し、playlist_videos の紐付けを作り直す。
-// どのプレイリストにも入っていない動画は、videos から削除する
-export const cron = "0 */6 * * *";
-
-// D1 は 1 文のバインド変数が 100 個までなので、まとめて渡すときは分ける
-const chunk = <T>(items: T[], size: number): T[][] => {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size)
-    out.push(items.slice(i, i + size));
-  return out;
-};
+// 全件の同期。8 時間ごとに、playlists に登録されたプレイリストの全動画を取り直して videos に反映し
+// （タイトル・概要欄などの変更も直す）、playlist_videos の紐付けを作り直す。
+// どのプレイリストにも入っていない動画は、videos から削除する。
+// 新着だけをこまめに拾うのは crons/sync-new-videos.ts
+export const cron = "0 */8 * * *";
 
 export default defineScheduled(async () => {
   const key = env.YOUTUBE_API_KEY;
@@ -43,12 +39,7 @@ export default defineScheduled(async () => {
   for (const rows of chunk(fetched, 10)) {
     await db
       .insert(videos)
-      .values(
-        rows.map(({ tags, ...video }) => ({
-          ...video,
-          tags: JSON.stringify(tags),
-        })),
-      )
+      .values(rows.map(toVideoRow))
       .onConflictDoUpdate({
         target: videos.youtubeId,
         set: {
@@ -134,4 +125,6 @@ export default defineScheduled(async () => {
   console.log(
     `sync-videos: 動画 ${fetched.length} 件、プレイリスト ${lists.length} 件、紐付け ${linked} 件を反映し、動画 ${removed} 件を削除しました`,
   );
+
+  await notifyNewVideos();
 });

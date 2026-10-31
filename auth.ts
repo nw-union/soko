@@ -15,6 +15,8 @@ const NAME_MAX = 30;
 // 登録時のメールアドレスは、ブラウザ（pages/login.svelte）が作る使い捨ての <UUID>@nwu.invalid だけ
 const SIGNUP_EMAIL =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@nwu\.invalid$/;
+// ログイン（登録）から何秒までのセッションを「新しい」とみなすか。登録直後の /welcome でのパスキー作成もこの時間内に行う
+const FRESH_AGE_SECONDS = 10 * 60;
 
 // 登録・更新で本人が送ってくる名前とイメージカラーを確かめ、名前は前後の空白を除いて返す。
 // color は style に埋め込まれるので、形式が正しいものだけ保存する。画像（image）はまだ設定できない
@@ -99,8 +101,40 @@ export default defineAuth(({ defaults }) => {
     // ログインはパスキーだけ。メール + パスワードは、招待コードでの登録時にユーザーを作るためだけに使う
     // （パスワードはブラウザが捨てるランダムな値で、誰も知らない）
     emailAndPassword: { enabled: true },
+    // 登録（sign-up）以外のメール + パスワードの機能は使わないので、エンドポイントごと閉じる
+    disabledPaths: [
+      ...(defaults.disabledPaths ?? []),
+      "/sign-in/email",
+      "/change-password",
+      "/change-email",
+      "/verify-password",
+      "/request-password-reset",
+      "/reset-password",
+      "/send-verification-email",
+      "/verify-email",
+    ],
+    // パスキーの追加・削除とアカウントの削除は、この時間内にパスキーでログインし直したセッションでだけ受け付ける
+    // （セッションが盗まれても、パスキーを差し替えて乗っ取られないように）。既定は 24 時間
+    session: { ...defaults.session, freshAge: FRESH_AGE_SECONDS },
     // イメージカラー（#rrggbb）。プロフィールで本人が変更できる
     user: {
+      // プロフィール画面からアカウントを削除できる（HIG: 作れるなら削除もできるように）。
+      // 削除の直前に、画面側でパスキーを使って本人確認し直す（セッションを新しくする）。
+      // パスキー・セッションは user に連動して消える。発行した未使用の招待と、通知の購読、視聴記録もここで消す（使用済みの招待の記録は残す）
+      deleteUser: {
+        enabled: true,
+        afterDelete: async (user) => {
+          await db.run(
+            sql`DELETE FROM invites WHERE inviter_user_id = ${user.id} AND used_at IS NULL`,
+          );
+          await db.run(
+            sql`DELETE FROM push_subscriptions WHERE user_id = ${user.id}`,
+          );
+          await db.run(
+            sql`DELETE FROM video_watches WHERE user_id = ${user.id}`,
+          );
+        },
+      },
       additionalFields: {
         color: { type: "string", required: false },
         // 発行できる招待の数。本人は変えられない（input: false）。増やすときは DB を直接更新する。
@@ -146,6 +180,14 @@ export default defineAuth(({ defaults }) => {
         // 最後のパスキーを削除するとログインできなくなるため、サーバー側でも拒否する
         const session = await getSessionFromCtx(ctx);
         if (!session) return; // 未ログイン時はエンドポイント側の認証で弾かれる
+        // パスキーの追加（better-auth の freshSessionMiddleware）と同じく、ログインし直したばかりのセッションだけが削除できる
+        const age = Date.now() - new Date(session.session.createdAt).getTime();
+        if (age >= FRESH_AGE_SECONDS * 1000) {
+          throw new APIError("FORBIDDEN", {
+            message: "Session is not fresh",
+            code: "SESSION_NOT_FRESH",
+          });
+        }
         const count = await ctx.context.adapter.count({
           model: "passkey",
           where: [{ field: "userId", value: session.user.id }],

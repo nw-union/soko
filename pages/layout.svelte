@@ -2,13 +2,21 @@
 import Stage from "../src/lib/Stage.svelte";
 import TabBar from "../src/lib/TabBar.svelte";
 import { registerServiceWorker } from "../src/lib/pwa";
+import { resyncPush } from "../src/lib/push";
 import { onMount } from "svelte";
+import { useShared } from "@void/svelte";
 // 見出し用フォント（自前配信。Google Fonts への通信はなく、サービスワーカーでキャッシュされる）
 import "@fontsource-variable/orbitron";
 
 let { children } = $props();
 
-onMount(registerServiceWorker);
+const shared = useShared();
+
+onMount(() => {
+	registerServiceWorker();
+	// 通知を許可済みの端末は、購読をサーバーに送り直す（ログイン中だけ）
+	if (shared.auth.user) resyncPush().catch(() => {});
+});
 </script>
 
 <!--
@@ -61,5 +69,13 @@ onMount(registerServiceWorker);
   :global(::view-transition-old(view)),
   :global(::view-transition-new(view)) {
     animation-duration: 120ms;
+  }
+
+  /* 「視差効果を減らす」設定のときは、画面遷移のクロスフェードもしない */
+  @media (prefers-reduced-motion: reduce) {
+    :global(::view-transition-old(view)),
+    :global(::view-transition-new(view)) {
+      animation: none;
+    }
   }
 </style>

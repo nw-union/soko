@@ -82,6 +82,7 @@ onMount(() => {
   <canvas class="grain" bind:this={canvas}></canvas>
   <div class="scanlines"></div>
   <div class="vignette"></div>
+  <div class="edge-fade"></div>
   <!-- 背景の上に重ねる内容 -->
   <div class="content">{@render children?.()}</div>
 </div>
@@ -90,6 +91,17 @@ onMount(() => {
   :global(body) {
     margin: 0;
     background: #000;
+  }
+
+  /* iOS / iPadOS では、基準の文字サイズを「設定 > 画面表示と明るさ > テキストサイズ」（Dynamic Type）に合わせる。
+     文字やタイルの大きさは rem で指定しているので、全体がこれに合わせて拡大・縮小する。
+     ログイン画面など、共通レイアウトを使わない画面にも効くよう、どの画面も使うこの背景に置く。
+     macOS の Safari では基準が 13px と小さくなるので、タッチ端末（-webkit-touch-callout が使える）だけに限る */
+  @supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+    :global(html) {
+      /* biome-ignore lint/a11y/useGenericFontNames: システムの文字設定そのものを読むキーワードで、代わりのフォントは書けない */
+      font: -apple-system-body;
+    }
   }
 
   .stage {
@@ -107,6 +119,7 @@ onMount(() => {
   .grain,
   .scanlines,
   .vignette,
+  .edge-fade,
   .content {
     position: absolute;
     inset: 0;
@@ -131,7 +144,9 @@ onMount(() => {
   .content {
     display: grid;
     place-items: center;
-    align-content: center;
+    /* 内容が画面より高いとき（文字を大きくした場合など）は、上を切らずにスクロールさせる */
+    align-content: safe center;
+    overflow-y: auto;
     gap: 1rem;
     color: #fff;
     text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
@@ -161,6 +176,25 @@ onMount(() => {
   .vignette {
     background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
     pointer-events: none;
+  }
+
+  /* ホーム画面から開いたとき（PWA）は、画像の上下を徐々に黒くして、ページの黒い背景との切れ目を見せない。
+     境目が線に見えないよう、途中の段を増やして滑らかに薄くする */
+  .edge-fade {
+    --top: calc(env(safe-area-inset-top) + 6rem);
+    --bottom: calc(env(safe-area-inset-bottom) + 7rem);
+    --fade: #000, rgb(0 0 0 / 0.72) 25%, rgb(0 0 0 / 0.38) 50%, rgb(0 0 0 / 0.12) 78%, transparent;
+    display: none;
+    background:
+      linear-gradient(to bottom, var(--fade)) top / 100% var(--top) no-repeat,
+      linear-gradient(to top, var(--fade)) bottom / 100% var(--bottom) no-repeat;
+    pointer-events: none;
+  }
+
+  @media (display-mode: standalone) {
+    .edge-fade {
+      display: block;
+    }
   }
 
   /* たまに明るさがわずかにチラつく */

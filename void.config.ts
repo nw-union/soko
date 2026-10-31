@@ -5,8 +5,14 @@ export default defineConfig({
   worker: {
     compatibility_date: "2026-02-24",
   },
+  // 公開先を明示する。これがないと、ダッシュボードで secret を足した版が本番のときに void deploy が止まる
+  cloudflare: {
+    workers_dev: true,
+    preview_urls: true,
+    routes: [],
+  },
   head: {
-    title: "soko",
+    title: "Soko",
     htmlAttrs: { lang: "ja" },
     meta: [
       { charset: "utf-8" },
@@ -26,6 +32,12 @@ export default defineConfig({
     ],
     link: [
       { rel: "manifest", href: "/manifest.webmanifest" },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "16x16",
+        href: "/icons/favicon-16.png",
+      },
       {
         rel: "icon",
         type: "image/png",

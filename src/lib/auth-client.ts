@@ -22,3 +22,15 @@ export const authClient = createAuthClient({
   basePath: "/api/auth",
   plugins: [passkeyClient(), additionalFields],
 });
+
+// パスキーの画面（OS のシート）を本人が閉じたときのエラーか。このときはエラーを表示しない。
+// 閉じると WebAuthn の NotAllowedError になり、passkey プラグインはこれらのコードで返す
+const PASSKEY_CANCEL_CODES = new Set([
+  "AUTH_CANCELLED",
+  "ERROR_CEREMONY_ABORTED",
+  "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY",
+]);
+
+export const isPasskeyCancelled = (
+  error: { code?: string } | null | undefined,
+) => !!error?.code && PASSKEY_CANCEL_CODES.has(error.code);

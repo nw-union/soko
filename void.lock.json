@@ -1,6 +1,10 @@
 {
   "version": 1,
-  "source": {},
+  "source": {
+    "workers_dev": true,
+    "preview_urls": true,
+    "routes": []
+  },
   "resolved": {
     "account_id": "de4fb9e6068c5316ec2332e738698b44",
     "d1_databases": [
@@ -11,7 +15,11 @@
         "migrations_dir": "./db/migrations"
       }
     ],
-    "name": "soko"
+    "name": "soko",
+    "compatibility_date": "2026-02-24",
+    "workers_dev": true,
+    "preview_urls": true,
+    "routes": []
   },
-  "text": "{\n  \"account_id\": \"de4fb9e6068c5316ec2332e738698b44\",\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"database_id\": \"80ac3304-0d44-455d-8bbe-169fa7a1c6c8\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"name\": \"soko\"\n}\n"
+  "text": "{\n  \"account_id\": \"de4fb9e6068c5316ec2332e738698b44\",\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"database_id\": \"80ac3304-0d44-455d-8bbe-169fa7a1c6c8\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"name\": \"soko\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"workers_dev\": true,\n  \"preview_urls\": true,\n  \"routes\": []\n}\n"
 }
