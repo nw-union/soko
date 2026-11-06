@@ -2,7 +2,7 @@ import { defineScheduled } from "void";
 import { db } from "void/db";
 import { env } from "void/env";
 import { playlists, playlistVideos, videos } from "@schema";
-import { notifyNewVideos } from "../src/lib/push-notify";
+import { notifyNewVideos } from "../server/notify.ts";
 import { chunk, toVideoRow } from "../src/lib/video-sync";
 import { fetchPlaylistVideoIds, fetchVideos } from "../src/lib/youtube-api";
 

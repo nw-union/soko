@@ -269,3 +269,61 @@ export type CountUnwatchedNewEvt = {
   // ユーザー ID → 本数. 見つからなかったユーザーは含めない
   counts: Map<string, number>;
 };
+
+// ============================================================================
+// Push
+// ============================================================================
+
+export interface PushWorkFlows {
+  /**
+   * 購読に使う VAPID の公開鍵. サーバーに鍵がなければ null (通知の設定を出さない)
+   */
+  getPublicKey(): ResultAsync<GetPublicKeyEvt, AppError>;
+
+  /**
+   * 購読を保存する. 同じ端末なら, ログインしているユーザーと鍵を上書きする.
+   * 1 人が持てる購読は 10 件まで (超えたら古いものから消す)
+   */
+  subscribe(cmd: SubscribeCmd): ResultAsync<void, AppError>;
+
+  /**
+   * 購読を消す (通知をオフにしたとき・ログアウトするとき)
+   */
+  unsubscribe(cmd: UnsubscribeCmd): ResultAsync<void, AppError>;
+
+  /**
+   * まだ通知していない動画を通知済みにして, そのうち最近のものを全購読者に 1 通で知らせる.
+   * 動画を同期する cron の最後に呼ぶ
+   */
+  notifyNewVideos(): ResultAsync<NotifyNewVideosEvt, AppError>;
+}
+
+export type GetPublicKeyEvt = { publicKey: string | null };
+
+export type SubscribeCmd = {
+  userId: string;
+  // ブラウザの PushSubscription.toJSON() のまま
+  body: unknown;
+};
+
+export type UnsubscribeCmd = { userId: string; endpoint: unknown };
+
+export type NotifyNewVideosEvt =
+  // 通知する (最近の) 新着がなかった
+  | { type: "NoRecentVideos" }
+  // VAPID の鍵がないので送らなかった (動画は通知済みにした)
+  | { type: "NoVapidKeys"; videos: number }
+  | {
+      type: "Notified";
+      // 通知した動画の本数
+      videos: number;
+      // 届いた数 / 送った数
+      sent: number;
+      total: number;
+      // 端末が購読をやめていたので消した数
+      removed: number;
+      // 届かなかった理由 (プッシュサービスの応答のステータスなど)
+      failures: string[];
+      // バッジの本数を数えられなかった理由 (それでも通知は送る)
+      badgeError: string | null;
+    };

@@ -15,7 +15,7 @@ const { publicKey, privateKey } = await crypto.subtle.generateKey(
 
 const base64url = (bytes) => Buffer.from(bytes).toString("base64url");
 
-// 公開鍵は非圧縮の 65 バイト、秘密鍵は d（32 バイト）。src/lib/web-push.ts が読む形
+// 公開鍵は非圧縮の 65 バイト、秘密鍵は d（32 バイト）。adapter/webpush/sender.ts が読む形
 const raw = new Uint8Array(await crypto.subtle.exportKey("raw", publicKey));
 const { d } = await crypto.subtle.exportKey("jwk", privateKey);
 
