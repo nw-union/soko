@@ -2,6 +2,8 @@
 import type { Context } from "hono";
 import { match } from "ts-pattern";
 import type { AppError, ValidationError } from "../error.ts";
+import { log } from "./log.ts";
+import { logAppError } from "./logger.ts";
 
 const INTERNAL_MESSAGE =
   "サーバーでエラーが発生しました。時間をおいて、もう一度お試しください";
@@ -22,11 +24,11 @@ export const errorResponse = (c: Context, e: AppError) =>
     .with({ type: "ConflictError" }, (e) => c.json({ message: e.message }, 409))
     .with({ type: "DatabaseError" }, { type: "StorageError" }, (e) => {
       // 内部のエラーの内容は画面に出さず、ログにだけ残す
-      console.error(`${e.type}: ${e.message}`, e.cause);
+      logAppError(log(), e);
       return c.json({ message: INTERNAL_MESSAGE }, 500);
     })
     .with({ type: "ExternalError" }, (e) => {
-      console.error(`${e.type}: ${e.message}`, e.cause);
+      logAppError(log(), e);
       return c.json({ message: INTERNAL_MESSAGE }, 502);
     })
     .exhaustive();
@@ -35,6 +37,6 @@ export const errorResponse = (c: Context, e: AppError) =>
  * ページの loader で, エラーを例外にする (Void のエラー画面に任せる). 内部のエラーの内容はログにだけ残す
  */
 export const throwError = (e: AppError): never => {
-  if ("cause" in e) console.error(`${e.type}: ${e.message}`, e.cause);
+  if ("cause" in e) logAppError(log(), e);
   throw new Error(`${e.type}: ${e.message}`);
 };

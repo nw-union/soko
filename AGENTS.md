@@ -32,6 +32,8 @@
 - 確認と書き込みを 1 文で行う必要がある操作（招待の発行と消費、通知済みにする、など）は、Port の 1 メソッドにして、その契約をコメントに書く
 - drizzle の `db.batch` は `db.run(sql)` を受け付けない。複数の文は 1 つずつ実行する
 - 日時は `ClockPort`、乱数は `RandomPort` から受け取る（ドメインで `new Date()`・`Math.random()` を直接使わない）
+- ログは `server/log.ts` の `log()`（`@nw-union/nw-utils` の `Logger`）から出す。`console.*` を直接使わない。出力先と最小レベルは環境変数 `LOG_ADAPTER`（json / console）と `LOG_LEVEL`。DB・ストレージ・外部サービスのエラーは `logAppError`（`server/logger.ts`）で残し、画面には出さない
+- `@nw-union/nw-utils` のエラークラス（`AppError`・`ValidationError` など）はドメインのエラーには使わない。`error.ts` の判別共用体（`type`）で `ts-pattern` の `.exhaustive()` を使うため。nw-utils のエラーを使うのは、ロガーに渡すときの `SystemError` だけ
 
 ### テスト
 

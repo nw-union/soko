@@ -1,6 +1,7 @@
 import { defineScheduled } from "void";
 import { container } from "../server/container.ts";
 import { throwError } from "../server/http.ts";
+import { log } from "../server/log.ts";
 import { notifyNewVideos } from "../server/notify.ts";
 
 // 差分の同期。30 分ごとに、プレイリストに増えた動画だけを videos に足して紐付け、新着を通知する。
@@ -17,7 +18,7 @@ export default defineScheduled(async () => {
   // 未設定・未登録の警告は、全件の同期が出す
   if (evt.type !== "Synced") return;
   if (evt.added > 0 || evt.links > 0)
-    console.log(
+    log().info(
       `sync-new-videos: 動画 ${evt.added} 件、紐付け ${evt.links} 件を追加しました`,
     );
   await notifyNewVideos();
