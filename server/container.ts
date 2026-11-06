@@ -4,6 +4,7 @@
 import { db } from "void/db";
 import { env } from "void/env";
 import { storage } from "void/storage";
+import { newCatalogRepository } from "../adapter/drizzle/catalog.ts";
 import { newFeedRepository } from "../adapter/drizzle/feed.ts";
 import { newInviteRepository } from "../adapter/drizzle/invite.ts";
 import { newProfileRepository } from "../adapter/drizzle/profile.ts";
@@ -11,6 +12,8 @@ import { newPushRepository } from "../adapter/drizzle/push.ts";
 import { newAvatarStorage } from "../adapter/r2/avatar.ts";
 import { cryptoRandom, systemClock } from "../adapter/system.ts";
 import { webPushSender } from "../adapter/webpush/sender.ts";
+import { newYoutubeApi } from "../adapter/youtube/api.ts";
+import { newCatalogWorkFlows } from "../domain/Catalog/workflow.ts";
 import { newFeedWorkFlows } from "../domain/Feed/workflow.ts";
 import { newInviteWorkFlows } from "../domain/Invite/workflow.ts";
 import { newProfileWorkFlows } from "../domain/Profile/workflow.ts";
@@ -30,6 +33,11 @@ const vapidKeys = (): VapidKeys | null =>
 export const container = () => {
   const feedWorkFlows = newFeedWorkFlows(newFeedRepository(db), cryptoRandom);
   return {
+    // 動画の自動取得。YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
+    catalogWorkFlows: newCatalogWorkFlows(
+      newCatalogRepository(db),
+      env.YOUTUBE_API_KEY ? newYoutubeApi(env.YOUTUBE_API_KEY) : null,
+    ),
     feedWorkFlows,
     inviteWorkFlows: newInviteWorkFlows(
       newInviteRepository(db),

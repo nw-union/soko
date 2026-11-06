@@ -327,3 +327,57 @@ export type NotifyNewVideosEvt =
       // バッジの本数を数えられなかった理由 (それでも通知は送る)
       badgeError: string | null;
     };
+
+// ============================================================================
+// Catalog
+// ============================================================================
+
+export interface CatalogWorkFlows {
+  /**
+   * 全件の同期. playlists に登録されたプレイリストの全動画を取り直して videos に反映し (タイトル・概要欄などの変更も直す),
+   * 紐付けを作り直す. プレイリストの名前と説明も YouTube に合わせる. どのプレイリストにも入っていない動画は消す.
+   *
+   * 先に YouTube からすべて取得し, 1 つでも失敗したら DB は何も変えない
+   * (DB への書き込みが始まった後の失敗では, 一部だけ反映されることがある. 次回の同期で直る)
+   */
+  syncAll(): ResultAsync<SyncAllEvt, AppError>;
+
+  /**
+   * 差分の同期. プレイリストに増えた動画だけを足して紐付ける.
+   * 既にある動画の更新・並び替え・削除はしない (全件の同期が直す)
+   */
+  syncNew(): ResultAsync<SyncNewEvt, AppError>;
+}
+
+export type SyncSkipped =
+  // YOUTUBE_API_KEY が未設定
+  | { type: "NoApiKey" }
+  // playlists にプレイリストが登録されていない
+  | { type: "NoPlaylists" };
+
+export type SyncAllEvt =
+  | SyncSkipped
+  | {
+      type: "Synced";
+      // 表示対象として取得できた動画の数
+      videos: number;
+      playlists: number;
+      // 結んだ紐付けの数
+      links: number;
+      // 消した動画の数
+      removed: number;
+      // 取得できた動画が 0 件だったので, 動画を消さなかった
+      removalSkipped: boolean;
+      // 名前・説明を更新したプレイリストの数
+      renamed: number;
+    };
+
+export type SyncNewEvt =
+  | SyncSkipped
+  | {
+      type: "Synced";
+      // 足した動画の数
+      added: number;
+      // 足した紐付けの数
+      links: number;
+    };

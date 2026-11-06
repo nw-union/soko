@@ -12,7 +12,8 @@ export type AppError =
   | ForbiddenError
   | ConflictError
   | DatabaseError
-  | StorageError;
+  | StorageError
+  | ExternalError;
 
 /**
  * バリデーションエラー
@@ -68,6 +69,15 @@ export interface DatabaseError {
  */
 export interface StorageError {
   readonly type: "StorageError";
+  readonly message: string;
+  readonly cause?: unknown;
+}
+
+/**
+ * 外部のサービス (YouTube Data API など) 関連のエラー
+ */
+export interface ExternalError {
+  readonly type: "ExternalError";
   readonly message: string;
   readonly cause?: unknown;
 }
@@ -131,3 +141,8 @@ export const newStorageError = (
   message: string,
   cause?: unknown,
 ): StorageError => ({ type: "StorageError", message, cause });
+
+export const newExternalError = (
+  message: string,
+  cause?: unknown,
+): ExternalError => ({ type: "ExternalError", message, cause });

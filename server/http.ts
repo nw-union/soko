@@ -25,13 +25,16 @@ export const errorResponse = (c: Context, e: AppError) =>
       console.error(`${e.type}: ${e.message}`, e.cause);
       return c.json({ message: INTERNAL_MESSAGE }, 500);
     })
+    .with({ type: "ExternalError" }, (e) => {
+      console.error(`${e.type}: ${e.message}`, e.cause);
+      return c.json({ message: INTERNAL_MESSAGE }, 502);
+    })
     .exhaustive();
 
 /**
  * ページの loader で, エラーを例外にする (Void のエラー画面に任せる). 内部のエラーの内容はログにだけ残す
  */
 export const throwError = (e: AppError): never => {
-  if (e.type === "DatabaseError" || e.type === "StorageError")
-    console.error(`${e.type}: ${e.message}`, e.cause);
+  if ("cause" in e) console.error(`${e.type}: ${e.message}`, e.cause);
   throw new Error(`${e.type}: ${e.message}`);
 };
