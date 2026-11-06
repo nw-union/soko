@@ -7,4 +7,5 @@ export const systemClock: ClockPort = {
 
 export const cryptoRandom: RandomPort = {
   bytes: (length) => crypto.getRandomValues(new Uint8Array(length)),
+  float: () => Math.random(),
 };

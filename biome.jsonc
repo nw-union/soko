@@ -51,6 +51,19 @@
         "rules": {
           "correctness": {
             "useImportExtensions": "error"
+          },
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@schema", "@schema/**"],
+                    "message": "Void の CLI は Vite のエイリアスを解決できない。db/schema.ts を相対パスで import する"
+                  }
+                ]
+              }
+            }
           }
         }
       }

@@ -11,9 +11,10 @@ export interface ClockPort {
 
 /**
  * 乱数ポート
- *
- * 暗号論的に安全な乱数を返すこと (招待トークンの生成に使う)
  */
 export interface RandomPort {
+  // 暗号論的に安全な乱数 (招待トークン・アイコン画像のキーの生成に使う)
   bytes(length: number): Uint8Array;
+  // 0 以上 1 未満の乱数 (並べ替えに使う. 暗号論的に安全でなくてよい)
+  float(): number;
 }

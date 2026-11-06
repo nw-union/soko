@@ -16,7 +16,10 @@ const OLD_KEY = `${"00".repeat(16)}.webp`;
 const NEW_KEY = `${"ab".repeat(16)}.png`;
 
 const clock: ClockPort = { now: () => NOW };
-const random: RandomPort = { bytes: (n) => new Uint8Array(n).fill(0xab) };
+const random: RandomPort = {
+  bytes: (n) => new Uint8Array(n).fill(0xab),
+  float: () => 0,
+};
 
 const newFakes = (
   init: { image?: string | null; failDelete?: boolean } = {},

@@ -19,6 +19,7 @@ const clock: ClockPort = { now: () => NOW };
 // バイト 0..15 → "ABCDEFGHJKMNPQRS"
 const random: RandomPort = {
   bytes: (n) => Uint8Array.from({ length: n }, (_, i) => i),
+  float: () => 0,
 };
 
 const invite: InviteDto = {

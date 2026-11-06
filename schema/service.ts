@@ -182,3 +182,90 @@ export type CheckPasskeyDeletionCmd = {
   sessionCreatedAt: Date;
   passkeyCount: number;
 };
+
+// ============================================================================
+// Feed
+// ============================================================================
+
+export interface FeedWorkFlows {
+  /**
+   * ホームに並べる動画 (New の候補・ランダムに選んだ動画・プレイリストごとの動画)
+   *
+   * New の未視聴の絞り込みと件数の制限は, 画面側でする (見た動画をその場で外すため)
+   */
+  getHomeFeed(cmd: GetHomeFeedCmd): ResultAsync<HomeFeedEvt, AppError>;
+
+  /**
+   * 動画を見たことを記録する. 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
+   */
+  recordWatch(cmd: WatchCmd): ResultAsync<void, AppError>;
+
+  /**
+   * 視聴記録を消して, 未視聴に戻す
+   */
+  unrecordWatch(cmd: WatchCmd): ResultAsync<void, AppError>;
+
+  /**
+   * アプリのアイコンのバッジに出す, 未視聴の New の本数
+   */
+  getBadgeCount(cmd: GetBadgeCountCmd): ResultAsync<GetBadgeCountEvt, AppError>;
+
+  /**
+   * ユーザーごとの, 未視聴の New の本数 (通知のバッジに使う)
+   */
+  countUnwatchedNew(
+    cmd: CountUnwatchedNewCmd,
+  ): ResultAsync<CountUnwatchedNewEvt, AppError>;
+}
+
+export type GetHomeFeedCmd = {
+  userId: string;
+  // 登録日時. これより後に投稿された動画が New
+  joinedAt: Date | string | number;
+};
+export type HomeFeedEvt = {
+  // New の候補 (新しい順)
+  newVideos: VideoItemDto[];
+  // New で足りない分を埋める動画 (未視聴の New を除いて, ランダムに選ぶ)
+  randomVideos: VideoItemDto[];
+  // 動画のあるプレイリストだけ (並び順)
+  playlists: PlaylistDto[];
+};
+
+export type PlaylistDto = {
+  id: number;
+  name: string;
+  description: string;
+  // 新しい順
+  videos: VideoItemDto[];
+};
+
+export type VideoItemDto = {
+  id: number;
+  // 通知から開いたとき (/?v=…) に, どの動画かを探すのに使う
+  youtubeId: string;
+  title: string;
+  description: string;
+  // "3:33" / "1:02:03". わからなければ null
+  duration: string | null;
+  // 再生画面の枠の縦横比. わからない動画は 16:9
+  aspectRatio: number;
+  // 日本時間の "2026.10.29". わからなければ null
+  publishedAt: string | null;
+  tags: string[];
+  watched: boolean;
+  url: string;
+  embed: string;
+  thumbnail: string;
+};
+
+export type WatchCmd = { userId: string; youtubeId: unknown };
+
+export type GetBadgeCountCmd = { userId: string };
+export type GetBadgeCountEvt = { count: number };
+
+export type CountUnwatchedNewCmd = { userIds: string[] };
+export type CountUnwatchedNewEvt = {
+  // ユーザー ID → 本数. 見つからなかったユーザーは含めない
+  counts: Map<string, number>;
+};

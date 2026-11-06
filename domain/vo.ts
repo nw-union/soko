@@ -7,6 +7,7 @@ import { err, ok, type Result } from "neverthrow";
 import { match } from "ts-pattern";
 import { z } from "zod";
 import { newValidationError, type ValidationError } from "../error.ts";
+import { isYoutubeId } from "./youtube.ts";
 
 /**
  * newVo は, Value Object を生成する関数を作るためのヘルパー関数
@@ -65,9 +66,6 @@ export const newUserId = newVo(userId, "UserId");
  *
  * href / src に埋め込むので, 必ずこの検証を通してから使う
  */
-const youtubeId = z
-  .string()
-  .regex(/^[\w-]{11}$/)
-  .brand("YoutubeId");
+const youtubeId = z.string().refine(isYoutubeId).brand("YoutubeId");
 export type YoutubeId = z.infer<typeof youtubeId>;
 export const newYoutubeId = newVo(youtubeId, "YoutubeId");

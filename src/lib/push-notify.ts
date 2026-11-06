@@ -2,7 +2,7 @@
 import { db, inArray, sql } from "void/db";
 import { env } from "void/env";
 import { pushSubscriptions } from "@schema";
-import { unwatchedNewCounts } from "./new-videos";
+import { container } from "../../server/container.ts";
 import { sendPush, type VapidKeys } from "./web-push";
 
 // 投稿からこれより古い動画は、新しく取り込んでも通知しない。
@@ -67,12 +67,17 @@ export const notifyNewVideos = async () => {
 
   const subs = await db.select().from(pushSubscriptions);
   // 動画はもう通知済みにしたので、件数を数えられなくても、通知は送る
-  const counts = await unwatchedNewCounts([
-    ...new Set(subs.map((sub) => sub.userId)),
-  ]).catch((error) => {
-    console.warn(`push: バッジの件数を数えられませんでした: ${error}`);
-    return new Map<string, number>();
-  });
+  const counts = await container()
+    .feedWorkFlows.countUnwatchedNew({ userIds: subs.map((sub) => sub.userId) })
+    .match(
+      (evt) => evt.counts,
+      (error) => {
+        console.warn(
+          `push: バッジの件数を数えられませんでした: ${error.type}: ${error.message}`,
+        );
+        return new Map<string, number>();
+      },
+    );
   const results = await Promise.allSettled(
     subs.map((sub) =>
       sendPush(sub, { ...payload, badge: counts.get(sub.userId) }, vapid),
