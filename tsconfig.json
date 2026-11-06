@@ -23,6 +23,9 @@
     "crons",
     "db",
     "domain",
+    "schema",
+    "adapter",
+    "server",
     "auth.ts",
     "error.ts",
     "error.test.ts"

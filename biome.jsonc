@@ -38,14 +38,28 @@
   },
   "overrides": [
     {
-      // ドメイン層は純粋な TypeScript にする。フレームワーク・DB・画面には依存しない（依存の向きは adapter/ → domain/）
-      "includes": ["domain/**", "error.ts", "error.test.ts"],
+      // auth.ts から読み込まれるファイル。Void の CLI は拡張子なしの相対 import を解決できないため、.ts を付ける
+      "includes": [
+        "domain/**",
+        "schema/**",
+        "adapter/**",
+        "server/**",
+        "error.ts",
+        "error.test.ts"
+      ],
       "linter": {
         "rules": {
           "correctness": {
-            // auth.ts から読み込まれ、Void の CLI は拡張子なしの相対 import を解決できないため
             "useImportExtensions": "error"
-          },
+          }
+        }
+      }
+    },
+    {
+      // ドメイン層は純粋な TypeScript にする。フレームワーク・DB・画面には依存しない（依存の向きは adapter/ → domain/）
+      "includes": ["domain/**", "schema/**", "error.ts", "error.test.ts"],
+      "linter": {
+        "rules": {
           "style": {
             "noRestrictedImports": {
               "level": "error",

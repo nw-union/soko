@@ -7,6 +7,10 @@ import {
 import { defineAuth } from "void/auth";
 import { db, sql } from "void/db";
 import { storage } from "void/storage";
+import type { AppError } from "./error.ts";
+import { DEFAULT_INVITE_LIMIT } from "./domain/Invite/logic.ts";
+import { container } from "./server/container.ts";
+import { INVITE_COOKIE, readInviteCookie } from "./server/invite-cookie.ts";
 
 // src/lib/color.ts の isHexColor と同じ判定。auth.ts は Void の CLI からも読み込まれ、
 // 拡張子なしの相対 import を解決できないため、ここでは import せずに持つ
@@ -52,51 +56,17 @@ function validateProfile<T extends Record<string, unknown>>(data: T): T {
 // 新規登録は、メンバーが発行した招待（invites テーブル）のトークンを持っている人だけができる。
 // トークンは /api/invite/start で検証され、短命の Cookie に入る。その後の sign-up でユーザーを作る。
 // ユーザー作成の直前（databaseHooks.user.create.before）で Cookie のトークンを使用済みにする。
-// DB には SHA-256 のハッシュだけが入っている。
-// ここの normalizeToken / hashToken と INVITE_COOKIE は src/lib/invite.ts・scripts/create-invite.mjs と同じにすること。
-const INVALID_INVITE = "招待コードが正しくないか、期限切れです";
-const TOKEN_LENGTH = 16;
-const INVITE_COOKIE = "nwu_invite";
+// 招待のルールは domain/Invite にある
 
-// 大文字小文字・ハイフン・空白の違いは無視する（スマホで打ち間違えにくいように）
-const normalizeToken = (raw: string) =>
-  raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-async function hashToken(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token),
-  );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function readCookie(request: Request | undefined, name: string): string | null {
-  const header = request?.headers.get("cookie") ?? "";
-  for (const part of header.split(";")) {
-    const [key, ...rest] = part.trim().split("=");
-    if (key === name) return decodeURIComponent(rest.join("="));
-  }
-  return null;
-}
-
-// 未使用で期限内の招待を使用済みにして、そのトークンのハッシュを返す。
-// 同じトークンで同時に登録されても、成功するのは 1 回だけ。理由は教えずに同じエラーにする
-async function claimInvite(request: Request | undefined): Promise<string> {
-  const token = normalizeToken(readCookie(request, INVITE_COOKIE) ?? "");
-  if (token.length !== TOKEN_LENGTH)
-    throw new APIError("BAD_REQUEST", { message: INVALID_INVITE });
-  const tokenHash = await hashToken(token);
-  const claimed = await db.run(sql`
-    UPDATE invites SET used_at = datetime('now')
-    WHERE token_hash = ${tokenHash}
-      AND used_at IS NULL
-      AND (expires_at IS NULL OR expires_at > datetime('now'))`);
-  if (!claimed.meta?.changes)
-    throw new APIError("BAD_REQUEST", { message: INVALID_INVITE });
-  return tokenHash;
-}
+// WorkFlow のエラーを better-auth のエラーにする。入力の誤り（使えない招待など）だけは、理由をそのまま返す
+const toAPIError = (e: AppError) =>
+  e.type === "ValidationError"
+    ? new APIError("BAD_REQUEST", {
+        message: Object.values(e.issues)[0]?.[0] ?? e.message,
+      })
+    : new Error(`${e.type}: ${e.message}`, {
+        cause: "cause" in e ? e.cause : undefined,
+      });
 
 export default defineAuth(({ defaults }) => {
   return {
@@ -144,11 +114,10 @@ export default defineAuth(({ defaults }) => {
       additionalFields: {
         color: { type: "string", required: false },
         // 発行できる招待の数。本人は変えられない（input: false）。増やすときは DB を直接更新する。
-        // 初期値は src/lib/invite.ts の DEFAULT_INVITE_LIMIT と同じにすること
         inviteLimit: {
           type: "number",
           required: false,
-          defaultValue: 3,
+          defaultValue: DEFAULT_INVITE_LIMIT,
           input: false,
         },
       },
@@ -164,16 +133,19 @@ export default defineAuth(({ defaults }) => {
             if (!SIGNUP_EMAIL.test(user.email))
               throw new APIError("BAD_REQUEST", { message: "登録できません" });
             const data = validateProfile(user);
-            await claimInvite(ctx?.request);
+            // 同じトークンで同時に登録されても、成功するのは 1 回だけ。理由は教えずに同じエラーにする
+            const claimed = await container().inviteWorkFlows.claimInvite({
+              token: readInviteCookie(ctx?.request),
+            });
+            if (claimed.isErr()) throw toAPIError(claimed.error);
             return { data };
           },
           after: async (user, ctx) => {
-            const token = normalizeToken(
-              readCookie(ctx?.request, INVITE_COOKIE) ?? "",
-            );
-            await db.run(
-              sql`UPDATE invites SET used_by_user_id = ${user.id} WHERE token_hash = ${await hashToken(token)}`,
-            );
+            const linked = await container().inviteWorkFlows.linkInvitedUser({
+              token: readInviteCookie(ctx?.request),
+              userId: user.id,
+            });
+            if (linked.isErr()) throw toAPIError(linked.error);
             // 使い終わった招待の Cookie は消す
             ctx?.setCookie(INVITE_COOKIE, "", { path: "/", maxAge: 0 });
           },
