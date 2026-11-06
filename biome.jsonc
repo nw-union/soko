@@ -38,6 +38,39 @@
   },
   "overrides": [
     {
+      // Web 層は schema/service.ts の WorkFlows（server/container.ts）を呼ぶだけにする。DB は adapter/ だけが触る
+      "includes": [
+        "pages/**",
+        "routes/**",
+        "middleware/**",
+        "crons/**",
+        "auth.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "void/db",
+                      "@schema",
+                      "@schema/**",
+                      "**/adapter/**",
+                      "**/db/schema*"
+                    ],
+                    "message": "Web 層から DB を直接触らない。domain/ に WorkFlow を足し、server/container.ts から呼ぶ"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       // auth.ts から読み込まれるファイル。Void の CLI は拡張子なしの相対 import を解決できないため、.ts を付ける
       "includes": [
         "domain/**",

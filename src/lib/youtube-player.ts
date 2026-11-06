@@ -52,7 +52,8 @@ const loadApi = () => {
     };
     const script = document.createElement("script");
     script.src = "https://www.youtube.com/iframe_api";
-    document.head.append(script);
+    // append は使わない。Void が読み込む Workers の型（HTMLRewriter の Element）と DOM の Element が合わさり、型が合わなくなる
+    document.head.appendChild(script);
   });
   return api;
 };

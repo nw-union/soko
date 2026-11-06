@@ -5,9 +5,12 @@ import type { ImageFile } from "./type.ts";
 import type { AvatarKey } from "./vo.ts";
 
 /**
- * ユーザーのリポジトリ (user テーブルは better-auth が管理している. ここで触るのは image だけ)
+ * ユーザーのリポジトリ (user・passkey テーブルは better-auth が管理している. ここで触るのは user.image とパスキーの数だけ)
  */
 export interface ProfileRepositoryPort {
+  // ユーザーのパスキーの数 (passkey テーブルは better-auth が管理している)
+  countPasskeys(user: UserId): ResultAsync<number, AppError>;
+
   // user.image. ユーザーがいなければ null
   readImage(user: UserId): ResultAsync<string | null, AppError>;
 

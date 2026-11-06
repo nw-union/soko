@@ -9,7 +9,8 @@
     "fmt": "biome format --write .",
     "lint": "biome lint --write .",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "biome format . && biome lint . && tsc --noEmit && bun test"
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.11",

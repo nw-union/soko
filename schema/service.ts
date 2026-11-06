@@ -117,6 +117,11 @@ export interface ProfileWorkFlows {
   getDisplayUser(cmd: GetDisplayUserCmd): ResultAsync<DisplayUserDto, AppError>;
 
   /**
+   * パスキーを作ったか. パスキーがログインの唯一の手段なので, まだ作っていない (登録の途中の) 人は /welcome から出さない
+   */
+  hasPasskey(cmd: HasPasskeyCmd): ResultAsync<HasPasskeyEvt, AppError>;
+
+  /**
    * アイコン画像を差し替える. 古い画像は消す (消せなくても差し替えは成功させる)
    */
   changeAvatar(cmd: ChangeAvatarCmd): ResultAsync<ChangeAvatarEvt, AppError>;
@@ -163,6 +168,9 @@ export type DisplayUserDto = {
   // このアプリで保存したアイコンのパスか, http(s) の URL. なければ null
   image: string | null;
 };
+
+export type HasPasskeyCmd = { userId: string };
+export type HasPasskeyEvt = { hasPasskey: boolean };
 
 export type ChangeAvatarCmd = {
   userId: string;

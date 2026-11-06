@@ -1,4 +1,5 @@
-// base64url (パディングなし) とバイト列の変換。ブラウザ (src/lib/push.ts) からも使うので、何にも依存させない
+// base64url (パディングなし) とバイト列の変換
+// ブラウザ (src/lib/push.ts) からも使うので、何にも依存させない
 
 export const base64urlToBytes = (value: string) => {
   const base64 = value.replaceAll("-", "+").replaceAll("_", "/");

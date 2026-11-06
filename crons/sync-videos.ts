@@ -1,5 +1,5 @@
-import { defineScheduled } from "void";
 import { match } from "ts-pattern";
+import { defineScheduled } from "void";
 import { container } from "../server/container.ts";
 import { throwError } from "../server/http.ts";
 import { notifyNewVideos } from "../server/notify.ts";

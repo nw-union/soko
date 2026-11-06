@@ -54,6 +54,18 @@ export const newProfileWorkFlows = (
     }),
 
   /**
+   * パスキーを作ったか
+   */
+  hasPasskey: ({ userId }) =>
+    okAsync(userId)
+      // Step 1. バリデーション: string -> UserId
+      .andThen((id) => newUserId(id))
+      // Step 2. 数える
+      .andThen(r.countPasskeys)
+      // Step 3. イベント発行
+      .map((count) => ({ hasPasskey: count > 0 })),
+
+  /**
    * アイコン画像を差し替える
    */
   changeAvatar: ({ userId, file }) =>

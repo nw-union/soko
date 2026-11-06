@@ -650,6 +650,7 @@ const bodySwipe = {
         <div class="info">
           <!-- キーボードでは、下の再生ボタンと速度ボタンで同じ操作ができる -->
           <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+          <!-- biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: キーボードでは、下の再生ボタンと速度ボタンで同じ操作ができる -->
           <div
             class="summary"
             onclick={summaryClick}

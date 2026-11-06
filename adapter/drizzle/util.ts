@@ -1,6 +1,6 @@
-import type { db } from "void/db";
 import { ResultAsync } from "neverthrow";
-import { newDatabaseError, type DatabaseError } from "../../error.ts";
+import type { db } from "void/db";
+import { type DatabaseError, newDatabaseError } from "../../error.ts";
 
 export type Database = typeof db;
 

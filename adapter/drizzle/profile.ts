@@ -3,6 +3,13 @@ import type { ProfileRepositoryPort } from "../../domain/Profile/port.ts";
 import { type Database, query } from "./util.ts";
 
 export const newProfileRepository = (db: Database): ProfileRepositoryPort => ({
+  countPasskeys: (user) =>
+    query("countPasskeys", () =>
+      db.all<{ count: number }>(
+        sql`SELECT COUNT(*) AS count FROM passkey WHERE userId = ${user}`,
+      ),
+    ).map((rows) => rows[0]?.count ?? 0),
+
   readImage: (user) =>
     query("readImage", () =>
       db.all<{ image: string | null }>(

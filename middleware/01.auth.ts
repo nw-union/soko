@@ -1,7 +1,7 @@
 import { defineMiddleware } from "void";
 import { getUser } from "void/auth";
-import { db, sql } from "void/db";
 import { container } from "../server/container.ts";
+import { throwError } from "../server/http.ts";
 
 declare module "void" {
   interface CloudContextVariables {
@@ -40,10 +40,10 @@ export default defineMiddleware(async (c, next) => {
   if (!isPublic && c.req.method === "GET") {
     if (!user) return c.redirect("/login");
     // パスキーがログインの唯一の手段。まだ作っていない（登録の途中の）人は、作るまで /welcome から出さない
-    const [row] = await db.all<{ count: number }>(
-      sql`SELECT COUNT(*) AS count FROM passkey WHERE userId = ${user.id}`,
-    );
-    if (!row?.count) return c.redirect("/welcome");
+    const { hasPasskey } = await container()
+      .profileWorkFlows.hasPasskey({ userId: user.id })
+      .match((e) => e, throwError);
+    if (!hasPasskey) return c.redirect("/welcome");
   }
   await next();
 });

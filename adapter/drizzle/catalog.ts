@@ -1,8 +1,8 @@
 import { inArray, sql } from "void/db";
-import type { CatalogRepositoryPort } from "../../domain/Catalog/port.ts";
-import type { FetchedVideo } from "../../domain/Catalog/type.ts";
 // auth.ts から読み込まれるので、Vite のエイリアス（@schema）ではなく相対パスで読む
 import { playlists, playlistVideos, videos } from "../../db/schema.ts";
+import type { CatalogRepositoryPort } from "../../domain/Catalog/port.ts";
+import type { FetchedVideo } from "../../domain/Catalog/type.ts";
 import { type Database, query } from "./util.ts";
 
 // D1 は 1 文のバインド変数が 100 個までなので, まとめて渡すときは分ける
