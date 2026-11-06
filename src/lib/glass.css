@@ -1,0 +1,56 @@
+/* リキッドグラス調の半透明カード。ホームの動画タイルや、Profile・Explore のタイルで共通に使う */
+.glass {
+  /* 暗いガラス。背景が明るくても、文字の裏は必ず暗くなる。
+     ホームなど共通レイアウトの .view の中は view-transition-name のせいで backdrop-filter の
+     ぼかしが背景まで届かないので、ぼかしに頼らず、色そのものを十分に濃くしておく */
+  background: linear-gradient(135deg, rgb(12 18 18 / 0.8), rgb(12 18 18 / 0.7));
+  border: 1px solid rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 8px 24px rgb(0 0 0 / 0.3);
+}
+
+/* prefers-reduced-transparency は iPhone の Safari で効かない可能性があるので、
+   「コントラストを上げる」でも同じ不透明表示にする */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass {
+    background: rgb(20 28 28 / 0.92);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* 外部リンクになるタイル（動画・プレイリスト・Podcast）の押下・ホバーの動き */
+.tile-link {
+  /* 外側の影は付けない。横スクロールの行（overflow）で四角く切れて、行の周りに暗い枠のように見えるため */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
+  transition:
+    transform 160ms,
+    box-shadow 160ms;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tile-link:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .tile-link:hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  }
+}
+
+/* 「視差効果を減らす」設定のときは、押下・ホバーでタイルを動かさない */
+@media (prefers-reduced-motion: reduce) {
+  .tile-link {
+    transition: none;
+  }
+
+  .tile-link:active,
+  .tile-link:hover {
+    transform: none;
+  }
+}

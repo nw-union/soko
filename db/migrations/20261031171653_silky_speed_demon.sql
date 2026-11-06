@@ -1,0 +1,1 @@
+ALTER TABLE `videos` ADD `aspect_ratio` real;

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "source": {
+    "workers_dev": true,
+    "preview_urls": true,
+    "routes": []
+  },
+  "resolved": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "soko-db",
+        "migrations_dir": "./db/migrations"
+      }
+    ],
+    "name": "soko",
+    "compatibility_date": "2026-02-24",
+    "workers_dev": true,
+    "preview_urls": true,
+    "routes": [],
+    "r2_buckets": [
+      {
+        "binding": "STORAGE",
+        "bucket_name": "soko-storage"
+      }
+    ]
+  }
+}

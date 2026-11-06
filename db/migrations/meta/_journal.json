@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793116606867,
+      "tag": "20261027155646_wonderful_sunspot",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793290575694,
+      "tag": "20261029161615_many_puppet_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793372333027,
+      "tag": "20261030145853_crazy_goliath",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793464410936,
+      "tag": "20261031163330_bitter_ezekiel",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793467013100,
+      "tag": "20261031171653_silky_speed_demon",
+      "breakpoints": true
+    }
+  ]
+}
