@@ -3,9 +3,11 @@ import { useShared } from "@void/svelte";
 import Avatar from "./Avatar.svelte";
 import ConfirmDialog from "./ConfirmDialog.svelte";
 import { authClient, isPasskeyCancelled } from "./auth-client";
-import { AVATAR_SIZE } from "./avatar";
-import { isHexColor } from "./color";
-import { NAME_MAX } from "./profile";
+import {
+	AVATAR_SIZE,
+	isHexColor,
+	NAME_MAX,
+} from "../../domain/Profile/rule.ts";
 import {
 	disablePush,
 	enablePush,

@@ -9,6 +9,7 @@ import type { ZodError } from "zod";
 export type AppError =
   | ValidationError
   | NotFoundError
+  | ForbiddenError
   | ConflictError
   | DatabaseError
   | StorageError;
@@ -30,6 +31,17 @@ export interface ValidationError {
 export interface NotFoundError {
   readonly type: "NotFoundError";
   readonly message: string;
+}
+
+/**
+ * 権限が足りない時のエラー (ログインし直したばかりのセッションが必要な操作, など)
+ *
+ * code は画面が分岐に使う識別子 (例: SESSION_NOT_FRESH)
+ */
+export interface ForbiddenError {
+  readonly type: "ForbiddenError";
+  readonly message: string;
+  readonly code?: string;
 }
 
 /**
@@ -99,6 +111,11 @@ export const newNotFoundError = (message: string): NotFoundError => ({
   type: "NotFoundError",
   message,
 });
+
+export const newForbiddenError = (
+  message: string,
+  code?: string,
+): ForbiddenError => ({ type: "ForbiddenError", message, code });
 
 export const newConflictError = (message: string): ConflictError => ({
   type: "ConflictError",

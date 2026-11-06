@@ -16,6 +16,9 @@ export const errorResponse = (c: Context, e: AppError) =>
       c.json({ message: firstIssue(e) }, 400),
     )
     .with({ type: "NotFoundError" }, (e) => c.json({ message: e.message }, 404))
+    .with({ type: "ForbiddenError" }, (e) =>
+      c.json({ message: e.message, code: e.code }, 403),
+    )
     .with({ type: "ConflictError" }, (e) => c.json({ message: e.message }, 409))
     .with({ type: "DatabaseError" }, { type: "StorageError" }, (e) => {
       // 内部のエラーの内容は画面に出さず、ログにだけ残す

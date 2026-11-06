@@ -1,9 +1,7 @@
 import { defineMiddleware } from "void";
 import { getUser } from "void/auth";
 import { db, sql } from "void/db";
-import { isAvatarPath } from "../src/lib/avatar";
-import { resolveColor } from "../src/lib/color";
-import { isHttpUrl } from "../src/lib/url";
+import { container } from "../server/container.ts";
 
 declare module "void" {
   interface CloudContextVariables {
@@ -20,21 +18,11 @@ export default defineMiddleware(async (c, next) => {
   const user = getUser() as
     | (ReturnType<typeof getUser> & { color?: string | null })
     | null;
-  c.set("shared", {
-    auth: {
-      user: user
-        ? {
-            name: user.name,
-            color: resolveColor(user.color, user.id),
-            // 画像の URL。このアプリで保存したアイコンのパスか、http(s) 以外は使わない
-            image:
-              user.image && (isAvatarPath(user.image) || isHttpUrl(user.image))
-                ? user.image
-                : null,
-          }
-        : null,
-    },
-  });
+  // 色と画像は、画面に出してよい値にしてから渡す（style・src に埋め込むため）
+  const displayUser = user
+    ? await container().profileWorkFlows.getDisplayUser({ user }).unwrapOr(null)
+    : null;
+  c.set("shared", { auth: { user: displayUser } });
 
   // アプリのページはログイン必須。ページごとに loader で確認しなくてよいようにここで止める。
   // ログイン前でも開ける画面と API は除く

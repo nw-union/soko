@@ -1,6 +1,7 @@
 import { defineHandler } from "void";
 import { storage } from "void/storage";
-import { avatarObjectKey, isAvatarKey } from "../../../src/lib/avatar";
+import { avatarObjectKey } from "../../../adapter/r2/avatar.ts";
+import { isAvatarKey } from "../../../domain/Profile/rule.ts";
 
 // アイコン画像の配信。キーはランダムで、差し替えると別のキーになるので、ずっとキャッシュしてよい
 export const GET = defineHandler(async (c) => {

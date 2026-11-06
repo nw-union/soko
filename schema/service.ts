@@ -90,3 +90,95 @@ export type InviteDto = {
   // 使ったユーザーの名前. 未使用やユーザー削除済みなら空
   usedByName: string | null;
 };
+
+// ============================================================================
+// Profile
+// ============================================================================
+
+export interface ProfileWorkFlows {
+  /**
+   * プロフィールの更新 (better-auth の update-user) で送られてきた値を確かめる.
+   * 名前は前後の空白を除いて返す. 画像はここでは設定できない
+   */
+  validateProfileUpdate(
+    cmd: ValidateProfileCmd,
+  ): ResultAsync<ValidateProfileEvt, AppError>;
+
+  /**
+   * 登録 (better-auth の sign-up) で送られてきた値を確かめる. メールアドレスは使い捨てのものだけ
+   */
+  validateSignUp(
+    cmd: ValidateSignUpCmd,
+  ): ResultAsync<ValidateProfileEvt, AppError>;
+
+  /**
+   * 画面に出すユーザー (全ページで共通に使う, 表示に必要な最小限)
+   */
+  getDisplayUser(cmd: GetDisplayUserCmd): ResultAsync<DisplayUserDto, AppError>;
+
+  /**
+   * アイコン画像を差し替える. 古い画像は消す (消せなくても差し替えは成功させる)
+   */
+  changeAvatar(cmd: ChangeAvatarCmd): ResultAsync<ChangeAvatarEvt, AppError>;
+
+  /**
+   * アイコン画像を外して, 頭文字の表示に戻す
+   */
+  removeAvatar(cmd: RemoveAvatarCmd): ResultAsync<void, AppError>;
+
+  /**
+   * 退会したユーザーの後始末 (アイコン画像・未使用の招待・通知の購読・視聴記録)
+   */
+  cleanupDeletedUser(cmd: CleanupDeletedUserCmd): ResultAsync<void, AppError>;
+
+  /**
+   * パスキーを削除してよいか確かめる.
+   * ログインし直したばかりでなければ ForbiddenError (code: SESSION_NOT_FRESH), 最後のパスキーなら ValidationError
+   */
+  checkPasskeyDeletion(
+    cmd: CheckPasskeyDeletionCmd,
+  ): ResultAsync<void, AppError>;
+}
+
+export type ValidateProfileCmd = {
+  name?: unknown;
+  color?: unknown;
+  image?: unknown;
+};
+export type ValidateSignUpCmd = ValidateProfileCmd & { email: unknown };
+export type ValidateProfileEvt = {
+  // 送られてこなかった項目は含めない (変更しない)
+  name?: string;
+  // null はイメージカラーを外す
+  color?: string | null;
+};
+
+export type GetDisplayUserCmd = {
+  user: { id: string; name: string; color?: unknown; image?: unknown };
+};
+export type DisplayUserDto = {
+  name: string;
+  // #rrggbb. 未設定ならユーザー ID から決まる色
+  color: string;
+  // このアプリで保存したアイコンのパスか, http(s) の URL. なければ null
+  image: string | null;
+};
+
+export type ChangeAvatarCmd = {
+  userId: string;
+  // アップロードされたファイルの中身. ファイルが送られてこなければ null
+  file: Uint8Array | null;
+};
+export type ChangeAvatarEvt = {
+  // user.image に入れたパス
+  image: string;
+};
+
+export type RemoveAvatarCmd = { userId: string };
+
+export type CleanupDeletedUserCmd = { userId: string; image: unknown };
+
+export type CheckPasskeyDeletionCmd = {
+  sessionCreatedAt: Date;
+  passkeyCount: number;
+};
