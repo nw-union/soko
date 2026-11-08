@@ -428,6 +428,20 @@ const summaryClick = () => {
 	else togglePlay();
 };
 
+// 「YouTube で開く」。再生中なら、今の位置（t=秒）から YouTube でも始まるようにリンクを書き換え、アプリ側は止める（音が重ならないように）。
+// href の読み取りはクリックのハンドラが終わった後なので、ここで差し替えれば間に合う
+const openInYoutube = (link: HTMLAnchorElement) => {
+	if (!playing) return;
+	markWatched(playing);
+	const url = new URL(playing.url);
+	if (player && moving) {
+		const seconds = Math.floor(player.getCurrentTime());
+		if (seconds > 0) url.searchParams.set("t", `${seconds}s`);
+		player.pauseVideo();
+	}
+	link.href = url.toString();
+};
+
 const SKIP_SECONDS = 10;
 
 const skip = (seconds: number) => {
@@ -737,7 +751,7 @@ const bodySwipe = {
             </div>
           </div>
           <div class="actions">
-            <a class="open" href={playing.url} target="_blank" rel="noopener noreferrer" onclick={() => playing && markWatched(playing)}>
+            <a class="open" href={playing.url} target="_blank" rel="noopener noreferrer" onclick={(e) => openInYoutube(e.currentTarget)}>
               <svg class="yt" viewBox="0 0 28 20" aria-hidden="true">
                 <path class="yt-bg" d="M27.4 3.1A3.5 3.5 0 0 0 24.9.6C22.7 0 14 0 14 0S5.3 0 3.1.6A3.5 3.5 0 0 0 .6 3.1C0 5.3 0 10 0 10s0 4.7.6 6.9a3.5 3.5 0 0 0 2.5 2.5C5.3 20 14 20 14 20s8.7 0 10.9-.6a3.5 3.5 0 0 0 2.5-2.5C28 14.7 28 10 28 10s0-4.7-.6-6.9z" />
                 <path class="yt-play" d="M11.2 14.3 18.4 10l-7.2-4.3z" />
