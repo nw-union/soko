@@ -5,8 +5,8 @@ import {
   newForbiddenError,
   newValidationErrorWithMessage,
   type ValidationError,
-} from "../../error.ts";
-import { isHttpUrl } from "../url.ts";
+} from "../../../error.ts";
+import { isHttpUrl } from "../../url.ts";
 import {
   AVATAR_MAX_BYTES,
   isAvatarPath,

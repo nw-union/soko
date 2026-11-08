@@ -14,7 +14,7 @@ export const cron = "0 */8 * * *";
 
 export default defineScheduled(async () => {
   const evt = await container()
-    .catalogWorkFlows.syncAllVideos()
+    .contentWorkFlows.syncAllVideos()
     .match((e) => e, throwError);
   const done = match(evt)
     .with({ type: "NoApiKey" }, () => {

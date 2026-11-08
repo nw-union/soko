@@ -15,7 +15,7 @@ import type {
   StoredSubscription,
   VapidKeys,
 } from "./type.ts";
-import { newPushWorkFlows } from "./workflow.ts";
+import { newNotificationWorkFlows } from "./workflow.ts";
 
 // ----------------------------------------------------------------------------
 // Test Data / Fake
@@ -105,7 +105,7 @@ const newFakes = (
         : okAsync(new Map(ids.map((id) => [id, id.length]))),
   };
   return {
-    wf: newPushWorkFlows(
+    wf: newNotificationWorkFlows(
       repo,
       sender,
       badge,

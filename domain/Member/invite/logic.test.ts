@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
-import { mustUserId } from "../vo.test.ts";
+import { mustUserId } from "../../vo.test.ts";
 import {
   createNewInvite,
   DEFAULT_INVITE_LIMIT,

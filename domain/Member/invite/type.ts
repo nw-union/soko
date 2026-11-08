@@ -1,4 +1,4 @@
-import type { UserId } from "../vo.ts";
+import type { UserId } from "../../vo.ts";
 import type { InviteToken, TokenHash } from "./vo.ts";
 
 /**

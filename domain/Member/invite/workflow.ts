@@ -1,7 +1,7 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { InviteWorkFlows } from "../../schema/service.ts";
-import type { ClockPort, RandomPort } from "../port.ts";
-import { newUserId } from "../vo.ts";
+import type { InviteWorkFlows } from "../../../schema/service.ts";
+import type { ClockPort, RandomPort } from "../../port.ts";
+import { newUserId } from "../../vo.ts";
 import {
   createNewInvite,
   DEFAULT_INVITE_LIMIT,

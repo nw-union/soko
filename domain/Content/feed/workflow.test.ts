@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { okAsync } from "neverthrow";
-import type { RandomPort } from "../port.ts";
+import type { RandomPort } from "../../port.ts";
 import type { FeedRepositoryPort } from "./port.ts";
 import type { PlaylistVideo } from "./type.ts";
 import { newFeedWorkFlows } from "./workflow.ts";

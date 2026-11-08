@@ -7,7 +7,7 @@ import { errorResponse } from "../../server/http.ts";
 export const GET = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .feedWorkFlows.getBadgeCount({ userId: user.id })
+    .contentWorkFlows.getBadgeCount({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),

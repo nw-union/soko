@@ -14,7 +14,7 @@ export const cron = "15,45 * * * *";
 
 export default defineScheduled(async () => {
   const evt = await container()
-    .catalogWorkFlows.syncNewVideos()
+    .contentWorkFlows.syncNewVideos()
     .match((e) => e, throwError);
   // 未設定・未登録の警告は、全件の同期が出す
   if (evt.type !== "Synced") return;

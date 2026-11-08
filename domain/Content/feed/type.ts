@@ -1,4 +1,4 @@
-import type { UserId } from "../vo.ts";
+import type { UserId } from "../../vo.ts";
 
 /**
  * 保存されている動画 (DB の値のまま. youtubeId はまだ検証していない)

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newVo } from "../vo.ts";
+import { newVo } from "../../vo.ts";
 
 /**
  * トークンに使う文字. 紛らわしい文字 (0 O 1 I L) を除いた 31 文字. 16 文字で約 80 ビット

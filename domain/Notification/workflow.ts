@@ -2,7 +2,7 @@ import { okAsync, ResultAsync } from "neverthrow";
 import type { AppError } from "../../error.ts";
 import type {
   NewVideosNotifiedEvt,
-  PushWorkFlows,
+  NotificationWorkFlows,
 } from "../../schema/service.ts";
 import type { ClockPort } from "../port.ts";
 import { newUserId } from "../vo.ts";
@@ -30,13 +30,13 @@ import type {
 /**
  * @param vapid - VAPID の鍵. どれかが未設定なら null (通知の機能を使わない)
  */
-export const newPushWorkFlows = (
+export const newNotificationWorkFlows = (
   r: PushRepositoryPort,
   sender: PushSenderPort,
   badge: BadgeCounterPort,
   clock: ClockPort,
   vapid: VapidKeys | null,
-): PushWorkFlows => {
+): NotificationWorkFlows => {
   /**
    * 全購読者に送る. 1 件ずつの失敗では止めない
    */

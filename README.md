@@ -34,9 +34,9 @@ NWU の創作を「置く」場所
 
 ## 🔄 WorkFlows
 
-Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts` の WorkFlows だけを呼ぶ。実装は `domain/<Context>/workflow.ts`。全 25 本。
+Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts` の WorkFlows だけを呼ぶ。実装は `domain/<Context>/` 以下の `workflow.ts`。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、`container()` の `contentWorkFlows`・`memberWorkFlows`・`notificationWorkFlows` から呼ぶ。全 25 本。
 
-### Invite（招待）
+### Member / Invite（招待）
 
 | WorkFlow | 内容 |
 | :-- | :-- |
@@ -47,7 +47,7 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
 | `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
 
-### Profile（プロフィール）
+### Member / Profile（プロフィール）
 
 | WorkFlow | 内容 |
 | :-- | :-- |
@@ -60,7 +60,7 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
 | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 
-### Feed（ホーム・視聴記録）
+### Content / Feed（ホーム・視聴記録）
 
 | WorkFlow | 内容 |
 | :-- | :-- |
@@ -70,7 +70,7 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
 | `countUnwatchedNew` | ユーザーごとの未視聴の New の本数（通知のバッジ用） |
 
-### Push（プッシュ通知）
+### Notification（プッシュ通知）
 
 | WorkFlow | 内容 |
 | :-- | :-- |
@@ -79,7 +79,7 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
 | `notifyNewVideos` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 
-### Catalog（動画の同期）
+### Content / Catalog（動画の同期）
 
 | WorkFlow | 内容 |
 | :-- | :-- |

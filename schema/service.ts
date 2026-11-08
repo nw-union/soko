@@ -3,8 +3,22 @@
 import type { ResultAsync } from "neverthrow";
 import type { AppError } from "../error.ts";
 
+// イベストの 3 つの集約（Content・Notification・Member）ごとに、WorkFlows をひとまとめにして公開する。
+// 集約の中は、さらに Catalog / Feed、Invite / Profile の 2 つずつに分かれている（domain/Content/ と domain/Member/ のサブフォルダ）。
+// Web 層は container() の contentWorkFlows・notificationWorkFlows・memberWorkFlows だけを見ればよい
+
+/**
+ * コンテンツ集約: 動画の取り込み（Catalog）と、見る・記録する（Feed）
+ */
+export interface ContentWorkFlows extends CatalogWorkFlows, FeedWorkFlows {}
+
+/**
+ * メンバー集約: 招待（Invite）と、プロフィール・ログイン（Profile）
+ */
+export interface MemberWorkFlows extends InviteWorkFlows, ProfileWorkFlows {}
+
 // ============================================================================
-// Invite
+// Member / Invite
 // ============================================================================
 
 export interface InviteWorkFlows {
@@ -92,7 +106,7 @@ export type InviteDto = {
 };
 
 // ============================================================================
-// Profile
+// Member / Profile
 // ============================================================================
 
 export interface ProfileWorkFlows {
@@ -192,7 +206,7 @@ export type CheckPasskeyDeletionCmd = {
 };
 
 // ============================================================================
-// Feed
+// Content / Feed
 // ============================================================================
 
 export interface FeedWorkFlows {
@@ -279,10 +293,13 @@ export type CountUnwatchedNewEvt = {
 };
 
 // ============================================================================
-// Push
+// Notification
 // ============================================================================
 
-export interface PushWorkFlows {
+/**
+ * 通知集約: Web Push の購読と、新着動画の通知
+ */
+export interface NotificationWorkFlows {
   /**
    * 購読に使う VAPID の公開鍵. サーバーに鍵がなければ null (通知の設定を出さない)
    */
@@ -337,7 +354,7 @@ export type NewVideosNotifiedEvt =
     };
 
 // ============================================================================
-// Catalog
+// Content / Catalog
 // ============================================================================
 
 export interface CatalogWorkFlows {

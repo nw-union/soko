@@ -1,7 +1,7 @@
 import type { ResultAsync } from "neverthrow";
-import type { AppError } from "../../error.ts";
-import type { InviteDto } from "../../schema/service.ts";
-import type { UserId } from "../vo.ts";
+import type { AppError } from "../../../error.ts";
+import type { InviteDto } from "../../../schema/service.ts";
+import type { UserId } from "../../vo.ts";
 import type { InviteUsage, NewInvite } from "./type.ts";
 import type { InviteId, TokenHash } from "./vo.ts";
 

@@ -7,7 +7,7 @@ export const layout = false;
   import { useRouter } from "@void/svelte";
   import Stage from "../src/lib/Stage.svelte";
   import { authClient, isPasskeyCancelled } from "../src/lib/auth-client";
-  import { GUEST_NAME } from "../domain/Profile/rule.ts";
+  import { GUEST_NAME } from "../domain/Member/profile/rule.ts";
   import { clearBadge } from "../src/lib/push";
   import { registerServiceWorker } from "../src/lib/pwa";
   import { onMount, tick } from "svelte";

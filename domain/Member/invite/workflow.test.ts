@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { errAsync, okAsync } from "neverthrow";
-import { newDatabaseError } from "../../error.ts";
-import type { InviteDto } from "../../schema/service.ts";
-import type { ClockPort, RandomPort } from "../port.ts";
+import { newDatabaseError } from "../../../error.ts";
+import type { InviteDto } from "../../../schema/service.ts";
+import type { ClockPort, RandomPort } from "../../port.ts";
 import type { InviteRepositoryPort } from "./port.ts";
 import type { NewInvite } from "./type.ts";
 import { createTokenHash, type InviteToken } from "./vo.ts";

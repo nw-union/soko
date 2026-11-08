@@ -1,7 +1,7 @@
 import { inArray, sql } from "void/db";
 // auth.ts から読み込まれるので、Vite のエイリアス（@schema）ではなく相対パスで読む
 import { pushSubscriptions } from "../../db/schema.ts";
-import type { PushRepositoryPort } from "../../domain/Push/port.ts";
+import type { PushRepositoryPort } from "../../domain/Notification/port.ts";
 import { type Database, query, toSqliteDatetime } from "./util.ts";
 
 export const newPushRepository = (db: Database): PushRepositoryPort => ({

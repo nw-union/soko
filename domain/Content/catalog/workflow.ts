@@ -1,10 +1,10 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { AppError } from "../../error.ts";
+import type { AppError } from "../../../error.ts";
 import type {
   CatalogWorkFlows,
   AllVideosSyncedEvt,
   NewVideosSyncedEvt,
-} from "../../schema/service.ts";
+} from "../../../schema/service.ts";
 import {
   canRemoveOrphans,
   planFullLinks,

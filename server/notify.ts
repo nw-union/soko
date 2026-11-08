@@ -6,7 +6,7 @@ import { log } from "./log.ts";
 
 export const notifyNewVideos = async () => {
   const evt = await container()
-    .pushWorkFlows.notifyNewVideos()
+    .notificationWorkFlows.notifyNewVideos()
     .match((e) => e, throwError);
   match(evt)
     .with({ type: "NoRecentVideos" }, () => {})

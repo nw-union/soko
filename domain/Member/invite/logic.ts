@@ -4,8 +4,8 @@ import {
   newConflictError,
   newValidationErrorWithMessage,
   type ValidationError,
-} from "../../error.ts";
-import type { UserId } from "../vo.ts";
+} from "../../../error.ts";
+import type { UserId } from "../../vo.ts";
 import type { InviteUsage, NewInvite } from "./type.ts";
 import {
   type InviteId,
