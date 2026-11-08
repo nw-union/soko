@@ -16,7 +16,8 @@ import { newPushAuth, newPushEndpoint, newPushP256dh } from "./vo.ts";
 
 /**
  * 1 人が持てる購読 (端末) の数. 超えたら古いものから消す.
- * 購読が増えすぎると, cron 1 回の送信数が Workers のサブリクエストの上限に届いて, 全員に届かなくなるため
+ * 購読が増えすぎると, cron 1 回の送信数が Workers のサブリクエストの
+ * 上限に届いて,  全員に届かなくなる
  */
 export const MAX_SUBSCRIPTIONS_PER_USER = 10;
 

@@ -7,7 +7,9 @@ import { errorResponse } from "../../server/http.ts";
 
 // 購読に使う VAPID の公開鍵。サーバーに鍵がなければ null（通知の設定を出さない）
 export const GET = defineHandler(async (c) => {
+  // 認証
   requireAuth(c);
+  // WF 実行: 購読に使う VAPID の公開鍵取得する
   return container()
     .pushWorkFlows.getPublicKey()
     .match(

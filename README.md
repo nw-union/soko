@@ -67,7 +67,7 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 
 | WorkFlow | 内容 |
 | :-- | :-- |
-| `getPublicKey` | 購読用の VAPID 公開鍵。鍵がなければ null |
+| `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
 | `notifyNewVideos` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。同期 cron の最後に呼ぶ |

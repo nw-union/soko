@@ -18,6 +18,7 @@ export interface VapidKeys {
  */
 export interface NewSubscription {
   readonly type: "NewSubscription";
+
   readonly userId: UserId;
   readonly endpoint: PushEndpoint;
   readonly p256dh: PushP256dh;
