@@ -1,75 +1,16 @@
-// Web Push の送信（サーバー用）。npm の web-push は Node の crypto に依存して Workers で動かないので、
+// Web Push の送信。npm の web-push は Node の crypto に依存して Workers で動かないので、
 // WebCrypto だけで書く。暗号化は RFC 8291（aes128gcm）、送信者の認証は RFC 8292（VAPID）。
+// encrypt 以降は src/lib/web-push.ts から変えずに移したもの
+import { ResultAsync } from "neverthrow";
+import { base64urlToBytes, bytesToBase64url } from "../../domain/base64url.ts";
+import type { PushSenderPort } from "../../domain/Notification/port.ts";
+import type { VapidKeys } from "../../domain/Notification/type.ts";
 
 type PushSubscriptionKeys = {
   endpoint: string;
   p256dh: string;
   auth: string;
 };
-
-export type VapidKeys = {
-  // 非圧縮の公開鍵（65 バイト）の base64url
-  publicKey: string;
-  // 秘密鍵 d（32 バイト）の base64url
-  privateKey: string;
-  // 連絡先（mailto:… か https://…）
-  subject: string;
-};
-
-// 送れる先は、ブラウザのプッシュサービスだけにする。購読はユーザーが送ってくるので、
-// 任意の URL にサーバーから POST させないように
-const PUSH_HOSTS = [
-  "fcm.googleapis.com",
-  "push.apple.com",
-  "push.services.mozilla.com",
-  "notify.windows.com",
-];
-
-export const isPushEndpoint = (value: string) => {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      PUSH_HOSTS.some(
-        (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
-      )
-    );
-  } catch {
-    return false;
-  }
-};
-
-export const base64urlToBytes = (value: string) => {
-  const base64 = value.replaceAll("-", "+").replaceAll("_", "/");
-  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-};
-
-// 購読の鍵が、送るときに暗号化できる形か（p256dh は P-256 の非圧縮の公開鍵 65 バイト、auth は 16 バイト）。
-// 壊れた鍵の購読は、送るたびに暗号化で失敗し続けるので、保存する前に弾く
-export const isValidSubscriptionKeys = async (p256dh: string, auth: string) => {
-  try {
-    const publicKey = base64urlToBytes(p256dh);
-    if (publicKey.length !== 65 || publicKey[0] !== 4) return false;
-    if (base64urlToBytes(auth).length !== 16) return false;
-    // 曲線上の点でなければ、ここで例外になる
-    await crypto.subtle.importKey(
-      "raw",
-      publicKey,
-      { name: "ECDH", namedCurve: "P-256" },
-      false,
-      [],
-    );
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const bytesToBase64url = (bytes: Uint8Array) =>
-  btoa(String.fromCharCode(...bytes))
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replace(/=+$/, "");
 
 // WebCrypto に渡せるバイト列（SharedArrayBuffer でないもの）
 type Bytes = Uint8Array<ArrayBuffer>;
@@ -215,3 +156,10 @@ export const sendPush = async (
     },
     body: await encrypt(sub, text(JSON.stringify(payload))),
   });
+
+export const webPushSender: PushSenderPort = {
+  send: (sub, payload, vapid) =>
+    ResultAsync.fromPromise(sendPush(sub, payload, vapid), (e) =>
+      String(e),
+    ).map((res) => res.status),
+};

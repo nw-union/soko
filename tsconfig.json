@@ -7,7 +7,27 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["void/env"]
+    "noEmit": true,
+    // domain/ は auth.ts から読み込まれ、Void の CLI では拡張子なしの相対 import を解決できないので、.ts を付けて import する
+    "allowImportingTsExtensions": true,
+    // Void の CLI は型を取り除くだけで読み込むので、型だけの import は import type で書き、enum など JS に変換が必要な構文は使わない
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "types": ["void/env", "bun"]
   },
-  "include": ["src", "pages", "routes", "middleware", "crons", "db", "auth.ts"]
+  "include": [
+    "src",
+    "pages",
+    "routes",
+    "middleware",
+    "crons",
+    "db",
+    "domain",
+    "schema",
+    "adapter",
+    "server",
+    "auth.ts",
+    "error.ts",
+    "error.test.ts"
+  ]
 }

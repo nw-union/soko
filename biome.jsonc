@@ -35,5 +35,118 @@
   },
   "javascript": {
     "globals": ["Env", "ExecutionContext"]
-  }
+  },
+  "overrides": [
+    {
+      // Web 層は schema/service.ts の WorkFlows（server/container.ts）を呼ぶだけにする。DB は adapter/ だけが触る
+      "includes": [
+        "pages/**",
+        "routes/**",
+        "middleware/**",
+        "crons/**",
+        "auth.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "void/db",
+                      "@schema",
+                      "@schema/**",
+                      "**/adapter/**",
+                      "**/db/schema*"
+                    ],
+                    "message": "Web 層から DB を直接触らない。domain/ に WorkFlow を足し、server/container.ts から呼ぶ"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // auth.ts から読み込まれるファイル。Void の CLI は拡張子なしの相対 import を解決できないため、.ts を付ける
+      "includes": [
+        "domain/**",
+        "schema/**",
+        "adapter/**",
+        "server/**",
+        "error.ts",
+        "error.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useImportExtensions": "error"
+          },
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@schema", "@schema/**"],
+                    "message": "Void の CLI は Vite のエイリアスを解決できない。db/schema.ts を相対パスで import する"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // ドメイン層は純粋な TypeScript にする。フレームワーク・DB・画面には依存しない（依存の向きは adapter/ → domain/）
+      "includes": ["domain/**", "schema/**", "error.ts", "error.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "void",
+                      "void/**",
+                      "@void/**",
+                      "hono",
+                      "hono/**",
+                      "@schema",
+                      "@schema/**",
+                      "better-auth",
+                      "better-auth/**",
+                      "@better-auth/**",
+                      "svelte",
+                      "svelte/**"
+                    ],
+                    "message": "domain/ はフレームワークや DB に依存させない。Port を定義して adapter/ で実装する"
+                  },
+                  {
+                    "group": [
+                      "**/src/**",
+                      "**/pages/**",
+                      "**/routes/**",
+                      "**/crons/**",
+                      "**/middleware/**",
+                      "**/db/**",
+                      "**/adapter/**",
+                      "**/server/**"
+                    ],
+                    "message": "domain/ から外側の層を import しない（依存の向きは外側 → domain/）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

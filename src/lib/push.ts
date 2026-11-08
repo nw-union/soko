@@ -1,6 +1,6 @@
 // 新着動画のプッシュ通知の購読（ブラウザ用）。購読はサービスワーカー（public/sw.js）に結びつく。
 // iPhone・iPad は、ホーム画面に追加したアプリの中でだけ通知を使える（Safari のタブでは PushManager がない）
-import { base64urlToBytes } from "./web-push";
+import { base64urlToBytes } from "../../domain/base64url.ts";
 
 export type PushState =
   // この端末・ブラウザでは使えない、またはサーバーに鍵がない

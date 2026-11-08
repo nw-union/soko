@@ -5,7 +5,8 @@ import { SvelteMap } from "svelte/reactivity";
 import type { Props } from "./index.server";
 import { syncBadge } from "../src/lib/push";
 import { splitLinks } from "../src/lib/url";
-import { previewUrl, shortUrl, studioUrl, thumbnailFallback, thumbnailTintVar } from "../src/lib/youtube";
+import { previewUrl, shortUrl, studioUrl } from "../domain/youtube.ts";
+import { thumbnailFallback, thumbnailTintVar } from "../src/lib/youtube";
 import Avatar from "../src/lib/Avatar.svelte";
 import PlaylistSheet from "../src/lib/PlaylistSheet.svelte";
 import ProfileSheet from "../src/lib/ProfileSheet.svelte";
@@ -649,6 +650,7 @@ const bodySwipe = {
         <div class="info">
           <!-- キーボードでは、下の再生ボタンと速度ボタンで同じ操作ができる -->
           <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+          <!-- biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: キーボードでは、下の再生ボタンと速度ボタンで同じ操作ができる -->
           <div
             class="summary"
             onclick={summaryClick}

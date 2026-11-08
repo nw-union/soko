@@ -11,11 +11,12 @@
 // 一覧: bunx void db execute "SELECT id, inviter_user_id, expires_at, used_at FROM invites ORDER BY id DESC"
 // 取り消し: bunx void db execute "DELETE FROM invites WHERE id = <id> AND used_at IS NULL"
 import { spawnSync } from "node:child_process";
-import { createHash, randomInt } from "node:crypto";
-
-// 紛らわしい文字（0 O 1 I L）を除いた 31 文字。16 文字で約 80 ビット
-const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const TOKEN_LENGTH = 16;
+import { formatToken } from "../domain/Invite/logic.ts";
+import {
+	createInviteToken,
+	createTokenHash,
+	TOKEN_LENGTH,
+} from "../domain/Invite/vo.ts";
 
 function fail(message) {
 	console.error(`エラー: ${message}`);
@@ -35,12 +36,11 @@ const remote = flag("remote");
 if (!Number.isInteger(days) || days < 0 || days > 365)
 	fail("--days は 0〜365 の整数で指定してください");
 
-const token = Array.from(
-	{ length: TOKEN_LENGTH },
-	() => ALPHABET[randomInt(ALPHABET.length)],
-).join("");
-// auth.ts の normalizeToken / hashToken と同じ処理（大文字にして英数字だけ残し、SHA-256）
-const tokenHash = createHash("sha256").update(token).digest("hex");
+// トークンの作り方とハッシュは、アプリ（domain/Invite）と同じものを使う
+const token = createInviteToken(
+	crypto.getRandomValues(new Uint8Array(TOKEN_LENGTH)),
+);
+const tokenHash = await createTokenHash(token);
 
 const sql =
 	"INSERT INTO invites (token_hash, expires_at) VALUES (" +
@@ -59,7 +59,7 @@ const result = spawnSync(
 );
 if (result.status !== 0) fail("DB への登録に失敗しました");
 
-const shown = token.match(/.{4}/g).join("-");
+const shown = formatToken(token);
 console.log(`
 招待を作成しました（${remote ? "本番 DB" : "ローカル DB"}）
   有効期限: ${days > 0 ? `${days} 日` : "なし"}

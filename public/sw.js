@@ -1,7 +1,7 @@
 // トップページ用の最小限のサービスワーカー。
 // - ハッシュ付きの /assets/ は不変なのでキャッシュ優先
 // - トップページ（/）のナビゲーションはネットワーク優先で、オフライン時だけキャッシュを使う
-// - 新着動画のプッシュ通知を表示し、押されたらその動画を開く（src/lib/push-notify.ts が送る）
+// - 新着動画のプッシュ通知を表示し、押されたらその動画を開く（domain/Push が送る）
 // API・認証・その他のページには一切関与しない
 const CACHE = "nwu-v1";
 
@@ -68,7 +68,7 @@ async function updateBadge(count) {
   }
 }
 
-// 中身は { title, body, url, badge }（src/lib/push-notify.ts の PushPayload）。
+// 中身は { title, body, url, badge }（domain/Push/type.ts の PushPayload）。
 // iPhone は、届いたプッシュを毎回通知として表示しないと購読を止めるので、必ず表示する
 self.addEventListener("push", (event) => {
   let data = {};

@@ -1,10 +1,15 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
-import { unwatchedNewCounts } from "../../src/lib/new-videos";
+import { container } from "../../server/container.ts";
+import { errorResponse } from "../../server/http.ts";
 
 // アプリのアイコンのバッジに出す、未視聴の New の本数。ブラウザ（src/lib/push.ts）が取りに来る
 export const GET = defineHandler(async (c) => {
   const user = requireAuth(c);
-  const counts = await unwatchedNewCounts([user.id]);
-  return { count: counts.get(user.id) ?? 0 };
+  return container()
+    .contentWorkFlows.getBadgeCount({ userId: user.id })
+    .match(
+      (evt) => evt,
+      (e) => errorResponse(c, e),
+    );
 });
