@@ -1,7 +1,7 @@
 import { okAsync, ResultAsync } from "neverthrow";
 import type { AppError } from "../../error.ts";
 import type {
-  NewVideosNotifiedEvt,
+  NewNotifiedEvt,
   NotificationWorkFlows,
 } from "../../schema/service.ts";
 import type { ClockPort } from "../port.ts";
@@ -80,7 +80,7 @@ export const newNotificationWorkFlows = (
         return (
           gone.length > 0 ? r.deleteSubscriptions(gone) : okAsync(undefined)
         ).map(
-          (): NewVideosNotifiedEvt => ({
+          (): NewNotifiedEvt => ({
             type: "Notified",
             videos: recent.length,
             sent: results.filter((res) => res.type === "Sent").length,
@@ -146,7 +146,7 @@ export const newNotificationWorkFlows = (
     /**
      * 新着動画を通知する
      */
-    notifyNewVideos: () => {
+    notifyNew: () => {
       const now = clock.now();
       return (
         // Step 1. まだ通知していない動画を, 通知済みにする
@@ -155,7 +155,7 @@ export const newNotificationWorkFlows = (
           // Step 2. 通知する動画を選ぶ (最近のものだけ)
           .map((claimed) => selectRecent(claimed, now))
           // Step 3. 送る (鍵がなければ送らない)
-          .andThen((recent): ResultAsync<NewVideosNotifiedEvt, AppError> => {
+          .andThen((recent): ResultAsync<NewNotifiedEvt, AppError> => {
             if (recent.length === 0) return okAsync({ type: "NoRecentVideos" });
             if (!vapid)
               return okAsync({ type: "NoVapidKeys", videos: recent.length });

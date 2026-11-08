@@ -4,9 +4,9 @@ import { container } from "./container.ts";
 import { throwError } from "./http.ts";
 import { log } from "./log.ts";
 
-export const notifyNewVideos = async () => {
+export const notifyNew = async () => {
   const evt = await container()
-    .notificationWorkFlows.notifyNewVideos()
+    .notificationWorkFlows.notifyNew()
     .match((e) => e, throwError);
   match(evt)
     .with({ type: "NoRecentVideos" }, () => {})

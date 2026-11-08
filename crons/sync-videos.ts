@@ -3,7 +3,7 @@ import { defineScheduled } from "void";
 import { container } from "../server/container.ts";
 import { throwError } from "../server/http.ts";
 import { log } from "../server/log.ts";
-import { notifyNewVideos } from "../server/notify.ts";
+import { notifyNew } from "../server/notify.ts";
 
 // 全件の同期。8 時間ごとに、playlists に登録されたプレイリストの全動画を取り直して videos に反映し
 // （タイトル・概要欄などの変更も直す）、playlist_videos の紐付けを作り直す。
@@ -40,5 +40,5 @@ export default defineScheduled(async () => {
       return true;
     })
     .exhaustive();
-  if (done) await notifyNewVideos();
+  if (done) await notifyNew();
 });

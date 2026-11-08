@@ -189,9 +189,9 @@ describe("unsubscribe", () => {
 });
 
 // ----------------------------------------------------------------------------
-// notifyNewVideos
+// notifyNew
 // ----------------------------------------------------------------------------
-describe("notifyNewVideos", () => {
+describe("notifyNew", () => {
   it("最近の新着がなければ, 送らない (動画は通知済みにする)", async () => {
     // Arrange:
     const { wf, sent, claimedAt } = newFakes({
@@ -200,7 +200,7 @@ describe("notifyNewVideos", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNewVideos();
+    const actual = await wf.notifyNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoRecentVideos" });
@@ -217,7 +217,7 @@ describe("notifyNewVideos", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNewVideos();
+    const actual = await wf.notifyNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoVapidKeys", videos: 1 });
@@ -232,7 +232,7 @@ describe("notifyNewVideos", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNewVideos();
+    const actual = await wf.notifyNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -275,7 +275,7 @@ describe("notifyNewVideos", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNewVideos();
+    const actual = await wf.notifyNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({
@@ -297,7 +297,7 @@ describe("notifyNewVideos", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNewVideos();
+    const actual = await wf.notifyNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({
