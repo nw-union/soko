@@ -45,36 +45,36 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 
 | 種類 | 名前 | 内容 |
 | :-- | :-- | :-- |
+| WF | `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
+| WF | `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
+| WF | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
+| WF | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
+| WF | `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
 | Query | `listInvites` | 自分が発行した招待の一覧と、あと何回発行できるか |
-| WorkFlow | `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
-| WorkFlow | `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
-| WorkFlow | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
-| WorkFlow | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
-| WorkFlow | `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
 
 ### Member / Profile（プロフィール）
 
 | 種類 | 名前 | 内容 |
 | :-- | :-- | :-- |
-| WorkFlow | `validateProfileUpdate` | プロフィール更新の入力を確かめる。名前は前後の空白を除く |
-| WorkFlow | `validateSignUp` | 登録の入力を確かめる。メールは使い捨てのものだけ |
+| WF | `validateProfileUpdate` | プロフィール更新の入力を確かめる。名前は前後の空白を除く |
+| WF | `validateSignUp` | 登録の入力を確かめる。メールは使い捨てのものだけ |
+| WF | `changeAvatar` | アイコン画像を差し替える。古い画像は消す（消せなくても成功） |
+| WF | `removeAvatar` | アイコン画像を外して、頭文字の表示に戻す |
+| WF | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
+| WF | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 | Query | `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
 | Query | `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
-| WorkFlow | `changeAvatar` | アイコン画像を差し替える。古い画像は消す（消せなくても成功） |
-| WorkFlow | `removeAvatar` | アイコン画像を外して、頭文字の表示に戻す |
-| WorkFlow | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
-| WorkFlow | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 
 ### Content（動画の同期・ホーム・視聴記録）
 
 | 種類 | 名前 | 内容 |
 | :-- | :-- | :-- |
-| WorkFlow | `syncAll` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
-| WorkFlow | `syncNew` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
-| WorkFlow | `createPlaylist` | 同期するプレイリストを足す。同じ ID が既にあれば ConflictError |
-| WorkFlow | `deletePlaylist` | プレイリストを消す（動画との紐付けも消える） |
-| WorkFlow | `watch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
-| WorkFlow | `unwatch` | 視聴記録を消して未視聴に戻す |
+| WF | `syncAll` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
+| WF | `syncNew` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
+| WF | `createPlaylist` | 同期するプレイリストを足す。同じ ID が既にあれば ConflictError |
+| WF | `deletePlaylist` | プレイリストを消す（動画との紐付けも消える） |
+| WF | `watch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
+| WF | `unwatch` | 視聴記録を消して未視聴に戻す |
 | Query | `listPlaylists` | 同期の対象のプレイリストの一覧（並び順） |
 | Query | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
 | Query | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
@@ -84,10 +84,10 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 
 | 種類 | 名前 | 内容 |
 | :-- | :-- | :-- |
+| WF | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
+| WF | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
+| WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 | Query | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
-| WorkFlow | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
-| WorkFlow | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
-| WorkFlow | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 
 <br/>
 <br/>
