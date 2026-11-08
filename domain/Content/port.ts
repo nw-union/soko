@@ -14,6 +14,7 @@ import type {
   Watch,
   YoutubeVideoItem,
 } from "./type.ts";
+import type { PlaylistId, PlaylistRowId } from "./vo.ts";
 
 /**
  * YouTube Data API v3. 値は API のまま返す (表示対象かどうかの判断はドメインでする)
@@ -62,6 +63,15 @@ export interface ContentRepositoryPort {
 
   // 視聴記録を消す. なくても成功
   deleteWatch(user: UserId, youtubeId: YoutubeId): ResultAsync<void, AppError>;
+
+  // ---- プレイリストの管理 ----
+
+  // プレイリストを足す. 同じ YouTube の ID が既にあれば何もせず null (確認と書き込みを 1 文で行う).
+  // 並びは末尾 (position が同じなら id の順)
+  insertPlaylist(id: PlaylistId): ResultAsync<Playlist | null, AppError>;
+
+  // プレイリストを消す (動画との紐付けも消える). なくても成功. 動画自体は次の全件の同期が掃除する
+  deletePlaylist(id: PlaylistRowId): ResultAsync<void, AppError>;
 
   // ---- YouTube からの取り込み ----
 

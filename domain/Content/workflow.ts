@@ -1,9 +1,10 @@
-import { okAsync, Result, ResultAsync } from "neverthrow";
-import type { AppError } from "../../error.ts";
+import { errAsync, okAsync, Result, ResultAsync } from "neverthrow";
+import { type AppError, newConflictError } from "../../error.ts";
 import type {
   AllSyncedEvt,
   ContentWorkFlows,
   NewSyncedEvt,
+  PlaylistSettingDto,
 } from "../../schema/service.ts";
 import type { RandomPort } from "../port.ts";
 import { newUserId } from "../vo.ts";
@@ -21,6 +22,13 @@ import {
 } from "./logic.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type { Playlist } from "./type.ts";
+import { newPlaylistId, newPlaylistRowId } from "./vo.ts";
+
+const toSettingDto = (list: Playlist): PlaylistSettingDto => ({
+  id: list.id,
+  playlistId: list.playlistId,
+  name: list.name,
+});
 
 /**
  * 1 つずつ順に実行する (YouTube への問い合わせを同時に投げない). 1 つでも失敗したら止める
@@ -227,6 +235,43 @@ export const newContentWorkFlows = (
         .map(({ lists, rows, watched, joined }) =>
           buildHomeFeed(lists, rows, new Set(watched), joined, random.float),
         ),
+
+    /**
+     * プレイリストの一覧
+     */
+    listPlaylists: () =>
+      r
+        .listPlaylists()
+        .map((lists) => ({ playlists: lists.map(toSettingDto) })),
+
+    /**
+     * プレイリストを足す
+     */
+    createPlaylist: ({ playlistId }) =>
+      // Step 1. バリデーション: unknown -> PlaylistId
+      okAsync(playlistId)
+        .andThen((src) => newPlaylistId(src, "playlistId"))
+        // Step 2. DB 保存 (同じ ID が既にあれば null)
+        .andThen((id) => r.insertPlaylist(id))
+        // Step 3. 既にあれば Conflict
+        .andThen(
+          (list): ResultAsync<PlaylistSettingDto, AppError> =>
+            list
+              ? okAsync(toSettingDto(list))
+              : errAsync(
+                  newConflictError("そのプレイリストは既に登録されています"),
+                ),
+        ),
+
+    /**
+     * プレイリストを消す
+     */
+    deletePlaylist: ({ id }) =>
+      // Step 1. バリデーション: unknown -> PlaylistRowId
+      okAsync(id)
+        .andThen((src) => newPlaylistRowId(src, "id"))
+        // Step 2. DB 削除
+        .andThen((rowId) => r.deletePlaylist(rowId)),
 
     /**
      * 動画を見たことを記録する

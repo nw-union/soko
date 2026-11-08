@@ -149,6 +149,33 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
       ),
     ).map(() => undefined),
 
+  // ---- プレイリストの管理 ----
+
+  insertPlaylist: (id) =>
+    query("insertPlaylist", () =>
+      db
+        .insert(playlists)
+        .values({ playlistId: id })
+        .onConflictDoNothing()
+        .returning(),
+    ).map((rows) => {
+      const list = rows[0];
+      return list
+        ? {
+            type: "Playlist" as const,
+            id: list.id,
+            playlistId: list.playlistId,
+            name: list.name,
+            description: list.description,
+          }
+        : null;
+    }),
+
+  deletePlaylist: (id) =>
+    query("deletePlaylist", () =>
+      db.delete(playlists).where(eq(playlists.id, id)),
+    ).map(() => undefined),
+
   // ---- YouTube からの取り込み ----
 
   updatePlaylistInfo: (id, info) =>

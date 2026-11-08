@@ -32,6 +32,8 @@ const unusedRepo: ContentRepositoryPort = {
   listMembers: notUsed,
   insertWatch: notUsed,
   deleteWatch: notUsed,
+  insertPlaylist: notUsed,
+  deletePlaylist: notUsed,
   updatePlaylistInfo: notUsed,
   listVideoIds: notUsed,
   upsertVideos: notUsed,
@@ -559,5 +561,85 @@ describe("syncNew", () => {
 
     // Assert:
     expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+  });
+});
+
+describe("プレイリストの管理", () => {
+  const list: Playlist = {
+    type: "Playlist",
+    id: 7,
+    playlistId: "PLabcdefghij",
+    name: "",
+    description: "",
+  };
+
+  it("listPlaylists: 一覧を DTO にして返す", async () => {
+    const wf = newContentWorkFlows(
+      { ...unusedRepo, listPlaylists: () => okAsync([list]) },
+      null,
+      random,
+    );
+    const actual = await wf.listPlaylists();
+    expect(actual._unsafeUnwrap()).toEqual({
+      playlists: [{ id: 7, playlistId: "PLabcdefghij", name: "" }],
+    });
+  });
+
+  it("createPlaylist: 登録できたら DTO を返す", async () => {
+    const saved: string[] = [];
+    const wf = newContentWorkFlows(
+      {
+        ...unusedRepo,
+        insertPlaylist: (id) => {
+          saved.push(id);
+          return okAsync(list);
+        },
+      },
+      null,
+      random,
+    );
+    const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
+    expect(actual._unsafeUnwrap().id).toBe(7);
+    expect(saved).toEqual(["PLabcdefghij"]);
+  });
+
+  it("createPlaylist: 既にあれば ConflictError", async () => {
+    const wf = newContentWorkFlows(
+      { ...unusedRepo, insertPlaylist: () => okAsync(null) },
+      null,
+      random,
+    );
+    const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
+    expect(actual._unsafeUnwrapErr().type).toBe("ConflictError");
+  });
+
+  it("createPlaylist: 不正な ID なら ValidationError で, DB に触らない", async () => {
+    const wf = newContentWorkFlows(unusedRepo, null, random);
+    const actual = await wf.createPlaylist({ playlistId: "x" });
+    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+  });
+
+  it("deletePlaylist: 消す", async () => {
+    const deleted: number[] = [];
+    const wf = newContentWorkFlows(
+      {
+        ...unusedRepo,
+        deletePlaylist: (id) => {
+          deleted.push(id);
+          return okAsync(undefined);
+        },
+      },
+      null,
+      random,
+    );
+    const actual = await wf.deletePlaylist({ id: 7 });
+    expect(actual.isOk()).toBe(true);
+    expect(deleted).toEqual([7]);
+  });
+
+  it("deletePlaylist: id が不正なら ValidationError", async () => {
+    const wf = newContentWorkFlows(unusedRepo, null, random);
+    const actual = await wf.deletePlaylist({ id: -1 });
+    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
   });
 });

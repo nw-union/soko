@@ -32,6 +32,25 @@ export interface ContentWorkFlows {
   syncNew(): ResultAsync<NewSyncedEvt, AppError>;
 
   /**
+   * プレイリストの一覧 (並び順). 同期の対象になっているもの
+   */
+  listPlaylists(): ResultAsync<ListPlaylistsEvt, AppError>;
+
+  /**
+   * プレイリストを足す. 同じ YouTube の ID が既にあれば ConflictError.
+   * 動画は次の同期で取り込まれる
+   */
+  createPlaylist(
+    cmd: CreatePlaylistCmd,
+  ): ResultAsync<PlaylistSettingDto, AppError>;
+
+  /**
+   * プレイリストを消す (動画との紐付けも消える). なくても成功.
+   * 他のプレイリストに入っていない動画は次の全件の同期で消える
+   */
+  deletePlaylist(cmd: DeletePlaylistCmd): ResultAsync<void, AppError>;
+
+  /**
    * 動画を見たことを記録する.
    * 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
    */
@@ -102,6 +121,24 @@ export type WatchCmd = { userId: string; youtubeId: unknown };
 
 // Cmd: 未視聴にする
 export type UnwatchCmd = { userId: string; youtubeId: unknown };
+
+// Cmd: プレイリストを足す
+export type CreatePlaylistCmd = { playlistId: unknown };
+
+// Cmd: プレイリストを消す (id は playlists の ID)
+export type DeletePlaylistCmd = { id: unknown };
+
+export type ListPlaylistsEvt = { playlists: PlaylistSettingDto[] };
+
+// 管理画面に出すプレイリスト
+export type PlaylistSettingDto = {
+  // playlists の ID
+  id: number;
+  // YouTube のプレイリスト ID
+  playlistId: string;
+  // 同期で YouTube から取った名前. まだ同期していなければ空
+  name: string;
+};
 
 export type GetHomeFeedCmd = {
   userId: string;
