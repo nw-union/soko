@@ -444,9 +444,19 @@ const openInYoutube = (link: HTMLAnchorElement) => {
 
 const SKIP_SECONDS = 10;
 
+// YouTube の getCurrentTime() は iframe から届いた値を覚えているだけで、seekTo の直後はまだ古い時刻を返す。
+// そのまま足すと連打しても 10 秒ぶんしか動かないので、少しの間は前回の行き先から足していく
+const SKIP_CHAIN_MS = 1000;
+let skipTarget: number | null = null;
+let skipTimer: ReturnType<typeof setTimeout> | undefined;
+
 const skip = (seconds: number) => {
-	if (player)
-		player.seekTo(Math.max(0, player.getCurrentTime() + seconds), true);
+	if (!player) return;
+	const target = Math.max(0, (skipTarget ?? player.getCurrentTime()) + seconds);
+	player.seekTo(target, true);
+	skipTarget = target;
+	clearTimeout(skipTimer);
+	skipTimer = setTimeout(() => (skipTarget = null), SKIP_CHAIN_MS);
 };
 
 // YouTube 側の設定で 1.25 倍などにされても、そのまま表示できるようにする
@@ -1516,6 +1526,8 @@ const bodySwipe = {
   /* 再生・一時停止、10 秒戻る・進む、再生速度のボタン。「YouTube で開く」の上に、半透明のグレーで横に並べる。
      下の行と共通の 5 列に載せ、ボタンの端を揃える。再生は 2 列ぶん（4:2:2:2） */
   .controls {
+    /* 10 秒戻る・進むを連打しても、スマートフォンのダブルタップ拡大にしない */
+    touch-action: manipulation;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.45rem;
