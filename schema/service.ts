@@ -23,13 +23,13 @@ export interface ContentWorkFlows {
    * 先に YouTube からすべて取得し, 1 つでも失敗したら DB は何も変えない
    * (DB への書き込みが始まった後の失敗では, 一部だけ反映されることがある. 次回の同期で直る)
    */
-  syncAllVideos(): ResultAsync<AllVideosSyncedEvt, AppError>;
+  syncAll(): ResultAsync<AllSyncedEvt, AppError>;
 
   /**
    * 差分の同期. プレイリストに増えた動画だけを足して紐付ける.
    * 既にある動画の更新・並び替え・削除はしない (全件の同期が直す)
    */
-  syncNewVideos(): ResultAsync<NewVideosSyncedEvt, AppError>;
+  syncNew(): ResultAsync<NewSyncedEvt, AppError>;
 
   // --- ホーム・視聴記録 ---
 
@@ -43,12 +43,12 @@ export interface ContentWorkFlows {
   /**
    * 動画を見たことを記録する. 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
    */
-  watchVideo(cmd: WatchCmd): ResultAsync<void, AppError>;
+  watch(cmd: WatchCmd): ResultAsync<void, AppError>;
 
   /**
    * 視聴記録を消して, 未視聴に戻す
    */
-  unwatchVideo(cmd: WatchCmd): ResultAsync<void, AppError>;
+  unwatch(cmd: UnwatchCmd): ResultAsync<void, AppError>;
 
   /**
    * アプリのアイコンのバッジに出す, 未視聴の New の本数
@@ -69,7 +69,7 @@ export type SyncSkipped =
   // playlists にプレイリストが登録されていない
   | { type: "NoPlaylists" };
 
-export type AllVideosSyncedEvt =
+export type AllSyncedEvt =
   | SyncSkipped
   | {
       type: "Synced";
@@ -86,7 +86,7 @@ export type AllVideosSyncedEvt =
       renamed: number;
     };
 
-export type NewVideosSyncedEvt =
+export type NewSyncedEvt =
   | SyncSkipped
   | {
       type: "Synced";
@@ -138,6 +138,7 @@ export type VideoItemDto = {
 };
 
 export type WatchCmd = { userId: string; youtubeId: unknown };
+export type UnwatchCmd = { userId: string; youtubeId: unknown };
 
 export type GetBadgeCountCmd = { userId: string };
 export type GetBadgeCountEvt = { count: number };

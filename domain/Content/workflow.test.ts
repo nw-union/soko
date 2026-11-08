@@ -140,13 +140,13 @@ describe("getHomeFeed", () => {
   });
 });
 
-describe("watchVideo / unwatchVideo", () => {
+describe("watch / unwatch", () => {
   it("検証した YouTube ID で, 視聴記録を入れる", async () => {
     // Arrange:
     const { wf, inserted } = newFeedFakes();
 
     // Act:
-    const actual = await wf.watchVideo({ userId: "user1", youtubeId: ID });
+    const actual = await wf.watch({ userId: "user1", youtubeId: ID });
 
     // Assert:
     expect(actual.isOk()).toBeTrue();
@@ -158,7 +158,7 @@ describe("watchVideo / unwatchVideo", () => {
     const { wf, inserted } = newFeedFakes();
 
     // Act:
-    const actual = await wf.watchVideo({ userId: "user1", youtubeId: 1 });
+    const actual = await wf.watch({ userId: "user1", youtubeId: 1 });
 
     // Assert:
     expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
@@ -170,7 +170,7 @@ describe("watchVideo / unwatchVideo", () => {
     const { wf, deleted } = newFeedFakes();
 
     // Act:
-    await wf.unwatchVideo({ userId: "user1", youtubeId: ID });
+    await wf.unwatch({ userId: "user1", youtubeId: ID });
 
     // Assert:
     expect(deleted).toEqual([["user1", ID]]);
@@ -348,11 +348,7 @@ describe("API キー・プレイリストがない場合", () => {
     const { repo } = newSyncFakes({ remote: {} });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      null,
-      random,
-    ).syncAllVideos();
+    const actual = await newContentWorkFlows(repo, null, random).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoApiKey" });
@@ -363,11 +359,7 @@ describe("API キー・プレイリストがない場合", () => {
     const { repo, youtube } = newSyncFakes({ remote: {}, lists: [] });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncNewVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoPlaylists" });
@@ -375,9 +367,9 @@ describe("API キー・プレイリストがない場合", () => {
 });
 
 // ----------------------------------------------------------------------------
-// syncAllVideos
+// syncAll
 // ----------------------------------------------------------------------------
-describe("syncAllVideos", () => {
+describe("syncAll", () => {
   it("YouTube の通りに, 動画と紐付けを作り直し, 外れた動画を消す", async () => {
     // Arrange: DB には a・b・old があり, YouTube の PL1 は [b, c, a]. c は非公開
     const { repo, youtube, db } = newSyncFakes({
@@ -399,11 +391,7 @@ describe("syncAllVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncAllVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -430,11 +418,7 @@ describe("syncAllVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncAllVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({ renamed: 1 });
@@ -451,11 +435,7 @@ describe("syncAllVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncAllVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({
@@ -473,11 +453,7 @@ describe("syncAllVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncAllVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
 
     // Assert:
     expect(actual.isErr()).toBeTrue();
@@ -487,9 +463,9 @@ describe("syncAllVideos", () => {
 });
 
 // ----------------------------------------------------------------------------
-// syncNewVideos
+// syncNew
 // ----------------------------------------------------------------------------
-describe("syncNewVideos", () => {
+describe("syncNew", () => {
   it("DB にない動画だけ詳細を引いて足し, 紐付けを足す", async () => {
     // Arrange: a は既にあり紐付け済み. b が増えた
     const { repo, youtube, db, youtubeCalls } = newSyncFakes({
@@ -499,11 +475,7 @@ describe("syncNewVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncNewVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -543,11 +515,7 @@ describe("syncNewVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncNewVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -567,11 +535,7 @@ describe("syncNewVideos", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(
-      repo,
-      youtube,
-      random,
-    ).syncNewVideos();
+    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -591,7 +555,7 @@ describe("syncNewVideos", () => {
       { ...repo, insertNewVideos: () => errAsync(newDatabaseError("boom")) },
       youtube,
       random,
-    ).syncNewVideos();
+    ).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");

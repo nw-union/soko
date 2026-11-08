@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import type { NewVideosSyncedEvt } from "../schema/service.ts";
-import { onNewVideosSynced } from "./policy.ts";
+import type { NewSyncedEvt } from "../schema/service.ts";
+import { onNewSynced } from "./policy.ts";
 
-const run = async (evt: NewVideosSyncedEvt) => {
+const run = async (evt: NewSyncedEvt) => {
   let called = 0;
-  await onNewVideosSynced(evt, async () => {
+  await onNewSynced(evt, async () => {
     called++;
   });
   return called;
 };
 
-describe("onNewVideosSynced", () => {
+describe("onNewSynced", () => {
   test("動画が増えたら通知する", async () => {
     expect(await run({ type: "Synced", added: 2, links: 3 })).toBe(1);
   });

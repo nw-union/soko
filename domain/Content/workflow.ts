@@ -1,9 +1,9 @@
 import { okAsync, Result, ResultAsync } from "neverthrow";
 import type { AppError } from "../../error.ts";
 import type {
-  AllVideosSyncedEvt,
+  AllSyncedEvt,
   ContentWorkFlows,
-  NewVideosSyncedEvt,
+  NewSyncedEvt,
 } from "../../schema/service.ts";
 import type { RandomPort } from "../port.ts";
 import { newUserId } from "../vo.ts";
@@ -98,7 +98,7 @@ export const newContentWorkFlows = (
     /**
      * 全件の同期
      */
-    syncAllVideos: () =>
+    syncAll: () =>
       withPlaylists((youtube, lists) =>
         // Step 1. YouTube から取得 (動画 ID・プレイリスト情報・動画の詳細). ここまでは DB を変えない
         fetchIdsByList(youtube, lists)
@@ -145,7 +145,7 @@ export const newContentWorkFlows = (
               ? r.deleteOrphanVideos()
               : okAsync(0)
             ).map(
-              (removed): AllVideosSyncedEvt => ({
+              (removed): AllSyncedEvt => ({
                 type: "Synced",
                 videos: fetched.length,
                 playlists: lists.length,
@@ -161,7 +161,7 @@ export const newContentWorkFlows = (
     /**
      * 差分の同期
      */
-    syncNewVideos: () =>
+    syncNew: () =>
       withPlaylists((youtube, lists) =>
         // Step 1. プレイリストごとの動画 ID と, 保存されている動画
         ResultAsync.combine([fetchIdsByList(youtube, lists), r.listVideoIds()])
@@ -192,7 +192,7 @@ export const newContentWorkFlows = (
               )
               .andThrough((links) => r.insertLinks(links))
               .map(
-                (links): NewVideosSyncedEvt => ({
+                (links): NewSyncedEvt => ({
                   type: "Synced",
                   added: inserted.length,
                   links: links.length,
@@ -231,7 +231,7 @@ export const newContentWorkFlows = (
     /**
      * 動画を見たことを記録する
      */
-    watchVideo: ({ userId, youtubeId }) =>
+    watch: ({ userId, youtubeId }) =>
       // Step 1. バリデーション: [string, unknown] -> [UserId, YoutubeId]
       okAsync(undefined)
         .andThen(() =>
@@ -243,7 +243,7 @@ export const newContentWorkFlows = (
     /**
      * 視聴記録を消して, 未視聴に戻す
      */
-    unwatchVideo: ({ userId, youtubeId }) =>
+    unwatch: ({ userId, youtubeId }) =>
       // Step 1. バリデーション: [string, unknown] -> [UserId, YoutubeId]
       okAsync(undefined)
         .andThen(() =>

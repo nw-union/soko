@@ -3,7 +3,7 @@ import { container } from "../server/container.ts";
 import { throwError } from "../server/http.ts";
 import { log } from "../server/log.ts";
 import { notifyNewVideos } from "../server/notify.ts";
-import { onNewVideosSynced } from "../server/policy.ts";
+import { onNewSynced } from "../server/policy.ts";
 
 // 差分の同期。30 分ごとに、プレイリストに増えた動画だけを videos に足して紐付ける。動画が増えたら、ポリシー（server/policy.ts）が新着を通知する。
 // 既にある動画の更新・並び替え・削除はしない（crons/sync-videos.ts が 8 時間ごとに直す）。
@@ -14,7 +14,7 @@ export const cron = "15,45 * * * *";
 
 export default defineScheduled(async () => {
   const evt = await container()
-    .contentWorkFlows.syncNewVideos()
+    .contentWorkFlows.syncNew()
     .match((e) => e, throwError);
   // 未設定・未登録の警告は、全件の同期が出す
   if (evt.type !== "Synced") return;
@@ -22,5 +22,5 @@ export default defineScheduled(async () => {
     log().info(
       `sync-new-videos: 動画 ${evt.added} 件、紐付け ${evt.links} 件を追加しました`,
     );
-  await onNewVideosSynced(evt, notifyNewVideos);
+  await onNewSynced(evt, notifyNewVideos);
 });
