@@ -14,8 +14,6 @@ import type { AppError } from "../error.ts";
  * コンテンツ集約: 動画の取り込み (YouTube との同期) と, 見る・記録する
  */
 export interface ContentWorkFlows {
-  // --- YouTube からの取り込み ---
-
   /**
    * 全件の同期. playlists に登録されたプレイリストの全動画を取り直して videos に反映し (タイトル・概要欄などの変更も直す),
    * 紐付けを作り直す. プレイリストの名前と説明も YouTube に合わせる. どのプレイリストにも入っていない動画は消す.
@@ -31,15 +29,6 @@ export interface ContentWorkFlows {
    */
   syncNew(): ResultAsync<NewSyncedEvt, AppError>;
 
-  // --- ホーム・視聴記録 ---
-
-  /**
-   * ホームに並べる動画 (New の候補・ランダムに選んだ動画・プレイリストごとの動画)
-   *
-   * New の未視聴の絞り込みと件数の制限は, 画面側でする (見た動画をその場で外すため)
-   */
-  getHomeFeed(cmd: GetHomeFeedCmd): ResultAsync<HomeFeedEvt, AppError>;
-
   /**
    * 動画を見たことを記録する. 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
    */
@@ -49,6 +38,14 @@ export interface ContentWorkFlows {
    * 視聴記録を消して, 未視聴に戻す
    */
   unwatch(cmd: UnwatchCmd): ResultAsync<void, AppError>;
+
+  /**
+   * ホームに並べる動画 (New の候補・ランダムに選んだ動画・プレイリストごとの動画)
+   *
+   * New の未視聴の絞り込みと件数の制限は, 画面側でする (見た動画をその場で外すため)
+   */
+  getHomeFeed(cmd: GetHomeFeedCmd): ResultAsync<HomeFeedEvt, AppError>;
+
 
   /**
    * アプリのアイコンのバッジに出す, 未視聴の New の本数
@@ -101,6 +98,7 @@ export type GetHomeFeedCmd = {
   // 登録日時. これより後に投稿された動画が New
   joinedAt: Date | string | number;
 };
+
 export type HomeFeedEvt = {
   // New の候補 (新しい順)
   newVideos: VideoItemDto[];
