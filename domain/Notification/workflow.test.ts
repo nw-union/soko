@@ -128,20 +128,6 @@ const recent: ClaimedVideo = {
 };
 
 // ----------------------------------------------------------------------------
-// getPublicKey
-// ----------------------------------------------------------------------------
-describe("getPublicKey", () => {
-  it("鍵があれば公開鍵を, なければ null を返す", async () => {
-    expect((await newFakes().wf.getPublicKey())._unsafeUnwrap()).toEqual({
-      publicKey: "PUBLIC",
-    });
-    expect(
-      (await newFakes({ vapid: null }).wf.getPublicKey())._unsafeUnwrap(),
-    ).toEqual({ publicKey: null });
-  });
-});
-
-// ----------------------------------------------------------------------------
 // subscribe / unsubscribe
 // ----------------------------------------------------------------------------
 describe("subscribe", () => {

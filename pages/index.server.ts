@@ -10,7 +10,7 @@ export const loader = defineHandler(async (c) => {
   const user = getUser();
   if (!user) return c.redirect("/login");
   return container()
-    .contentWorkFlows.getHomeFeed({ userId: user.id, joinedAt: user.createdAt })
+    .contentQueries.getHomeFeed({ userId: user.id, joinedAt: user.createdAt })
     .match((evt) => evt, throwError);
 });
 

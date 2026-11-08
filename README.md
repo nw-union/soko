@@ -32,54 +32,62 @@ NWU の創作を「置く」場所
 
 <br />
 
-## 🔄 WorkFlows
+## 🔄 WorkFlows / Queries
 
-Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts` の WorkFlows だけを呼ぶ。実装は `domain/<Context>/` 以下の `workflow.ts`。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、`container()` の `contentWorkFlows`・`memberWorkFlows`・`notificationWorkFlows` から呼ぶ。全 25 本。
+Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は、`schema/service.ts` の WorkFlows と Queries だけを呼ぶ。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、それぞれ 2 つに分ける。
+
+- **WorkFlows**（コマンド）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/` 以下の `workflow.ts`。`container()` の `contentWorkFlows`・`memberWorkFlows`・`notificationWorkFlows` から呼ぶ。全 20 本
+- **Queries**（Read Model）: 読むだけ。戻り値は `…View` / `…Dto`。実装は `domain/<Context>/` 以下の `query.ts`。`container()` の `contentQueries`・`memberQueries`・`notificationQueries` から呼ぶ。全 8 本
+
+better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `startInvite` は、書き込みの前提を確かめるコマンドの一部なので WorkFlows に置く。
 
 ### Member / Invite（招待）
 
-| WorkFlow | 内容 |
-| :-- | :-- |
-| `listInvites` | 自分が発行した招待の一覧と、あと何回発行できるか |
-| `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
-| `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
-| `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
-| `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
-| `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
+| 種類 | 名前 | 内容 |
+| :-- | :-- | :-- |
+| Query | `listInvites` | 自分が発行した招待の一覧と、あと何回発行できるか |
+| WorkFlow | `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
+| WorkFlow | `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
+| WorkFlow | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
+| WorkFlow | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
+| WorkFlow | `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
 
 ### Member / Profile（プロフィール）
 
-| WorkFlow | 内容 |
-| :-- | :-- |
-| `validateProfileUpdate` | プロフィール更新の入力を確かめる。名前は前後の空白を除く |
-| `validateSignUp` | 登録の入力を確かめる。メールは使い捨てのものだけ |
-| `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
-| `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
-| `changeAvatar` | アイコン画像を差し替える。古い画像は消す（消せなくても成功） |
-| `removeAvatar` | アイコン画像を外して、頭文字の表示に戻す |
-| `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
-| `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
+| 種類 | 名前 | 内容 |
+| :-- | :-- | :-- |
+| WorkFlow | `validateProfileUpdate` | プロフィール更新の入力を確かめる。名前は前後の空白を除く |
+| WorkFlow | `validateSignUp` | 登録の入力を確かめる。メールは使い捨てのものだけ |
+| Query | `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
+| Query | `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
+| WorkFlow | `changeAvatar` | アイコン画像を差し替える。古い画像は消す（消せなくても成功） |
+| WorkFlow | `removeAvatar` | アイコン画像を外して、頭文字の表示に戻す |
+| WorkFlow | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
+| WorkFlow | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 
 ### Content（動画の同期・ホーム・視聴記録）
 
-| WorkFlow | 内容 |
-| :-- | :-- |
-| `syncAll` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
-| `syncNew` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
-| `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
-| `watch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
-| `unwatch` | 視聴記録を消して未視聴に戻す |
-| `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
-| `countUnwatchedNew` | ユーザーごとの未視聴の New の本数（通知のバッジ用） |
+| 種類 | 名前 | 内容 |
+| :-- | :-- | :-- |
+| WorkFlow | `syncAll` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
+| WorkFlow | `syncNew` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
+| WorkFlow | `createPlaylist` | 同期するプレイリストを足す。同じ ID が既にあれば ConflictError |
+| WorkFlow | `deletePlaylist` | プレイリストを消す（動画との紐付けも消える） |
+| WorkFlow | `watch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
+| WorkFlow | `unwatch` | 視聴記録を消して未視聴に戻す |
+| Query | `listPlaylists` | 同期の対象のプレイリストの一覧（並び順） |
+| Query | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
+| Query | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
+| Query | `countUnwatchedNew` | ユーザーごとの未視聴の New の本数（通知のバッジ用） |
 
 ### Notification（プッシュ通知）
 
-| WorkFlow | 内容 |
-| :-- | :-- |
-| `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
-| `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
-| `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
-| `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
+| 種類 | 名前 | 内容 |
+| :-- | :-- | :-- |
+| Query | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
+| WorkFlow | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
+| WorkFlow | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
+| WorkFlow | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 
 <br/>
 <br/>

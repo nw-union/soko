@@ -28,6 +28,8 @@ import type {
 } from "./type.ts";
 
 /**
+ * 通知集約の WorkFlows (コマンド). Web Push の購読と, 新着動画の通知
+ *
  * @param vapid - VAPID の鍵. どれかが未設定なら null (通知の機能を使わない)
  */
 export const newNotificationWorkFlows = (
@@ -110,11 +112,6 @@ export const newNotificationWorkFlows = (
       );
 
   return {
-    /**
-     * 購読に使う VAPID の公開鍵
-     */
-    getPublicKey: () => okAsync({ publicKey: vapid?.publicKey ?? null }),
-
     /**
      * 購読を保存する
      */

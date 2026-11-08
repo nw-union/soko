@@ -1,14 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { errAsync, okAsync } from "neverthrow";
 import { newDatabaseError } from "../../error.ts";
-import type { RandomPort } from "../port.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type {
   FetchedVideo,
   Link,
   Playlist,
   PlaylistInfo,
-  PlaylistVideo,
   StoredVideoId,
   YoutubeVideoItem,
 } from "./type.ts";
@@ -17,8 +15,6 @@ import { newContentWorkFlows } from "./workflow.ts";
 // ----------------------------------------------------------------------------
 // 共通の Fake
 // ----------------------------------------------------------------------------
-const random: RandomPort = { bytes: (n) => new Uint8Array(n), float: () => 0 };
-
 // テストで使わないリポジトリのメソッド. 呼ばれたら失敗させる
 const notUsed = (): never => {
   throw new Error("このテストでは使わない");
@@ -50,53 +46,11 @@ const unusedRepo: ContentRepositoryPort = {
 // ----------------------------------------------------------------------------
 const ID = "dQw4w9WgXcQ";
 
-const row: PlaylistVideo = {
-  playlistId: 1,
-  video: {
-    type: "StoredVideo",
-    id: 1,
-    youtubeId: ID,
-    title: "動画",
-    description: null,
-    durationSeconds: 61,
-    aspectRatio: 1,
-    publishedAt: "2026-10-02T00:00:00Z",
-    tags: ["tag"],
-  },
-};
-
-const newFeedFakes = () => {
-  const calls: string[] = [];
+const newWatchFakes = () => {
   const inserted: [string, string][] = [];
   const deleted: [string, string][] = [];
   const repo: ContentRepositoryPort = {
     ...unusedRepo,
-    listPlaylists: () =>
-      okAsync([
-        {
-          type: "Playlist",
-          id: 1,
-          playlistId: "PL1",
-          name: "リスト",
-          description: "説明",
-        },
-      ]),
-    listPlaylistVideos: () => okAsync([row]),
-    listPlaylistVideoDates: () => {
-      calls.push("listPlaylistVideoDates");
-      return okAsync([{ youtubeId: ID, publishedAt: row.video.publishedAt }]);
-    },
-    listWatchedIds: () => okAsync([ID]),
-    listWatches: (users) => {
-      calls.push(`listWatches:${users.join(",")}`);
-      return okAsync([]);
-    },
-    listMembers: (users) => {
-      calls.push(`listMembers:${users.join(",")}`);
-      return okAsync(
-        users.map((id) => ({ id, joinedAt: new Date("2026-10-01T00:00:00Z") })),
-      );
-    },
     insertWatch: (user, id) => {
       inserted.push([user, id]);
       return okAsync(undefined);
@@ -107,8 +61,7 @@ const newFeedFakes = () => {
     },
   };
   return {
-    wf: newContentWorkFlows(repo, null, random),
-    calls,
+    wf: newContentWorkFlows(repo, null),
     inserted,
     deleted,
   };
@@ -117,35 +70,10 @@ const newFeedFakes = () => {
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------
-describe("getHomeFeed", () => {
-  it("プレイリスト・動画・視聴記録から, ホームに並べる動画を組み立てる", async () => {
-    // Act:
-    const actual = await newFeedFakes().wf.getHomeFeed({
-      userId: "user1",
-      joinedAt: new Date("2026-10-01T00:00:00Z"),
-    });
-
-    // Assert:
-    const feed = actual._unsafeUnwrap();
-    expect(feed.newVideos.map((v) => v.youtubeId)).toEqual([ID]);
-    expect(feed.playlists).toHaveLength(1);
-    expect(feed.playlists[0]).toMatchObject({
-      name: "リスト",
-      description: "説明",
-    });
-    expect(feed.playlists[0].videos[0]).toMatchObject({
-      watched: true,
-      duration: "1:01",
-      aspectRatio: 1,
-      tags: ["tag"],
-    });
-  });
-});
-
 describe("watch / unwatch", () => {
   it("検証した YouTube ID で, 視聴記録を入れる", async () => {
     // Arrange:
-    const { wf, inserted } = newFeedFakes();
+    const { wf, inserted } = newWatchFakes();
 
     // Act:
     const actual = await wf.watch({ userId: "user1", youtubeId: ID });
@@ -157,7 +85,7 @@ describe("watch / unwatch", () => {
 
   it("YouTube ID が不正な場合, ValidationError となり, 記録しない", async () => {
     // Arrange:
-    const { wf, inserted } = newFeedFakes();
+    const { wf, inserted } = newWatchFakes();
 
     // Act:
     const actual = await wf.watch({ userId: "user1", youtubeId: 1 });
@@ -169,52 +97,13 @@ describe("watch / unwatch", () => {
 
   it("視聴記録を消す", async () => {
     // Arrange:
-    const { wf, deleted } = newFeedFakes();
+    const { wf, deleted } = newWatchFakes();
 
     // Act:
     await wf.unwatch({ userId: "user1", youtubeId: ID });
 
     // Assert:
     expect(deleted).toEqual([["user1", ID]]);
-  });
-});
-
-describe("getBadgeCount", () => {
-  it("そのユーザーの未視聴の New を数える", async () => {
-    // Act:
-    const actual = await newFeedFakes().wf.getBadgeCount({ userId: "user1" });
-
-    // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ count: 1 });
-  });
-});
-
-describe("countUnwatchedNew", () => {
-  it("同じユーザーは 1 回だけ問い合わせる", async () => {
-    // Arrange:
-    const { wf, calls } = newFeedFakes();
-
-    // Act:
-    const actual = await wf.countUnwatchedNew({ userIds: ["a", "b", "a"] });
-
-    // Assert:
-    expect([...actual._unsafeUnwrap().counts]).toEqual([
-      ["a", 1],
-      ["b", 1],
-    ]);
-    expect(calls).toContain("listMembers:a,b");
-  });
-
-  it("ユーザーがいない場合, DB に問い合わせない", async () => {
-    // Arrange:
-    const { wf, calls } = newFeedFakes();
-
-    // Act:
-    const actual = await wf.countUnwatchedNew({ userIds: [] });
-
-    // Assert:
-    expect(actual._unsafeUnwrap().counts.size).toBe(0);
-    expect(calls).toHaveLength(0);
   });
 });
 
@@ -350,7 +239,7 @@ describe("API キー・プレイリストがない場合", () => {
     const { repo } = newSyncFakes({ remote: {} });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, null, random).syncAll();
+    const actual = await newContentWorkFlows(repo, null).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoApiKey" });
@@ -361,7 +250,7 @@ describe("API キー・プレイリストがない場合", () => {
     const { repo, youtube } = newSyncFakes({ remote: {}, lists: [] });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
+    const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoPlaylists" });
@@ -393,7 +282,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
+    const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -420,7 +309,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
+    const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({ renamed: 1 });
@@ -437,7 +326,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
+    const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({
@@ -455,7 +344,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncAll();
+    const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
     expect(actual.isErr()).toBeTrue();
@@ -477,7 +366,7 @@ describe("syncNew", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
+    const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -517,7 +406,7 @@ describe("syncNew", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
+    const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -537,7 +426,7 @@ describe("syncNew", () => {
     });
 
     // Act:
-    const actual = await newContentWorkFlows(repo, youtube, random).syncNew();
+    const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -556,7 +445,6 @@ describe("syncNew", () => {
     const actual = await newContentWorkFlows(
       { ...repo, insertNewVideos: () => errAsync(newDatabaseError("boom")) },
       youtube,
-      random,
     ).syncNew();
 
     // Assert:
@@ -573,18 +461,6 @@ describe("プレイリストの管理", () => {
     description: "",
   };
 
-  it("listPlaylists: 一覧を DTO にして返す", async () => {
-    const wf = newContentWorkFlows(
-      { ...unusedRepo, listPlaylists: () => okAsync([list]) },
-      null,
-      random,
-    );
-    const actual = await wf.listPlaylists();
-    expect(actual._unsafeUnwrap()).toEqual({
-      playlists: [{ id: 7, playlistId: "PLabcdefghij", name: "" }],
-    });
-  });
-
   it("createPlaylist: 登録できたら DTO を返す", async () => {
     const saved: string[] = [];
     const wf = newContentWorkFlows(
@@ -596,7 +472,6 @@ describe("プレイリストの管理", () => {
         },
       },
       null,
-      random,
     );
     const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
     expect(actual._unsafeUnwrap().id).toBe(7);
@@ -607,14 +482,13 @@ describe("プレイリストの管理", () => {
     const wf = newContentWorkFlows(
       { ...unusedRepo, insertPlaylist: () => okAsync(null) },
       null,
-      random,
     );
     const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
     expect(actual._unsafeUnwrapErr().type).toBe("ConflictError");
   });
 
   it("createPlaylist: 不正な ID なら ValidationError で, DB に触らない", async () => {
-    const wf = newContentWorkFlows(unusedRepo, null, random);
+    const wf = newContentWorkFlows(unusedRepo, null);
     const actual = await wf.createPlaylist({ playlistId: "x" });
     expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
   });
@@ -630,7 +504,6 @@ describe("プレイリストの管理", () => {
         },
       },
       null,
-      random,
     );
     const actual = await wf.deletePlaylist({ id: 7 });
     expect(actual.isOk()).toBe(true);
@@ -638,7 +511,7 @@ describe("プレイリストの管理", () => {
   });
 
   it("deletePlaylist: id が不正なら ValidationError", async () => {
-    const wf = newContentWorkFlows(unusedRepo, null, random);
+    const wf = newContentWorkFlows(unusedRepo, null);
     const actual = await wf.deletePlaylist({ id: -1 });
     expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
   });

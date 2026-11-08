@@ -1,17 +1,20 @@
-// アプリケーションサービスの I/F。Web 層（pages/ routes/ crons/ auth.ts）は、ここに定義した WorkFlows だけを呼ぶ。
-// 入力（Cmd）は画面や API から来た値のまま受け取り、検証はドメインで行う
+// アプリケーションサービスの I/F。Web 層（pages/ routes/ crons/ auth.ts）は、ここに定義した WorkFlows と Queries だけを呼ぶ。
+// 入力（Cmd / Query）は画面や API から来た値のまま受け取り、検証はドメインで行う
 import type { ResultAsync } from "neverthrow";
 import type { AppError } from "../error.ts";
 
-// イベストの 3 つの集約（Content・Notification・Member）ごとに WorkFlows を定義する。
-// Web 層は container() の contentWorkFlows・notificationWorkFlows・memberWorkFlows を呼ぶ
+// イベストの 3 つの集約（Content・Notification・Member）ごとに、2 つの I/F を定義する。
+// - WorkFlows: コマンド（イベストの「〜する」）。状態を変える。better-auth の手前のチェック（validate〜・check〜・startInvite）も、
+//   書き込み（登録・更新・削除）の前提を確かめるものなので、こちらに置く
+// - Queries: Read Model。状態を変えずに読むだけ。戻り値は …View / …Dto
+// Web 層は container() の contentWorkFlows・contentQueries などを呼ぶ
 
 // ============================================================================
 // Content
 // ============================================================================
 
 /**
- * コンテンツ集約: 動画の取り込み (YouTube との同期) と, 見る・記録する
+ * コンテンツ集約のコマンド: 動画の取り込み (YouTube との同期), プレイリストの登録, 視聴の記録
  */
 export interface ContentWorkFlows {
   /**
@@ -30,11 +33,6 @@ export interface ContentWorkFlows {
    * 既にある動画の更新・並び替え・削除はしない (全件の同期が直す)
    */
   syncNew(): ResultAsync<NewSyncedEvt, AppError>;
-
-  /**
-   * プレイリストの一覧 (並び順). 同期の対象になっているもの
-   */
-  listPlaylists(): ResultAsync<ListPlaylistsEvt, AppError>;
 
   /**
    * プレイリストを足す. 同じ YouTube の ID が既にあれば ConflictError.
@@ -60,25 +58,37 @@ export interface ContentWorkFlows {
    * 視聴記録を消して, 未視聴に戻す
    */
   unwatch(cmd: UnwatchCmd): ResultAsync<void, AppError>;
+}
+
+/**
+ * コンテンツ集約の Read Model: ホーム・バッジの本数・プレイリストの一覧
+ */
+export interface ContentQueries {
+  /**
+   * プレイリストの一覧 (並び順). 同期の対象になっているもの
+   */
+  listPlaylists(): ResultAsync<PlaylistSettingsView, AppError>;
 
   /**
    * ホームに並べる動画 (New の候補・ランダムに選んだ動画・プレイリストごとの動画)
    *
    * New の未視聴の絞り込みと件数の制限は, 画面側でする (見た動画をその場で外すため)
    */
-  getHomeFeed(cmd: GetHomeFeedCmd): ResultAsync<HomeFeedEvt, AppError>;
+  getHomeFeed(query: GetHomeFeedQuery): ResultAsync<HomeFeedView, AppError>;
 
   /**
    * アプリのアイコンのバッジに出す, 未視聴の New の本数
    */
-  getBadgeCount(cmd: GetBadgeCountCmd): ResultAsync<GetBadgeCountEvt, AppError>;
+  getBadgeCount(
+    query: GetBadgeCountQuery,
+  ): ResultAsync<BadgeCountView, AppError>;
 
   /**
    * ユーザーごとの, 未視聴の New の本数 (通知のバッジに使う)
    */
   countUnwatchedNew(
-    cmd: CountUnwatchedNewCmd,
-  ): ResultAsync<CountUnwatchedNewEvt, AppError>;
+    query: CountUnwatchedNewQuery,
+  ): ResultAsync<UnwatchedNewCountsView, AppError>;
 }
 
 export type SyncSkipped =
@@ -128,7 +138,7 @@ export type CreatePlaylistCmd = { playlistId: unknown };
 // Cmd: プレイリストを消す (id は playlists の ID)
 export type DeletePlaylistCmd = { id: unknown };
 
-export type ListPlaylistsEvt = { playlists: PlaylistSettingDto[] };
+export type PlaylistSettingsView = { playlists: PlaylistSettingDto[] };
 
 // 管理画面に出すプレイリスト
 export type PlaylistSettingDto = {
@@ -140,13 +150,13 @@ export type PlaylistSettingDto = {
   name: string;
 };
 
-export type GetHomeFeedCmd = {
+export type GetHomeFeedQuery = {
   userId: string;
   // 登録日時. これより後に投稿された動画が New
   joinedAt: Date | string | number;
 };
 
-export type HomeFeedEvt = {
+export type HomeFeedView = {
   // New の候補 (新しい順)
   newVideos: VideoItemDto[];
   // New で足りない分を埋める動画 (未視聴の New を除いて, ランダムに選ぶ)
@@ -182,11 +192,11 @@ export type VideoItemDto = {
   thumbnail: string;
 };
 
-export type GetBadgeCountCmd = { userId: string };
-export type GetBadgeCountEvt = { count: number };
+export type GetBadgeCountQuery = { userId: string };
+export type BadgeCountView = { count: number };
 
-export type CountUnwatchedNewCmd = { userIds: string[] };
-export type CountUnwatchedNewEvt = {
+export type CountUnwatchedNewQuery = { userIds: string[] };
+export type UnwatchedNewCountsView = {
   // ユーザー ID → 本数. 見つからなかったユーザーは含めない
   counts: Map<string, number>;
 };
@@ -196,14 +206,9 @@ export type CountUnwatchedNewEvt = {
 // ============================================================================
 
 /**
- * 通知集約: Web Push の購読と、新着動画の通知
+ * 通知集約のコマンド: Web Push の購読と、新着動画の通知
  */
 export interface NotificationWorkFlows {
-  /**
-   * 購読に使う VAPID の公開鍵. サーバーに鍵がなければ null (通知の設定を出さない)
-   */
-  getPublicKey(): ResultAsync<GetPublicKeyEvt, AppError>;
-
   /**
    * 購読を保存する. 同じ端末なら, ログインしているユーザーと鍵を上書きする.
    * 1 人が持てる購読は 10 件まで (超えたら古いものから消す)
@@ -222,7 +227,17 @@ export interface NotificationWorkFlows {
   notifyNew(): ResultAsync<NewNotifiedEvt, AppError>;
 }
 
-export type GetPublicKeyEvt = { publicKey: string | null };
+/**
+ * 通知集約の Read Model
+ */
+export interface NotificationQueries {
+  /**
+   * 購読に使う VAPID の公開鍵. サーバーに鍵がなければ null (通知の設定を出さない)
+   */
+  getPublicKey(): ResultAsync<PublicKeyView, AppError>;
+}
+
+export type PublicKeyView = { publicKey: string | null };
 
 export type SubscribeCmd = {
   userId: string;
@@ -257,15 +272,10 @@ export type NewNotifiedEvt =
 // ============================================================================
 
 /**
- * メンバー集約: 招待と, プロフィール・ログイン
+ * メンバー集約のコマンド: 招待と, プロフィール・ログイン (better-auth の手前のチェックを含む)
  */
 export interface MemberWorkFlows {
   // --- 招待 (domain/Member/invite) ---
-
-  /**
-   * 自分が発行した招待の一覧と, あと何回発行できるか
-   */
-  listInvites(cmd: ListInvitesCmd): ResultAsync<ListInvitesEvt, AppError>;
 
   /**
    * 招待を発行する. 上限に達していれば ConflictError
@@ -316,16 +326,6 @@ export interface MemberWorkFlows {
   ): ResultAsync<ValidateProfileEvt, AppError>;
 
   /**
-   * 画面に出すユーザー (全ページで共通に使う, 表示に必要な最小限)
-   */
-  getDisplayUser(cmd: GetDisplayUserCmd): ResultAsync<DisplayUserDto, AppError>;
-
-  /**
-   * パスキーを作ったか. パスキーがログインの唯一の手段なので, まだ作っていない (登録の途中の) 人は /welcome から出さない
-   */
-  hasPasskey(cmd: HasPasskeyCmd): ResultAsync<HasPasskeyEvt, AppError>;
-
-  /**
    * アイコン画像を差し替える. 古い画像は消す (消せなくても差し替えは成功させる)
    */
   changeAvatar(cmd: ChangeAvatarCmd): ResultAsync<ChangeAvatarEvt, AppError>;
@@ -349,8 +349,34 @@ export interface MemberWorkFlows {
   ): ResultAsync<void, AppError>;
 }
 
-export type ListInvitesCmd = { userId: string };
-export type ListInvitesEvt = {
+/**
+ * メンバー集約の Read Model
+ */
+export interface MemberQueries {
+  // --- 招待 (domain/Member/invite) ---
+
+  /**
+   * 自分が発行した招待の一覧と, あと何回発行できるか
+   */
+  listInvites(query: ListInvitesQuery): ResultAsync<InvitesView, AppError>;
+
+  // --- プロフィール・ログイン (domain/Member/profile) ---
+
+  /**
+   * 画面に出すユーザー (全ページで共通に使う, 表示に必要な最小限)
+   */
+  getDisplayUser(
+    query: GetDisplayUserQuery,
+  ): ResultAsync<DisplayUserDto, AppError>;
+
+  /**
+   * パスキーを作ったか. パスキーがログインの唯一の手段なので, まだ作っていない (登録の途中の) 人は /welcome から出さない
+   */
+  hasPasskey(query: HasPasskeyQuery): ResultAsync<PasskeyStatusView, AppError>;
+}
+
+export type ListInvitesQuery = { userId: string };
+export type InvitesView = {
   limit: number;
   remaining: number;
   invites: InviteDto[];
@@ -408,7 +434,7 @@ export type ValidateProfileEvt = {
   color?: string | null;
 };
 
-export type GetDisplayUserCmd = {
+export type GetDisplayUserQuery = {
   user: { id: string; name: string; color?: unknown; image?: unknown };
 };
 export type DisplayUserDto = {
@@ -419,8 +445,8 @@ export type DisplayUserDto = {
   image: string | null;
 };
 
-export type HasPasskeyCmd = { userId: string };
-export type HasPasskeyEvt = { hasPasskey: boolean };
+export type HasPasskeyQuery = { userId: string };
+export type PasskeyStatusView = { hasPasskey: boolean };
 
 export type ChangeAvatarCmd = {
   userId: string;

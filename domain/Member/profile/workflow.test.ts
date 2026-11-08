@@ -22,7 +22,7 @@ const random: RandomPort = {
 };
 
 const newFakes = (
-  init: { image?: string | null; failDelete?: boolean; passkeys?: number } = {},
+  init: { image?: string | null; failDelete?: boolean } = {},
 ) => {
   const images = new Map<string, string | null>([
     ["user1", init.image ?? null],
@@ -33,8 +33,7 @@ const newFakes = (
   const removed: string[] = [];
 
   const repo: ProfileRepositoryPort = {
-    countPasskeys: (user) =>
-      okAsync(user === "user1" ? (init.passkeys ?? 0) : 0),
+    countPasskeys: () => okAsync(0),
     readImage: (user) => okAsync(images.get(user) ?? null),
     updateImage: (user, image, now) => {
       images.set(user, image);
@@ -107,25 +106,6 @@ describe("validateSignUp", () => {
     // Assert:
     expect(actual._unsafeUnwrapErr()).toMatchObject({
       issues: { email: ["登録できません"] },
-    });
-  });
-});
-
-// ----------------------------------------------------------------------------
-// getDisplayUser
-// ----------------------------------------------------------------------------
-describe("getDisplayUser", () => {
-  it("色と画像を, 画面に出してよい値にする", async () => {
-    // Act:
-    const actual = await newFakes().wf.getDisplayUser({
-      user: { id: "user1", name: "たろう", color: null, image: "javascript:x" },
-    });
-
-    // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
-      name: "たろう",
-      color: "#3cddb7",
-      image: null,
     });
   });
 });
@@ -308,24 +288,5 @@ describe("checkPasskeyDeletion", () => {
       type: "ForbiddenError",
       code: "SESSION_NOT_FRESH",
     });
-  });
-});
-
-// ----------------------------------------------------------------------------
-// hasPasskey
-// ----------------------------------------------------------------------------
-describe("hasPasskey", () => {
-  it.each([
-    [0, false],
-    [1, true],
-    [3, true],
-  ])("パスキーが %d 個なら %p", async (passkeys, expected) => {
-    // Act:
-    const actual = await newFakes({ passkeys }).wf.hasPasskey({
-      userId: "user1",
-    });
-
-    // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ hasPasskey: expected });
   });
 });

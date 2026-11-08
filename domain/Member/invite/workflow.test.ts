@@ -85,34 +85,6 @@ const newFakes = (init: Partial<State> = {}) => {
 };
 
 // ----------------------------------------------------------------------------
-// listInvites
-// ----------------------------------------------------------------------------
-describe("listInvites", () => {
-  it("一覧と, 上限・残りの回数を返す", async () => {
-    // Arrange:
-    const { wf } = newFakes({ limit: 5, used: 2 });
-
-    // Act:
-    const actual = await wf.listInvites({ userId: "user1" });
-
-    // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
-      limit: 5,
-      remaining: 3,
-      invites: [invite],
-    });
-  });
-
-  it("ユーザー ID が空の場合, ValidationError となる", async () => {
-    // Act:
-    const actual = await newFakes().wf.listInvites({ userId: "" });
-
-    // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
-  });
-});
-
-// ----------------------------------------------------------------------------
 // issueInvite
 // ----------------------------------------------------------------------------
 describe("issueInvite", () => {

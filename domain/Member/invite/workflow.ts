@@ -9,8 +9,6 @@ import {
   ensureUsable,
   formatToken,
   INVITE_DAYS,
-  limitOf,
-  remainingOf,
   validateInviteId,
   validateToken,
 } from "./logic.ts";
@@ -22,40 +20,21 @@ import {
   TOKEN_LENGTH,
 } from "./vo.ts";
 
+/**
+ * 招待の WorkFlows (コマンド). 登録の手前のチェック (startInvite) もここに置く
+ */
 export const newInviteWorkFlows = (
   r: InviteRepositoryPort,
   clock: ClockPort,
   random: RandomPort,
 ): Pick<
   MemberWorkFlows,
-  | "listInvites"
   | "issueInvite"
   | "revokeInvite"
   | "startInvite"
   | "claimInvite"
   | "linkInvitedUser"
 > => ({
-  /**
-   * 自分が発行した招待の一覧と, あと何回発行できるか
-   */
-  listInvites: ({ userId }) =>
-    okAsync(userId)
-      // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
-      // Step 2. 一覧と利用状況の取得: UserId -> [InviteDto[], InviteUsage]
-      .andThen((inviter) =>
-        ResultAsync.combine([
-          r.listInvites(inviter),
-          r.readUsage(inviter, clock.now()),
-        ]),
-      )
-      // Step 3. イベント発行
-      .map(([invites, usage]) => ({
-        limit: limitOf(usage),
-        remaining: remainingOf(usage),
-        invites,
-      })),
-
   /**
    * 招待を発行する
    */
