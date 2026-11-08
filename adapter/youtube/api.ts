@@ -1,10 +1,10 @@
-// YouTube Data API v3 のクライアント。API の値をそのまま返す（表示対象かどうかは domain/Content/catalog が決める）
+// YouTube Data API v3 のクライアント。API の値をそのまま返す（表示対象かどうかは domain/Content が決める）
 import { ResultAsync } from "neverthrow";
-import type { YoutubePort } from "../../domain/Content/catalog/port.ts";
+import type { YoutubePort } from "../../domain/Content/port.ts";
 import type {
   PlaylistInfo,
   YoutubeVideoItem,
-} from "../../domain/Content/catalog/type.ts";
+} from "../../domain/Content/type.ts";
 import { type ExternalError, newExternalError } from "../../error.ts";
 
 const API = "https://www.googleapis.com/youtube/v3";

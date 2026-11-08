@@ -12,7 +12,7 @@
 
 | ディレクトリ | 役割 |
 | :-- | :-- |
-| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content は `catalog/`（YouTube からの取り込み）と `feed/`（ホーム・視聴記録）、Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts` でそれぞれの WorkFlows を 1 つにまとめる。Notification は直下に置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（`okAsync(...).andThen(...)` でつなぐユースケース）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/policy.ts`（ポリシー）と `server/container.ts` |
+| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts` でそれぞれの WorkFlows を 1 つにまとめる。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（`okAsync(...).andThen(...)` でつなぐユースケース）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/policy.ts`（ポリシー）と `server/container.ts` |
 | `domain/*.ts` | コンテキストをまたいで使うもの（`vo.ts`・`port.ts`、ブラウザからも使う `youtube.ts`・`url.ts`・`base64url.ts`） |
 | `schema/service.ts` | WorkFlows の I/F と Cmd / Evt / DTO。Web 層はここに定義した WorkFlows だけを呼ぶ |
 | `error.ts` | `AppError`（判別共用体）。エラーは例外ではなく `Result` で返す |

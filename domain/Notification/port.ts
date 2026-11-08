@@ -49,7 +49,7 @@ export interface PushSenderPort {
 }
 
 /**
- * バッジの本数 (Feed コンテキストの, 未視聴の New の本数)
+ * バッジの本数 (コンテンツ集約の, 未視聴の New の本数)
  */
 export interface BadgeCounterPort {
   countUnwatchedNew(

@@ -60,10 +60,12 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
 | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 
-### Content / Feed（ホーム・視聴記録）
+### Content（動画の同期・ホーム・視聴記録）
 
 | WorkFlow | 内容 |
 | :-- | :-- |
+| `syncAllVideos` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
+| `syncNewVideos` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
 | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
 | `watchVideo` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
 | `unwatchVideo` | 視聴記録を消して未視聴に戻す |
@@ -78,13 +80,6 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
 | `notifyNewVideos` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
-
-### Content / Catalog（動画の同期）
-
-| WorkFlow | 内容 |
-| :-- | :-- |
-| `syncAllVideos` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
-| `syncNewVideos` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
 
 <br/>
 <br/>

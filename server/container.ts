@@ -4,8 +4,7 @@
 import { db } from "void/db";
 import { env } from "void/env";
 import { storage } from "void/storage";
-import { newCatalogRepository } from "../adapter/drizzle/catalog.ts";
-import { newFeedRepository } from "../adapter/drizzle/feed.ts";
+import { newContentRepository } from "../adapter/drizzle/content.ts";
 import { newInviteRepository } from "../adapter/drizzle/invite.ts";
 import { newProfileRepository } from "../adapter/drizzle/profile.ts";
 import { newPushRepository } from "../adapter/drizzle/push.ts";
@@ -29,12 +28,11 @@ const vapidKeys = (): VapidKeys | null =>
     : null;
 
 export const container = () => {
-  // コンテンツ集約: 動画の自動取得（Catalog）と、見る・記録する（Feed）。
+  // コンテンツ集約: 動画の自動取得と、ホーム・視聴記録。
   // YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
   const contentWorkFlows = newContentWorkFlows(
-    newCatalogRepository(db),
+    newContentRepository(db),
     env.YOUTUBE_API_KEY ? newYoutubeApi(env.YOUTUBE_API_KEY) : null,
-    newFeedRepository(db),
     cryptoRandom,
   );
   return {

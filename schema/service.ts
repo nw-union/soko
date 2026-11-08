@@ -14,7 +14,7 @@ import type { AppError } from "../error.ts";
  * コンテンツ集約: 動画の取り込み (YouTube との同期) と, 見る・記録する
  */
 export interface ContentWorkFlows {
-  // --- 動画の取り込み (domain/Content/catalog) ---
+  // --- YouTube からの取り込み ---
 
   /**
    * 全件の同期. playlists に登録されたプレイリストの全動画を取り直して videos に反映し (タイトル・概要欄などの変更も直す),
@@ -31,7 +31,7 @@ export interface ContentWorkFlows {
    */
   syncNewVideos(): ResultAsync<NewVideosSyncedEvt, AppError>;
 
-  // --- 見る・記録する (domain/Content/feed) ---
+  // --- ホーム・視聴記録 ---
 
   /**
    * ホームに並べる動画 (New の候補・ランダムに選んだ動画・プレイリストごとの動画)
