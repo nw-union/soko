@@ -1,5 +1,5 @@
 import { okAsync, Result, ResultAsync } from "neverthrow";
-import type { FeedWorkFlows } from "../../../schema/service.ts";
+import type { ContentWorkFlows } from "../../../schema/service.ts";
 import type { RandomPort } from "../../port.ts";
 import { newUserId } from "../../vo.ts";
 import {
@@ -13,7 +13,14 @@ import type { FeedRepositoryPort } from "./port.ts";
 export const newFeedWorkFlows = (
   r: FeedRepositoryPort,
   random: RandomPort,
-): FeedWorkFlows => {
+): Pick<
+  ContentWorkFlows,
+  | "getHomeFeed"
+  | "watchVideo"
+  | "unwatchVideo"
+  | "getBadgeCount"
+  | "countUnwatchedNew"
+> => {
   // ユーザーごとの, 未視聴の New の本数 (getBadgeCount と countUnwatchedNew で使う)
   const counts = (userIds: string[]) =>
     // Step 1. バリデーション: string[] -> UserId[]

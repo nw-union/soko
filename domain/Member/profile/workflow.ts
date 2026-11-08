@@ -1,6 +1,6 @@
 import { okAsync, type ResultAsync } from "neverthrow";
 import type { AppError } from "../../../error.ts";
-import type { ProfileWorkFlows } from "../../../schema/service.ts";
+import type { MemberWorkFlows } from "../../../schema/service.ts";
 import type { ClockPort, RandomPort } from "../../port.ts";
 import { newUserId } from "../../vo.ts";
 import {
@@ -20,7 +20,17 @@ export const newProfileWorkFlows = (
   s: AvatarStoragePort,
   clock: ClockPort,
   random: RandomPort,
-): ProfileWorkFlows => ({
+): Pick<
+  MemberWorkFlows,
+  | "validateProfileUpdate"
+  | "validateSignUp"
+  | "getDisplayUser"
+  | "hasPasskey"
+  | "changeAvatar"
+  | "removeAvatar"
+  | "cleanupDeletedUser"
+  | "checkPasskeyDeletion"
+> => ({
   /**
    * プロフィールの更新で送られてきた値を確かめる
    */

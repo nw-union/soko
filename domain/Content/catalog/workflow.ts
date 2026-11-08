@@ -1,7 +1,7 @@
 import { okAsync, ResultAsync } from "neverthrow";
 import type { AppError } from "../../../error.ts";
 import type {
-  CatalogWorkFlows,
+  ContentWorkFlows,
   AllVideosSyncedEvt,
   NewVideosSyncedEvt,
 } from "../../../schema/service.ts";
@@ -34,7 +34,7 @@ const sequence = <T, U>(
 export const newCatalogWorkFlows = (
   r: CatalogRepositoryPort,
   yt: YoutubePort | null,
-): CatalogWorkFlows => {
+): Pick<ContentWorkFlows, "syncAllVideos" | "syncNewVideos"> => {
   /**
    * プレイリストごとの動画 ID (DB の ID → YouTube 上の順の動画 ID)
    */

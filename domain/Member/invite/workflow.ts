@@ -1,5 +1,5 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { InviteWorkFlows } from "../../../schema/service.ts";
+import type { MemberWorkFlows } from "../../../schema/service.ts";
 import type { ClockPort, RandomPort } from "../../port.ts";
 import { newUserId } from "../../vo.ts";
 import {
@@ -26,7 +26,15 @@ export const newInviteWorkFlows = (
   r: InviteRepositoryPort,
   clock: ClockPort,
   random: RandomPort,
-): InviteWorkFlows => ({
+): Pick<
+  MemberWorkFlows,
+  | "listInvites"
+  | "issueInvite"
+  | "revokeInvite"
+  | "startInvite"
+  | "claimInvite"
+  | "linkInvitedUser"
+> => ({
   /**
    * 自分が発行した招待の一覧と, あと何回発行できるか
    */
