@@ -17,9 +17,7 @@ NWU の創作を「置く」場所
 </p>
 <br />
 
-## 🎬 Overview
-
-[![Soko のプロモーション動画](https://img.youtube.com/vi/t9O2A_r-nzo/maxresdefault.jpg)](https://youtu.be/t9O2A_r-nzo)
+## 🌏 URL
 
 | Name       | URL                      |
 | :--------- | :----------------------- |
