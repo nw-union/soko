@@ -4,8 +4,9 @@ import {
   type ValidationError,
 } from "../../error.ts";
 import type {
-  HomeFeedEvt,
+  HomeFeedView,
   PlaylistDto,
+  PlaylistSettingDto,
   VideoItemDto,
 } from "../../schema/service.ts";
 import { newYoutubeId, type YoutubeId } from "../vo.ts";
@@ -73,7 +74,7 @@ export const buildHomeFeed = (
   watchedIds: ReadonlySet<string>,
   joinedAt: number,
   random: () => number,
-): HomeFeedEvt => {
+): HomeFeedView => {
   // 不正な ID の動画は表示しない
   const valid = rows.filter((row) => isYoutubeId(row.video.youtubeId));
 
@@ -235,6 +236,17 @@ export const convToVideoItemDto = (
   url: watchUrl(video.youtubeId),
   embed: embedUrl(video.youtubeId),
   thumbnail: thumbnailUrl(video.youtubeId),
+});
+
+/**
+ * 管理画面に出すプレイリスト
+ */
+export const convToPlaylistSettingDto = (
+  list: Playlist,
+): PlaylistSettingDto => ({
+  id: list.id,
+  playlistId: list.playlistId,
+  name: list.name,
 });
 
 // ----------------------------------------------------------------------------

@@ -6,29 +6,20 @@ import type {
   NewSyncedEvt,
   PlaylistSettingDto,
 } from "../../schema/service.ts";
-import type { RandomPort } from "../port.ts";
 import { newUserId } from "../vo.ts";
 import {
-  buildHomeFeed,
   canRemoveOrphans,
-  countUnwatchedNew,
+  convToPlaylistSettingDto,
   planFullLinks,
   planNewLinks,
   playlistsToRename,
   toFetchedVideos,
   unknownVideoIds,
-  validateJoinedAt,
   validateWatchedVideo,
 } from "./logic.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type { Playlist } from "./type.ts";
 import { newPlaylistId, newPlaylistRowId } from "./vo.ts";
-
-const toSettingDto = (list: Playlist): PlaylistSettingDto => ({
-  id: list.id,
-  playlistId: list.playlistId,
-  name: list.name,
-});
 
 /**
  * 1 つずつ順に実行する (YouTube への問い合わせを同時に投げない). 1 つでも失敗したら止める
@@ -43,14 +34,13 @@ const sequence = <T, U>(
   );
 
 /**
- * コンテンツ集約の WorkFlows. YouTube からの取り込みと, ホーム・視聴記録
+ * コンテンツ集約の WorkFlows (コマンド). YouTube からの取り込み・プレイリストの登録・視聴記録
  *
  * @param yt - YouTube Data API. API キーが未設定なら null (同期しない)
  */
 export const newContentWorkFlows = (
   r: ContentRepositoryPort,
   yt: YoutubePort | null,
-  random: RandomPort,
 ): ContentWorkFlows => {
   /**
    * プレイリストごとの動画 ID (DB の ID → YouTube 上の順の動画 ID)
@@ -81,26 +71,6 @@ export const newContentWorkFlows = (
           : f(youtube, lists),
       );
   };
-
-  // ユーザーごとの, 未視聴の New の本数 (getBadgeCount と countUnwatchedNew で使う)
-  const counts = (userIds: string[]) =>
-    // Step 1. バリデーション: string[] -> UserId[]
-    okAsync(userIds)
-      .andThen((ids) => Result.combine(ids.map((id) => newUserId(id))))
-      // Step 2. 取得: UserId[] -> [Member[], VideoDate[], Watch[]]
-      .andThen((users) =>
-        users.length === 0
-          ? okAsync(new Map<string, number>())
-          : ResultAsync.combine([
-              r.listMembers(users),
-              r.listPlaylistVideoDates(),
-              r.listWatches(users),
-            ])
-              // Step 3. 数える
-              .map(([members, videos, watches]) =>
-                countUnwatchedNew(members, videos, watches),
-              ),
-      );
 
   return {
     /**
@@ -210,41 +180,6 @@ export const newContentWorkFlows = (
       ),
 
     /**
-     * ホームに並べる動画
-     */
-    getHomeFeed: ({ userId, joinedAt }) =>
-      // Step 1. バリデーション: [string, Date] -> [UserId, number]
-      okAsync(undefined)
-        .andThen(() =>
-          Result.combine([newUserId(userId), validateJoinedAt(joinedAt)]),
-        )
-        // Step 2. 取得: [UserId, number] -> [Playlist[], PlaylistVideo[], string[], number]
-        .andThen(([user, joined]) =>
-          ResultAsync.combine([
-            r.listPlaylists(),
-            r.listPlaylistVideos(),
-            r.listWatchedIds(user),
-          ]).map(([lists, rows, watched]) => ({
-            lists,
-            rows,
-            watched,
-            joined,
-          })),
-        )
-        // Step 3. 組み立て
-        .map(({ lists, rows, watched, joined }) =>
-          buildHomeFeed(lists, rows, new Set(watched), joined, random.float),
-        ),
-
-    /**
-     * プレイリストの一覧
-     */
-    listPlaylists: () =>
-      r
-        .listPlaylists()
-        .map((lists) => ({ playlists: lists.map(toSettingDto) })),
-
-    /**
      * プレイリストを足す
      */
     createPlaylist: ({ playlistId }) =>
@@ -257,7 +192,7 @@ export const newContentWorkFlows = (
         .andThen(
           (list): ResultAsync<PlaylistSettingDto, AppError> =>
             list
-              ? okAsync(toSettingDto(list))
+              ? okAsync(convToPlaylistSettingDto(list))
               : errAsync(
                   newConflictError("そのプレイリストは既に登録されています"),
                 ),
@@ -296,17 +231,5 @@ export const newContentWorkFlows = (
         )
         // Step 2. DB 削除
         .andThen(([user, id]) => r.deleteWatch(user, id)),
-
-    /**
-     * バッジに出す, 未視聴の New の本数
-     */
-    getBadgeCount: ({ userId }) =>
-      counts([userId]).map((m) => ({ count: m.get(userId) ?? 0 })),
-
-    /**
-     * ユーザーごとの, 未視聴の New の本数
-     */
-    countUnwatchedNew: ({ userIds }) =>
-      counts([...new Set(userIds)]).map((m) => ({ counts: m })),
   };
 };

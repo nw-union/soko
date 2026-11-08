@@ -5,8 +5,6 @@ import type { ClockPort, RandomPort } from "../../port.ts";
 import { newUserId } from "../../vo.ts";
 import {
   ensurePasskeyDeletable,
-  resolveColor,
-  resolveImage,
   validateImageFile,
   validateProfileInput,
   validateSignupEmail,
@@ -15,6 +13,9 @@ import type { AvatarStoragePort, ProfileRepositoryPort } from "./port.ts";
 import type { ValidatedProfile } from "./type.ts";
 import { createAvatarKey, parseAvatarPath, toAvatarPath } from "./vo.ts";
 
+/**
+ * プロフィール・ログインの WorkFlows (コマンド). better-auth の手前のチェック (validate〜・check〜) もここに置く
+ */
 export const newProfileWorkFlows = (
   r: ProfileRepositoryPort,
   s: AvatarStoragePort,
@@ -24,8 +25,6 @@ export const newProfileWorkFlows = (
   MemberWorkFlows,
   | "validateProfileUpdate"
   | "validateSignUp"
-  | "getDisplayUser"
-  | "hasPasskey"
   | "changeAvatar"
   | "removeAvatar"
   | "cleanupDeletedUser"
@@ -52,28 +51,6 @@ export const newProfileWorkFlows = (
       .andThen(() => validateProfileInput(profile))
       // Step 3. イベント発行
       .map(convToProfileEvt),
-
-  /**
-   * 画面に出すユーザー
-   */
-  getDisplayUser: ({ user }) =>
-    okAsync({
-      name: user.name,
-      color: resolveColor(user.color, user.id),
-      image: resolveImage(user.image),
-    }),
-
-  /**
-   * パスキーを作ったか
-   */
-  hasPasskey: ({ userId }) =>
-    okAsync(userId)
-      // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
-      // Step 2. 数える
-      .andThen(r.countPasskeys)
-      // Step 3. イベント発行
-      .map((count) => ({ hasPasskey: count > 0 })),
 
   /**
    * アイコン画像を差し替える

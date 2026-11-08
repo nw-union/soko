@@ -38,7 +38,7 @@
   },
   "overrides": [
     {
-      // Web 層は schema/service.ts の WorkFlows（server/container.ts）を呼ぶだけにする。DB は adapter/ だけが触る
+      // Web 層は schema/service.ts の WorkFlows・Queries（server/container.ts）を呼ぶだけにする。DB は adapter/ だけが触る
       "includes": [
         "pages/**",
         "routes/**",

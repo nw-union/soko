@@ -9,7 +9,7 @@ export type Props = InferProps<typeof loader>;
 export const loader = defineHandler(async (c) => {
   if (!getUser()) return c.redirect("/login");
   return container()
-    .contentWorkFlows.listPlaylists()
+    .contentQueries.listPlaylists()
     .match((evt) => evt, throwError);
 });
 

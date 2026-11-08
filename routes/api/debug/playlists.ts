@@ -7,7 +7,7 @@ import { errorResponse } from "../../../server/http.ts";
 export const GET = defineHandler(async (c) => {
   requireAuth(c);
   return container()
-    .contentWorkFlows.listPlaylists()
+    .contentQueries.listPlaylists()
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),

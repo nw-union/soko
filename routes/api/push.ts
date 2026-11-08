@@ -11,7 +11,7 @@ export const GET = defineHandler(async (c) => {
   requireAuth(c);
   // WF 実行: 購読に使う VAPID の公開鍵取得する
   return container()
-    .notificationWorkFlows.getPublicKey()
+    .notificationQueries.getPublicKey()
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),

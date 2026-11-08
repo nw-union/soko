@@ -9,7 +9,7 @@ import type {
 import { newProfileWorkFlows } from "./profile/workflow.ts";
 
 /**
- * メンバー集約の WorkFlows. 招待の Invite と、プロフィール・ログインの Profile をまとめる
+ * メンバー集約の WorkFlows (コマンド). 招待の Invite と、プロフィール・ログインの Profile をまとめる
  */
 export const newMemberWorkFlows = (
   invite: InviteRepositoryPort,
