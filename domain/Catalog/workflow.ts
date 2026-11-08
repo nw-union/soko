@@ -2,8 +2,8 @@ import { okAsync, ResultAsync } from "neverthrow";
 import type { AppError } from "../../error.ts";
 import type {
   CatalogWorkFlows,
-  SyncAllEvt,
-  SyncNewEvt,
+  AllVideosSyncedEvt,
+  NewVideosSyncedEvt,
 } from "../../schema/service.ts";
 import {
   canRemoveOrphans,
@@ -72,7 +72,7 @@ export const newCatalogWorkFlows = (
     /**
      * 全件の同期
      */
-    syncAll: () =>
+    syncAllVideos: () =>
       withPlaylists((youtube, lists) =>
         // Step 1. YouTube から取得 (動画 ID・プレイリスト情報・動画の詳細). ここまでは DB を変えない
         fetchIdsByList(youtube, lists)
@@ -119,7 +119,7 @@ export const newCatalogWorkFlows = (
               ? r.deleteOrphanVideos()
               : okAsync(0)
             ).map(
-              (removed): SyncAllEvt => ({
+              (removed): AllVideosSyncedEvt => ({
                 type: "Synced",
                 videos: fetched.length,
                 playlists: lists.length,
@@ -135,7 +135,7 @@ export const newCatalogWorkFlows = (
     /**
      * 差分の同期
      */
-    syncNew: () =>
+    syncNewVideos: () =>
       withPlaylists((youtube, lists) =>
         // Step 1. プレイリストごとの動画 ID と, 保存されている動画
         ResultAsync.combine([fetchIdsByList(youtube, lists), r.listVideoIds()])
@@ -166,7 +166,7 @@ export const newCatalogWorkFlows = (
               )
               .andThrough((links) => r.insertLinks(links))
               .map(
-                (links): SyncNewEvt => ({
+                (links): NewVideosSyncedEvt => ({
                   type: "Synced",
                   added: inserted.length,
                   links: links.length,

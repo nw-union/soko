@@ -143,7 +143,7 @@ describe("API キー・プレイリストがない場合", () => {
     const { repo } = newFakes({ remote: {} });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, null).syncAll();
+    const actual = await newCatalogWorkFlows(repo, null).syncAllVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoApiKey" });
@@ -154,7 +154,7 @@ describe("API キー・プレイリストがない場合", () => {
     const { repo, youtube } = newFakes({ remote: {}, lists: [] });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncNew();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncNewVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ type: "NoPlaylists" });
@@ -162,9 +162,9 @@ describe("API キー・プレイリストがない場合", () => {
 });
 
 // ----------------------------------------------------------------------------
-// syncAll
+// syncAllVideos
 // ----------------------------------------------------------------------------
-describe("syncAll", () => {
+describe("syncAllVideos", () => {
   it("YouTube の通りに, 動画と紐付けを作り直し, 外れた動画を消す", async () => {
     // Arrange: DB には a・b・old があり, YouTube の PL1 は [b, c, a]. c は非公開
     const { repo, youtube, db } = newFakes({
@@ -182,7 +182,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncAll();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncAllVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -209,7 +209,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncAll();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncAllVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({ renamed: 1 });
@@ -226,7 +226,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncAll();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncAllVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toMatchObject({
@@ -244,7 +244,7 @@ describe("syncAll", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncAll();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncAllVideos();
 
     // Assert:
     expect(actual.isErr()).toBeTrue();
@@ -254,9 +254,9 @@ describe("syncAll", () => {
 });
 
 // ----------------------------------------------------------------------------
-// syncNew
+// syncNewVideos
 // ----------------------------------------------------------------------------
-describe("syncNew", () => {
+describe("syncNewVideos", () => {
   it("DB にない動画だけ詳細を引いて足し, 紐付けを足す", async () => {
     // Arrange: a は既にあり紐付け済み. b が増えた
     const { repo, youtube, db, youtubeCalls } = newFakes({
@@ -266,7 +266,7 @@ describe("syncNew", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncNew();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncNewVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -294,7 +294,7 @@ describe("syncNew", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncNew();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncNewVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -314,7 +314,7 @@ describe("syncNew", () => {
     });
 
     // Act:
-    const actual = await newCatalogWorkFlows(repo, youtube).syncNew();
+    const actual = await newCatalogWorkFlows(repo, youtube).syncNewVideos();
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({
@@ -333,7 +333,7 @@ describe("syncNew", () => {
     const actual = await newCatalogWorkFlows(
       { ...repo, insertNewVideos: () => errAsync(newDatabaseError("boom")) },
       youtube,
-    ).syncNew();
+    ).syncNewVideos();
 
     // Assert:
     expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");

@@ -65,8 +65,8 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | WorkFlow | 内容 |
 | :-- | :-- |
 | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
-| `recordWatch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
-| `unrecordWatch` | 視聴記録を消して未視聴に戻す |
+| `watchVideo` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
+| `unwatchVideo` | 視聴記録を消して未視聴に戻す |
 | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
 | `countUnwatchedNew` | ユーザーごとの未視聴の New の本数（通知のバッジ用） |
 
@@ -77,14 +77,14 @@ Web 層（`pages/`・`routes/`・`crons/`・`auth.ts`）は、`schema/service.ts
 | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
-| `notifyNewVideos` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。同期 cron の最後に呼ぶ |
+| `notifyNewVideos` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 
 ### Catalog（動画の同期）
 
 | WorkFlow | 内容 |
 | :-- | :-- |
-| `syncAll` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
-| `syncNew` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
+| `syncAllVideos` | 全件の同期。全動画を取り直して反映し、紐付けを作り直す。どのプレイリストにもない動画は消す。YouTube から先にすべて取得し、1 つでも失敗したら DB は変えない |
+| `syncNewVideos` | 差分の同期。プレイリストに増えた動画だけを足す。更新・並び替え・削除はしない |
 
 <br/>
 <br/>

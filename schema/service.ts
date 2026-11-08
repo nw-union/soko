@@ -206,12 +206,12 @@ export interface FeedWorkFlows {
   /**
    * 動画を見たことを記録する. 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
    */
-  recordWatch(cmd: WatchCmd): ResultAsync<void, AppError>;
+  watchVideo(cmd: WatchCmd): ResultAsync<void, AppError>;
 
   /**
    * 視聴記録を消して, 未視聴に戻す
    */
-  unrecordWatch(cmd: WatchCmd): ResultAsync<void, AppError>;
+  unwatchVideo(cmd: WatchCmd): ResultAsync<void, AppError>;
 
   /**
    * アプリのアイコンのバッジに出す, 未視聴の New の本数
@@ -301,9 +301,9 @@ export interface PushWorkFlows {
 
   /**
    * まだ通知していない動画を通知済みにして, そのうち最近のものを全購読者に 1 通で知らせる.
-   * 動画を同期する cron の最後に呼ぶ
+   * 新規追加動画があった場合に, ポリシー (server/policy.ts) が呼ぶ. 全件の同期の cron も, 取りこぼしを拾うために呼ぶ
    */
-  notifyNewVideos(): ResultAsync<NotifyNewVideosEvt, AppError>;
+  notifyNewVideos(): ResultAsync<NewVideosNotifiedEvt, AppError>;
 }
 
 export type GetPublicKeyEvt = { publicKey: string | null };
@@ -316,7 +316,7 @@ export type SubscribeCmd = {
 
 export type UnsubscribeCmd = { userId: string; endpoint: unknown };
 
-export type NotifyNewVideosEvt =
+export type NewVideosNotifiedEvt =
   // 通知する (最近の) 新着がなかった
   | { type: "NoRecentVideos" }
   // VAPID の鍵がないので送らなかった (動画は通知済みにした)
@@ -348,13 +348,13 @@ export interface CatalogWorkFlows {
    * 先に YouTube からすべて取得し, 1 つでも失敗したら DB は何も変えない
    * (DB への書き込みが始まった後の失敗では, 一部だけ反映されることがある. 次回の同期で直る)
    */
-  syncAll(): ResultAsync<SyncAllEvt, AppError>;
+  syncAllVideos(): ResultAsync<AllVideosSyncedEvt, AppError>;
 
   /**
    * 差分の同期. プレイリストに増えた動画だけを足して紐付ける.
    * 既にある動画の更新・並び替え・削除はしない (全件の同期が直す)
    */
-  syncNew(): ResultAsync<SyncNewEvt, AppError>;
+  syncNewVideos(): ResultAsync<NewVideosSyncedEvt, AppError>;
 }
 
 export type SyncSkipped =
@@ -363,7 +363,7 @@ export type SyncSkipped =
   // playlists にプレイリストが登録されていない
   | { type: "NoPlaylists" };
 
-export type SyncAllEvt =
+export type AllVideosSyncedEvt =
   | SyncSkipped
   | {
       type: "Synced";
@@ -380,7 +380,7 @@ export type SyncAllEvt =
       renamed: number;
     };
 
-export type SyncNewEvt =
+export type NewVideosSyncedEvt =
   | SyncSkipped
   | {
       type: "Synced";

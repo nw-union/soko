@@ -65,7 +65,7 @@ export const newFeedWorkFlows = (
     /**
      * 動画を見たことを記録する
      */
-    recordWatch: ({ userId, youtubeId }) =>
+    watchVideo: ({ userId, youtubeId }) =>
       // Step 1. バリデーション: [string, unknown] -> [UserId, YoutubeId]
       okAsync(undefined)
         .andThen(() =>
@@ -77,7 +77,7 @@ export const newFeedWorkFlows = (
     /**
      * 視聴記録を消して, 未視聴に戻す
      */
-    unrecordWatch: ({ userId, youtubeId }) =>
+    unwatchVideo: ({ userId, youtubeId }) =>
       // Step 1. バリデーション: [string, unknown] -> [UserId, YoutubeId]
       okAsync(undefined)
         .andThen(() =>

@@ -1,4 +1,4 @@
-// 新着動画のプッシュ通知を送り、結果をログに残す。動画を同期する cron（crons/sync-*.ts）の最後に呼ぶ
+// 新着動画のプッシュ通知を送り、結果をログに残す。ポリシー（server/policy.ts）と、全件の同期の cron（crons/sync-videos.ts）から呼ぶ
 import { match } from "ts-pattern";
 import { container } from "./container.ts";
 import { throwError } from "./http.ts";

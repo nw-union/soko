@@ -91,13 +91,13 @@ describe("getHomeFeed", () => {
   });
 });
 
-describe("recordWatch / unrecordWatch", () => {
+describe("watchVideo / unwatchVideo", () => {
   it("検証した YouTube ID で, 視聴記録を入れる", async () => {
     // Arrange:
     const { wf, inserted } = newFakes();
 
     // Act:
-    const actual = await wf.recordWatch({ userId: "user1", youtubeId: ID });
+    const actual = await wf.watchVideo({ userId: "user1", youtubeId: ID });
 
     // Assert:
     expect(actual.isOk()).toBeTrue();
@@ -109,7 +109,7 @@ describe("recordWatch / unrecordWatch", () => {
     const { wf, inserted } = newFakes();
 
     // Act:
-    const actual = await wf.recordWatch({ userId: "user1", youtubeId: 1 });
+    const actual = await wf.watchVideo({ userId: "user1", youtubeId: 1 });
 
     // Assert:
     expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
@@ -121,7 +121,7 @@ describe("recordWatch / unrecordWatch", () => {
     const { wf, deleted } = newFakes();
 
     // Act:
-    await wf.unrecordWatch({ userId: "user1", youtubeId: ID });
+    await wf.unwatchVideo({ userId: "user1", youtubeId: ID });
 
     // Assert:
     expect(deleted).toEqual([["user1", ID]]);
