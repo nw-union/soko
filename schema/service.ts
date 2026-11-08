@@ -74,20 +74,18 @@ export interface ContentQueries {
    *
    * New の未視聴の絞り込みと件数の制限は, 画面側でする (見た動画をその場で外すため)
    */
-  getHomeFeed(query: GetHomeFeedQuery): ResultAsync<HomeFeedView, AppError>;
+  getHomeFeed(q: GetHomeFeedQuery): ResultAsync<HomeFeedView, AppError>;
 
   /**
    * アプリのアイコンのバッジに出す, 未視聴の New の本数
    */
-  getBadgeCount(
-    query: GetBadgeCountQuery,
-  ): ResultAsync<BadgeCountView, AppError>;
+  getBadgeCount(q: GetBadgeCountQuery): ResultAsync<BadgeCountView, AppError>;
 
   /**
    * ユーザーごとの, 未視聴の New の本数 (通知のバッジに使う)
    */
   countUnwatchedNew(
-    query: CountUnwatchedNewQuery,
+    q: CountUnwatchedNewQuery,
   ): ResultAsync<UnwatchedNewCountsView, AppError>;
 }
 
@@ -358,21 +356,19 @@ export interface MemberQueries {
   /**
    * 自分が発行した招待の一覧と, あと何回発行できるか
    */
-  listInvites(query: ListInvitesQuery): ResultAsync<InvitesView, AppError>;
+  listInvites(q: ListInvitesQuery): ResultAsync<InvitesView, AppError>;
 
   // --- プロフィール・ログイン (domain/Member/profile) ---
 
   /**
    * 画面に出すユーザー (全ページで共通に使う, 表示に必要な最小限)
    */
-  getDisplayUser(
-    query: GetDisplayUserQuery,
-  ): ResultAsync<DisplayUserDto, AppError>;
+  getDisplayUser(q: GetDisplayUserQuery): ResultAsync<DisplayUserDto, AppError>;
 
   /**
    * パスキーを作ったか. パスキーがログインの唯一の手段なので, まだ作っていない (登録の途中の) 人は /welcome から出さない
    */
-  hasPasskey(query: HasPasskeyQuery): ResultAsync<PasskeyStatusView, AppError>;
+  hasPasskey(q: HasPasskeyQuery): ResultAsync<PasskeyStatusView, AppError>;
 }
 
 export type ListInvitesQuery = { userId: string };

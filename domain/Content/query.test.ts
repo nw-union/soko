@@ -88,7 +88,7 @@ const newFeedFakes = () => {
     },
   };
   return {
-    q: newContentQueries(repo, random),
+    qs: newContentQueries(repo, random),
     calls,
   };
 };
@@ -99,7 +99,7 @@ const newFeedFakes = () => {
 describe("getHomeFeed", () => {
   it("プレイリスト・動画・視聴記録から, ホームに並べる動画を組み立てる", async () => {
     // Act:
-    const actual = await newFeedFakes().q.getHomeFeed({
+    const actual = await newFeedFakes().qs.getHomeFeed({
       userId: "user1",
       joinedAt: new Date("2026-10-01T00:00:00Z"),
     });
@@ -124,7 +124,7 @@ describe("getHomeFeed", () => {
 describe("getBadgeCount", () => {
   it("そのユーザーの未視聴の New を数える", async () => {
     // Act:
-    const actual = await newFeedFakes().q.getBadgeCount({ userId: "user1" });
+    const actual = await newFeedFakes().qs.getBadgeCount({ userId: "user1" });
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ count: 1 });
@@ -134,10 +134,10 @@ describe("getBadgeCount", () => {
 describe("countUnwatchedNew", () => {
   it("同じユーザーは 1 回だけ問い合わせる", async () => {
     // Arrange:
-    const { q, calls } = newFeedFakes();
+    const { qs, calls } = newFeedFakes();
 
     // Act:
-    const actual = await q.countUnwatchedNew({ userIds: ["a", "b", "a"] });
+    const actual = await qs.countUnwatchedNew({ userIds: ["a", "b", "a"] });
 
     // Assert:
     expect([...actual._unsafeUnwrap().counts]).toEqual([
@@ -149,10 +149,10 @@ describe("countUnwatchedNew", () => {
 
   it("ユーザーがいない場合, DB に問い合わせない", async () => {
     // Arrange:
-    const { q, calls } = newFeedFakes();
+    const { qs, calls } = newFeedFakes();
 
     // Act:
-    const actual = await q.countUnwatchedNew({ userIds: [] });
+    const actual = await qs.countUnwatchedNew({ userIds: [] });
 
     // Assert:
     expect(actual._unsafeUnwrap().counts.size).toBe(0);
@@ -170,11 +170,11 @@ describe("listPlaylists", () => {
   };
 
   it("一覧を DTO にして返す", async () => {
-    const q = newContentQueries(
+    const qs = newContentQueries(
       { ...unusedRepo, listPlaylists: () => okAsync([list]) },
       random,
     );
-    const actual = await q.listPlaylists();
+    const actual = await qs.listPlaylists();
     expect(actual._unsafeUnwrap()).toEqual({
       playlists: [{ id: 7, playlistId: "PLabcdefghij", name: "" }],
     });
