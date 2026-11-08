@@ -50,7 +50,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
 | WF | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
 | WF | `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
-| Query | `listInvites` | 自分が発行した招待の一覧と、あと何回発行できるか |
+| Qry | `listInvites` | 自分が発行した招待の一覧と、あと何回発行できるか |
 
 ### Member / Profile（プロフィール）
 
@@ -62,8 +62,8 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `removeAvatar` | アイコン画像を外して、頭文字の表示に戻す |
 | WF | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
 | WF | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
-| Query | `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
-| Query | `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
+| Qry | `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
+| Qry | `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
 
 ### Content（動画の同期・ホーム・視聴記録）
 
@@ -75,10 +75,10 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `deletePlaylist` | プレイリストを消す（動画との紐付けも消える） |
 | WF | `watch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
 | WF | `unwatch` | 視聴記録を消して未視聴に戻す |
-| Query | `listPlaylists` | 同期の対象のプレイリストの一覧（並び順） |
-| Query | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
-| Query | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
-| Query | `countUnwatchedNew` | ユーザーごとの未視聴の New の本数（通知のバッジ用） |
+| Qry | `listPlaylists` | 同期の対象のプレイリストの一覧（並び順） |
+| Qry | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
+| Qry | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
+| Qry | `countUnwatchedNew` | ユーザーごとの未視聴の New の本数（通知のバッジ用） |
 
 ### Notification（プッシュ通知）
 
@@ -87,7 +87,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | WF | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
 | WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
-| Query | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
+| Qry | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 
 <br/>
 <br/>
