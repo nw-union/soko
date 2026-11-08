@@ -15,8 +15,10 @@ import type { AppError } from "../error.ts";
  */
 export interface ContentWorkFlows {
   /**
-   * 全件の同期. playlists に登録されたプレイリストの全動画を取り直して videos に反映し (タイトル・概要欄などの変更も直す),
-   * 紐付けを作り直す. プレイリストの名前と説明も YouTube に合わせる. どのプレイリストにも入っていない動画は消す.
+   * 全件の同期. playlists に登録されたプレイリストの全動画を取り直して
+   * videos に反映し (タイトル・概要欄などの変更も直す), 紐付けを作り直す.
+   * プレイリストの名前と説明も YouTube に合わせる.
+   * どのプレイリストにも入っていない動画は消す.
    *
    * 先に YouTube からすべて取得し, 1 つでも失敗したら DB は何も変えない
    * (DB への書き込みが始まった後の失敗では, 一部だけ反映されることがある. 次回の同期で直る)
@@ -30,7 +32,8 @@ export interface ContentWorkFlows {
   syncNew(): ResultAsync<NewSyncedEvt, AppError>;
 
   /**
-   * 動画を見たことを記録する. 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
+   * 動画を見たことを記録する.
+   * 登録済みの動画だけを受け付け, 何度送っても 1 件のまま (最初に見た日時が残る)
    */
   watch(cmd: WatchCmd): ResultAsync<void, AppError>;
 
@@ -65,6 +68,7 @@ export type SyncSkipped =
   // playlists にプレイリストが登録されていない
   | { type: "NoPlaylists" };
 
+// Evt: 全件更新した
 export type AllSyncedEvt =
   | SyncSkipped
   | {
@@ -82,6 +86,7 @@ export type AllSyncedEvt =
       renamed: number;
     };
 
+// Evt: 差分更新した
 export type NewSyncedEvt =
   | SyncSkipped
   | {
@@ -91,6 +96,12 @@ export type NewSyncedEvt =
       // 足した紐付けの数
       links: number;
     };
+
+// Cmd: 視聴する
+export type WatchCmd = { userId: string; youtubeId: unknown };
+
+// Cmd: 未視聴にする
+export type UnwatchCmd = { userId: string; youtubeId: unknown };
 
 export type GetHomeFeedCmd = {
   userId: string;
@@ -133,9 +144,6 @@ export type VideoItemDto = {
   embed: string;
   thumbnail: string;
 };
-
-export type WatchCmd = { userId: string; youtubeId: unknown };
-export type UnwatchCmd = { userId: string; youtubeId: unknown };
 
 export type GetBadgeCountCmd = { userId: string };
 export type GetBadgeCountEvt = { count: number };
