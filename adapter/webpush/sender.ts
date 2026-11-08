@@ -3,8 +3,8 @@
 // encrypt 以降は src/lib/web-push.ts から変えずに移したもの
 import { ResultAsync } from "neverthrow";
 import { base64urlToBytes, bytesToBase64url } from "../../domain/base64url.ts";
-import type { PushSenderPort } from "../../domain/Push/port.ts";
-import type { VapidKeys } from "../../domain/Push/type.ts";
+import type { PushSenderPort } from "../../domain/Notification/port.ts";
+import type { VapidKeys } from "../../domain/Notification/type.ts";
 
 type PushSubscriptionKeys = {
   endpoint: string;

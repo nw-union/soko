@@ -12,7 +12,7 @@
 
 | ディレクトリ | 役割 |
 | :-- | :-- |
-| `domain/<Context>/` | コンテキストごとのドメイン。`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（`okAsync(...).andThen(...)` でつなぐユースケース）。コンテキストは Invite・Profile・Feed・Push・Catalog |
+| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content は `catalog/`（YouTube からの取り込み）と `feed/`（ホーム・視聴記録）、Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts` でそれぞれの WorkFlows を 1 つにまとめる。Notification は直下に置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（`okAsync(...).andThen(...)` でつなぐユースケース）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/policy.ts`（ポリシー）と `server/container.ts` |
 | `domain/*.ts` | コンテキストをまたいで使うもの（`vo.ts`・`port.ts`、ブラウザからも使う `youtube.ts`・`url.ts`・`base64url.ts`） |
 | `schema/service.ts` | WorkFlows の I/F と Cmd / Evt / DTO。Web 層はここに定義した WorkFlows だけを呼ぶ |
 | `error.ts` | `AppError`（判別共用体）。エラーは例外ではなく `Result` で返す |
@@ -28,7 +28,7 @@
   - 相対 import に必ず `.ts` を付ける（拡張子なしは解決できない。Biome で強制している）
   - `@schema` などの Vite のエイリアスを使わない。`db/schema.ts` は相対パスで読む（Biome で禁止している）
   - 型だけの import は `import type` にし、enum など型を消すだけで動かない構文を使わない（`verbatimModuleSyntax`・`erasableSyntaxOnly`）
-- ブラウザからも使う定数や判定は、zod に依存しないファイル（例: `domain/Profile/rule.ts`）に置く。zod の VO を import すると、ツリーシェイキングで消えずにクライアントのバンドルに入る
+- ブラウザからも使う定数や判定は、zod に依存しないファイル（例: `domain/Member/profile/rule.ts`）に置く。zod の VO を import すると、ツリーシェイキングで消えずにクライアントのバンドルに入る
 - 確認と書き込みを 1 文で行う必要がある操作（招待の発行と消費、通知済みにする、など）は、Port の 1 メソッドにして、その契約をコメントに書く
 - drizzle の `db.batch` は `db.run(sql)` を受け付けない。複数の文は 1 つずつ実行する
 - 日時は `ClockPort`、乱数は `RandomPort` から受け取る（ドメインで `new Date()`・`Math.random()` を直接使わない）

@@ -7,7 +7,7 @@ import { errorResponse } from "../../server/http.ts";
 export const GET = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .inviteWorkFlows.listInvites({ userId: user.id })
+    .memberWorkFlows.listInvites({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -18,7 +18,7 @@ export const GET = defineHandler(async (c) => {
 export const POST = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .inviteWorkFlows.issueInvite({ userId: user.id })
+    .memberWorkFlows.issueInvite({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -29,7 +29,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .inviteWorkFlows.revokeInvite({ userId: user.id, id: c.req.query("id") })
+    .memberWorkFlows.revokeInvite({ userId: user.id, id: c.req.query("id") })
     .match(
       () => null,
       (e) => errorResponse(c, e),

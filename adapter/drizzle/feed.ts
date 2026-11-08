@@ -6,8 +6,8 @@ import {
   videos,
   videoWatches,
 } from "../../db/schema.ts";
-import type { FeedRepositoryPort } from "../../domain/Feed/port.ts";
-import type { StoredVideo } from "../../domain/Feed/type.ts";
+import type { FeedRepositoryPort } from "../../domain/Content/feed/port.ts";
+import type { StoredVideo } from "../../domain/Content/feed/type.ts";
 import { type Database, query } from "./util.ts";
 
 // ----------------------------------------------------------------------------

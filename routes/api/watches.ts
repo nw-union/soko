@@ -11,7 +11,10 @@ export const POST = defineHandler(async (c) => {
     youtubeId?: unknown;
   } | null;
   return container()
-    .feedWorkFlows.recordWatch({ userId: user.id, youtubeId: body?.youtubeId })
+    .contentWorkFlows.watchVideo({
+      userId: user.id,
+      youtubeId: body?.youtubeId,
+    })
     .match(
       () => null,
       (e) => errorResponse(c, e),
@@ -22,7 +25,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .feedWorkFlows.unrecordWatch({
+    .contentWorkFlows.unwatchVideo({
       userId: user.id,
       youtubeId: c.req.query("youtubeId"),
     })

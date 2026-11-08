@@ -1,7 +1,7 @@
 // アイコン画像の配信（R2 のオブジェクトをそのまま返す）。ビジネスロジックはないので WorkFlow にはしない
 import { storage } from "void/storage";
 import { avatarObjectKey } from "../adapter/r2/avatar.ts";
-import { isAvatarKey } from "../domain/Profile/rule.ts";
+import { isAvatarKey } from "../domain/Member/profile/rule.ts";
 
 /**
  * アイコン画像の応答. キーの形が違うか, 画像がなければ null

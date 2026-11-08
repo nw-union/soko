@@ -1,0 +1,108 @@
+import { okAsync, Result, ResultAsync } from "neverthrow";
+import type { ContentWorkFlows } from "../../../schema/service.ts";
+import type { RandomPort } from "../../port.ts";
+import { newUserId } from "../../vo.ts";
+import {
+  buildHomeFeed,
+  countUnwatchedNew,
+  validateJoinedAt,
+  validateWatchedVideo,
+} from "./logic.ts";
+import type { FeedRepositoryPort } from "./port.ts";
+
+export const newFeedWorkFlows = (
+  r: FeedRepositoryPort,
+  random: RandomPort,
+): Pick<
+  ContentWorkFlows,
+  | "getHomeFeed"
+  | "watchVideo"
+  | "unwatchVideo"
+  | "getBadgeCount"
+  | "countUnwatchedNew"
+> => {
+  // ユーザーごとの, 未視聴の New の本数 (getBadgeCount と countUnwatchedNew で使う)
+  const counts = (userIds: string[]) =>
+    // Step 1. バリデーション: string[] -> UserId[]
+    okAsync(userIds)
+      .andThen((ids) => Result.combine(ids.map((id) => newUserId(id))))
+      // Step 2. 取得: UserId[] -> [Member[], VideoDate[], Watch[]]
+      .andThen((users) =>
+        users.length === 0
+          ? okAsync(new Map<string, number>())
+          : ResultAsync.combine([
+              r.listMembers(users),
+              r.listPlaylistVideoDates(),
+              r.listWatches(users),
+            ])
+              // Step 3. 数える
+              .map(([members, videos, watches]) =>
+                countUnwatchedNew(members, videos, watches),
+              ),
+      );
+
+  return {
+    /**
+     * ホームに並べる動画
+     */
+    getHomeFeed: ({ userId, joinedAt }) =>
+      // Step 1. バリデーション: [string, Date] -> [UserId, number]
+      okAsync(undefined)
+        .andThen(() =>
+          Result.combine([newUserId(userId), validateJoinedAt(joinedAt)]),
+        )
+        // Step 2. 取得: [UserId, number] -> [Playlist[], PlaylistVideo[], string[], number]
+        .andThen(([user, joined]) =>
+          ResultAsync.combine([
+            r.listPlaylists(),
+            r.listPlaylistVideos(),
+            r.listWatchedIds(user),
+          ]).map(([lists, rows, watched]) => ({
+            lists,
+            rows,
+            watched,
+            joined,
+          })),
+        )
+        // Step 3. 組み立て
+        .map(({ lists, rows, watched, joined }) =>
+          buildHomeFeed(lists, rows, new Set(watched), joined, random.float),
+        ),
+
+    /**
+     * 動画を見たことを記録する
+     */
+    watchVideo: ({ userId, youtubeId }) =>
+      // Step 1. バリデーション: [string, unknown] -> [UserId, YoutubeId]
+      okAsync(undefined)
+        .andThen(() =>
+          Result.combine([newUserId(userId), validateWatchedVideo(youtubeId)]),
+        )
+        // Step 2. DB 保存
+        .andThen(([user, id]) => r.insertWatch(user, id)),
+
+    /**
+     * 視聴記録を消して, 未視聴に戻す
+     */
+    unwatchVideo: ({ userId, youtubeId }) =>
+      // Step 1. バリデーション: [string, unknown] -> [UserId, YoutubeId]
+      okAsync(undefined)
+        .andThen(() =>
+          Result.combine([newUserId(userId), validateWatchedVideo(youtubeId)]),
+        )
+        // Step 2. DB 削除
+        .andThen(([user, id]) => r.deleteWatch(user, id)),
+
+    /**
+     * バッジに出す, 未視聴の New の本数
+     */
+    getBadgeCount: ({ userId }) =>
+      counts([userId]).map((m) => ({ count: m.get(userId) ?? 0 })),
+
+    /**
+     * ユーザーごとの, 未視聴の New の本数
+     */
+    countUnwatchedNew: ({ userIds }) =>
+      counts([...new Set(userIds)]).map((m) => ({ counts: m })),
+  };
+};

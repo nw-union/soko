@@ -1,5 +1,5 @@
 import { sql } from "void/db";
-import type { InviteRepositoryPort } from "../../domain/Invite/port.ts";
+import type { InviteRepositoryPort } from "../../domain/Member/invite/port.ts";
 import { type Database, query, toSqliteDatetime } from "./util.ts";
 
 type InviteRow = {

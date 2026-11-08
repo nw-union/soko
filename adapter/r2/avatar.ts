@@ -1,7 +1,7 @@
 import { ResultAsync } from "neverthrow";
 import type { storage } from "void/storage";
-import type { AvatarStoragePort } from "../../domain/Profile/port.ts";
-import type { AvatarKey } from "../../domain/Profile/vo.ts";
+import type { AvatarStoragePort } from "../../domain/Member/profile/port.ts";
+import type { AvatarKey } from "../../domain/Member/profile/vo.ts";
 import { newStorageError } from "../../error.ts";
 
 type Storage = typeof storage;

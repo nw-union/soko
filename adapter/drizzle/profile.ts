@@ -1,5 +1,5 @@
 import { sql } from "void/db";
-import type { ProfileRepositoryPort } from "../../domain/Profile/port.ts";
+import type { ProfileRepositoryPort } from "../../domain/Member/profile/port.ts";
 import { type Database, query } from "./util.ts";
 
 export const newProfileRepository = (db: Database): ProfileRepositoryPort => ({

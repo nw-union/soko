@@ -20,7 +20,7 @@ export default defineMiddleware(async (c, next) => {
     | null;
   // 色と画像は、画面に出してよい値にしてから渡す（style・src に埋め込むため）
   const displayUser = user
-    ? await container().profileWorkFlows.getDisplayUser({ user }).unwrapOr(null)
+    ? await container().memberWorkFlows.getDisplayUser({ user }).unwrapOr(null)
     : null;
   c.set("shared", { auth: { user: displayUser } });
 
@@ -41,7 +41,7 @@ export default defineMiddleware(async (c, next) => {
     if (!user) return c.redirect("/login");
     // パスキーがログインの唯一の手段。まだ作っていない（登録の途中の）人は、作るまで /welcome から出さない
     const { hasPasskey } = await container()
-      .profileWorkFlows.hasPasskey({ userId: user.id })
+      .memberWorkFlows.hasPasskey({ userId: user.id })
       .match((e) => e, throwError);
     if (!hasPasskey) return c.redirect("/welcome");
   }
