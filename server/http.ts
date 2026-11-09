@@ -1,7 +1,7 @@
 // AppError を API の応答にする。本文は { message }（画面はこの message をそのまま出す）
 import type { Context } from "hono";
 import { match } from "ts-pattern";
-import type { AppError, ValidationError } from "../error.ts";
+import type { AppError, ValidationError } from "../domain/shared/error.ts";
 import { log } from "./log.ts";
 import { logAppError } from "./logger.ts";
 

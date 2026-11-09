@@ -1,5 +1,5 @@
-import type { MemberQueries } from "../../schema/service.ts";
-import type { ClockPort } from "../port.ts";
+import type { ClockPort } from "../shared/port.ts";
+import type { MemberQueries } from "./api.ts";
 import type { InviteRepositoryPort } from "./invite/port.ts";
 import { newInviteQueries } from "./invite/query.ts";
 import type { ProfileRepositoryPort } from "./profile/port.ts";

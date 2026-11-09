@@ -7,7 +7,7 @@ import {
 import { defineAuth } from "void/auth";
 import { DEFAULT_INVITE_LIMIT } from "./domain/Member/invite/logic.ts";
 import { FRESH_AGE_SECONDS } from "./domain/Member/profile/logic.ts";
-import type { AppError } from "./error.ts";
+import type { AppError } from "./domain/shared/error.ts";
 import { container } from "./server/container.ts";
 import { INVITE_COOKIE, readInviteCookie } from "./server/invite-cookie.ts";
 

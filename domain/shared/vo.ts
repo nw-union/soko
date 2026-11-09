@@ -6,8 +6,8 @@
 import { err, ok, type Result } from "neverthrow";
 import { match } from "ts-pattern";
 import { z } from "zod";
-import { newValidationError, type ValidationError } from "../error.ts";
-import { isYoutubeId } from "./youtube.ts";
+import { isYoutubeId } from "../rule/youtube.ts";
+import { newValidationError, type ValidationError } from "./error.ts";
 
 /**
  * newVo は, Value Object を生成する関数を作るためのヘルパー関数

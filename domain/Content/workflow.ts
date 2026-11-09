@@ -1,12 +1,12 @@
 import { errAsync, okAsync, Result, ResultAsync } from "neverthrow";
-import { type AppError, newConflictError } from "../../error.ts";
+import { type AppError, newConflictError } from "../shared/error.ts";
+import { newUserId } from "../shared/vo.ts";
 import type {
   AllSyncedEvt,
   ContentWorkFlows,
   NewSyncedEvt,
   PlaylistSettingDto,
-} from "../../schema/service.ts";
-import { newUserId } from "../vo.ts";
+} from "./api.ts";
 import {
   canRemoveOrphans,
   convToPlaylistSettingDto,

@@ -1,4 +1,4 @@
-import { isHttpUrl } from "../../domain/url.ts";
+import { isHttpUrl } from "../../domain/rule/url.ts";
 
 // 文章中の URL。日本語が続いても URL に含めないよう、ASCII の文字だけを見る
 const URL_IN_TEXT = /https?:\/\/[\w\-.~:/?#[\]@!$&'()*+,;=%]+/g;

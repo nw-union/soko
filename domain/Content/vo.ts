@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newVo } from "../vo.ts";
+import { newVo } from "../shared/vo.ts";
 
 /**
  * PlaylistId YouTube のプレイリスト ID (list= の後ろ. PL…・UU…・OLAK5uy_… など)

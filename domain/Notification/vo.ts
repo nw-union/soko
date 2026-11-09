@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newVo } from "../vo.ts";
+import { newVo } from "../shared/vo.ts";
 
 // 送れる先は, ブラウザのプッシュサービスだけにする. 購読はユーザーが送ってくるので,
 // 任意の URL にサーバーから POST させないように

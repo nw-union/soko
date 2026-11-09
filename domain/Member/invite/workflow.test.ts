@@ -1,10 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { errAsync, okAsync } from "neverthrow";
-import { newDatabaseError } from "../../../error.ts";
-import type { InviteDto } from "../../../schema/service.ts";
-import type { ClockPort, RandomPort } from "../../port.ts";
+import { newDatabaseError } from "../../shared/error.ts";
+import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import type { InviteRepositoryPort } from "./port.ts";
-import type { NewInvite } from "./type.ts";
+import type { IssuedInvite, NewInvite } from "./type.ts";
 import { createTokenHash, type InviteToken } from "./vo.ts";
 import { newInviteWorkFlows } from "./workflow.ts";
 
@@ -22,7 +21,8 @@ const random: RandomPort = {
   float: () => 0,
 };
 
-const invite: InviteDto = {
+const invite: IssuedInvite = {
+  type: "IssuedInvite",
   id: 1,
   createdAt: "2026-10-30 00:00:00",
   expiresAt: "2026-11-06 00:00:00",

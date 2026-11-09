@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { VideoItemDto } from "../../schema/service.ts";
-import { mustUserId } from "../vo.test.ts";
+import { mustUserId } from "../shared/vo.test.ts";
+import type { VideoItemDto } from "./api.ts";
 import {
   buildHomeFeed,
   canRemoveOrphans,

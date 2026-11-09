@@ -1,6 +1,6 @@
 import { okAsync } from "neverthrow";
-import type { MemberQueries } from "../../../schema/service.ts";
-import { newUserId } from "../../vo.ts";
+import { newUserId } from "../../shared/vo.ts";
+import type { MemberQueries } from "../api.ts";
 import { resolveColor, resolveImage } from "./logic.ts";
 import type { ProfileRepositoryPort } from "./port.ts";
 

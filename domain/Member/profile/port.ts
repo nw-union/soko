@@ -1,6 +1,6 @@
 import type { ResultAsync } from "neverthrow";
-import type { AppError } from "../../../error.ts";
-import type { UserId } from "../../vo.ts";
+import type { AppError } from "../../shared/error.ts";
+import type { UserId } from "../../shared/vo.ts";
 import type { ImageFile } from "./type.ts";
 import type { AvatarKey } from "./vo.ts";
 

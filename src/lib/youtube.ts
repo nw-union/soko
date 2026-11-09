@@ -1,4 +1,4 @@
-// YouTube のサムネイルをブラウザで扱う処理（img・canvas を使う）。ID や URL の組み立ては domain/youtube.ts
+// YouTube のサムネイルをブラウザで扱う処理（img・canvas を使う）。ID や URL の組み立ては domain/rule/youtube.ts
 
 // <img use:thumbnailFallback> で使う。maxresdefault が読めなかったら hqdefault にする。
 // ハイドレーション前に読み込みが失敗していた場合も拾う

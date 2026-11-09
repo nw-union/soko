@@ -1,7 +1,7 @@
 import { okAsync, Result, ResultAsync } from "neverthrow";
-import type { ContentQueries } from "../../schema/service.ts";
-import type { RandomPort } from "../port.ts";
-import { newUserId } from "../vo.ts";
+import type { RandomPort } from "../shared/port.ts";
+import { newUserId } from "../shared/vo.ts";
+import type { ContentQueries } from "./api.ts";
 import {
   buildHomeFeed,
   convToPlaylistSettingDto,

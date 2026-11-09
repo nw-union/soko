@@ -1,8 +1,7 @@
 import type { ResultAsync } from "neverthrow";
-import type { AppError } from "../../../error.ts";
-import type { InviteDto } from "../../../schema/service.ts";
-import type { UserId } from "../../vo.ts";
-import type { InviteUsage, NewInvite } from "./type.ts";
+import type { AppError } from "../../shared/error.ts";
+import type { UserId } from "../../shared/vo.ts";
+import type { InviteUsage, IssuedInvite, NewInvite } from "./type.ts";
 import type { InviteId, TokenHash } from "./vo.ts";
 
 /**
@@ -16,7 +15,7 @@ import type { InviteId, TokenHash } from "./vo.ts";
  */
 export interface InviteRepositoryPort {
   // inviter が発行した招待の一覧 (新しい順)
-  listInvites(inviter: UserId): ResultAsync<InviteDto[], AppError>;
+  listInvites(inviter: UserId): ResultAsync<IssuedInvite[], AppError>;
 
   // inviter の上限と, 数える招待の数
   readUsage(inviter: UserId, now: Date): ResultAsync<InviteUsage, AppError>;

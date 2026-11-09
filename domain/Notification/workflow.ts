@@ -1,11 +1,8 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { AppError } from "../../error.ts";
-import type {
-  NewNotifiedEvt,
-  NotificationWorkFlows,
-} from "../../schema/service.ts";
-import type { ClockPort } from "../port.ts";
-import { newUserId } from "../vo.ts";
+import type { AppError } from "../shared/error.ts";
+import type { ClockPort } from "../shared/port.ts";
+import { newUserId } from "../shared/vo.ts";
+import type { NewNotifiedEvt, NotificationWorkFlows } from "./api.ts";
 import {
   buildPayload,
   classifySendResult,

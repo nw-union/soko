@@ -3,7 +3,7 @@
 import { type Logger, type LogLevel, SystemError } from "@nw-union/nw-utils";
 import { newLogConsole } from "@nw-union/nw-utils/adapter/log-console";
 import { newLogJson } from "@nw-union/nw-utils/adapter/log-json";
-import type { AppError } from "../error.ts";
+import type { AppError } from "../domain/shared/error.ts";
 
 const LEVELS: readonly LogLevel[] = ["debug", "info", "warn", "error"];
 

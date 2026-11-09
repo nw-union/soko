@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newVo } from "../../vo.ts";
+import { newVo } from "../../shared/vo.ts";
 import { AVATAR_PREFIX, isAvatarKey, isHexColor, NAME_MAX } from "./rule.ts";
 
 /**

@@ -1,22 +1,22 @@
 import { err, ok, type Result } from "neverthrow";
 import {
-  newValidationErrorWithMessage,
-  type ValidationError,
-} from "../../error.ts";
-import type {
-  HomeFeedView,
-  PlaylistDto,
-  PlaylistSettingDto,
-  VideoItemDto,
-} from "../../schema/service.ts";
-import { newYoutubeId, type YoutubeId } from "../vo.ts";
-import {
   embedUrl,
   formatDuration,
   isYoutubeId,
   thumbnailUrl,
   watchUrl,
-} from "../youtube.ts";
+} from "../rule/youtube.ts";
+import {
+  newValidationErrorWithMessage,
+  type ValidationError,
+} from "../shared/error.ts";
+import { newYoutubeId, type YoutubeId } from "../shared/vo.ts";
+import type {
+  HomeFeedView,
+  PlaylistDto,
+  PlaylistSettingDto,
+  VideoItemDto,
+} from "./api.ts";
 import type {
   FetchedVideo,
   Link,

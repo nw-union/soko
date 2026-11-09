@@ -1,5 +1,5 @@
-import type { MemberWorkFlows } from "../../schema/service.ts";
-import type { ClockPort, RandomPort } from "../port.ts";
+import type { ClockPort, RandomPort } from "../shared/port.ts";
+import type { MemberWorkFlows } from "./api.ts";
 import type { InviteRepositoryPort } from "./invite/port.ts";
 import { newInviteWorkFlows } from "./invite/workflow.ts";
 import type {
