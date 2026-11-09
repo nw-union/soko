@@ -105,6 +105,13 @@ export interface MemberQueries {
    * パスキーを作ったか. パスキーがログインの唯一の手段なので, まだ作っていない (登録の途中の) 人は /welcome から出さない
    */
   hasPasskey(q: HasPasskeyQuery): ResultAsync<PasskeyStatusView, AppError>;
+
+  /**
+   * アイコン画像のファイル (配信に使う). キーの形が違うか, 画像がなければ NotFoundError
+   *
+   * キーはランダムで, 差し替えると別のキーになるので, 応答はずっとキャッシュしてよい
+   */
+  getAvatarFile(q: GetAvatarFileQuery): ResultAsync<AvatarFileView, AppError>;
 }
 
 export type ListInvitesQuery = { userId: string };
@@ -179,6 +186,17 @@ export type DisplayUserDto = {
 
 export type HasPasskeyQuery = { userId: string };
 export type PasskeyStatusView = { hasPasskey: boolean };
+
+export type GetAvatarFileQuery = {
+  // URL のパス (/files/avatars/:key) のまま
+  key: unknown;
+};
+export type AvatarFileView = {
+  body: ReadableStream;
+  // わからなければ null
+  contentType: string | null;
+  etag: string;
+};
 
 export type ChangeAvatarCmd = {
   userId: string;

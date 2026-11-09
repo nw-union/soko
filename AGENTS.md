@@ -12,11 +12,11 @@
 
 | ディレクトリ | 役割 |
 | :-- | :-- |
-| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。コンテキストのフォルダ直下に `api.ts`（入口の I/F。WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO）を置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/policy.ts`（ポリシー）と `server/container.ts` |
+| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。コンテキストのフォルダ直下に `api.ts`（入口の I/F。WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO）を置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/process/`（ポリシー）と `server/container.ts` |
 | `domain/shared/` | コンテキストをまたいで使うドメインの概念。`error.ts`（`AppError`。判別共用体で、エラーは例外ではなく `Result` で返す）・`vo.ts`・`port.ts`（`ClockPort`・`RandomPort`） |
 | `domain/rule/` | ブラウザからも import するルール（`youtube.ts`・`url.ts`）。各コンテキストの `rule.ts`（例: `domain/Member/profile/rule.ts`）と同じく、zod・VO・`shared/error.ts` を import しない（Biome で禁止している） |
 | `adapter/` | Port の実装（`drizzle/`・`r2/`・`webpush/`・`youtube/`・`system.ts`）。SQL はここにだけ書く |
-| `server/` | `container.ts`（Composition Root）・`http.ts`（AppError → HTTP）など、Web 層とドメインをつなぐもの |
+| `server/` | Web 層とドメインをつなぐもの。直下に `container.ts`（Composition Root）。`process/`（コンテキストをつなぐ流れ: `policy.ts`（ポリシー）・`sync.ts`・`notify.ts`）・`http/`（HTTP の都合: `error.ts`（AppError → HTTP）・`invite-cookie.ts`・`avatar-file.ts`）・`log/`（ロガー） |
 | `lib/` | どの層からも使う、アプリに依存しない汎用の関数（`base64url.ts`）。フレームワークやアプリの層を import しない（Biome で禁止している） |
 | `src/lib/` | ブラウザと UI のコードだけ |
 
@@ -41,7 +41,7 @@
 - 確認と書き込みを 1 文で行う必要がある操作（招待の発行と消費、通知済みにする、など）は、Port の 1 メソッドにして、その契約をコメントに書く
 - drizzle の `db.batch` は `db.run(sql)` を受け付けない。複数の文は 1 つずつ実行する
 - 日時は `ClockPort`、乱数は `RandomPort` から受け取る（ドメインで `new Date()`・`Math.random()` を直接使わない）
-- ログは `server/log.ts` の `log()`（`@nw-union/nw-utils` の `Logger`）から出す。`console.*` を直接使わない。出力先と最小レベルは環境変数 `LOG_ADAPTER`（json / console）と `LOG_LEVEL`。DB・ストレージ・外部サービスのエラーは `logAppError`（`server/logger.ts`）で残し、画面には出さない
+- ログは `server/log/log.ts` の `log()`（`@nw-union/nw-utils` の `Logger`）から出す。`console.*` を直接使わない。出力先と最小レベルは環境変数 `LOG_ADAPTER`（json / console）と `LOG_LEVEL`。DB・ストレージ・外部サービスのエラーは `logAppError`（`server/log/logger.ts`）で残し、画面には出さない
 - `@nw-union/nw-utils` のエラークラス（`AppError`・`ValidationError` など）はドメインのエラーには使わない。`domain/shared/error.ts` の判別共用体（`type`）で `ts-pattern` の `.exhaustive()` を使うため。nw-utils のエラーを使うのは、ロガーに渡すときの `SystemError` だけ
 
 ### テスト

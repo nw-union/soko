@@ -55,6 +55,7 @@ const newFakes = (
       removed.push(key);
       return okAsync(undefined);
     },
+    getAvatar: () => okAsync(null),
   };
   return {
     wf: newProfileWorkFlows(repo, storage, clock, random),
@@ -183,6 +184,7 @@ describe("changeAvatar", () => {
       {
         putAvatar: () => errAsync(newStorageError("boom")),
         deleteAvatar: () => okAsync(undefined),
+        getAvatar: () => okAsync(null),
       },
       clock,
       random,

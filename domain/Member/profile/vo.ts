@@ -21,6 +21,7 @@ export const newHexColor = newVo(hexColor, "HexColor");
  */
 const avatarKey = z.string().refine(isAvatarKey).brand("AvatarKey");
 export type AvatarKey = z.infer<typeof avatarKey>;
+export const newAvatarKey = newVo(avatarKey, "AvatarKey");
 
 /**
  * アイコン画像のキーを作る

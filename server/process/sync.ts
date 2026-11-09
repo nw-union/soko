@@ -1,10 +1,10 @@
 // 動画の同期の実行. cron (crons/sync-videos.ts・crons/sync-new-videos.ts) と, デバッグ画面 (routes/api/debug/) から呼ぶ.
 // 同期の結果をログに残し, 通知まで行う. 結果のイベントは呼び出し元に返す
 import { match } from "ts-pattern";
-import type { AllSyncedEvt, NewSyncedEvt } from "../domain/Content/api.ts";
-import { container } from "./container.ts";
-import { throwError } from "./http.ts";
-import { log } from "./log.ts";
+import type { AllSyncedEvt, NewSyncedEvt } from "../../domain/Content/api.ts";
+import { container } from "../container.ts";
+import { throwError } from "../http/error.ts";
+import { log } from "../log/log.ts";
 import { notifyNew } from "./notify.ts";
 import { onNewSynced } from "./policy.ts";
 

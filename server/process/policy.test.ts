@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { NewSyncedEvt } from "../domain/Content/api.ts";
+import type { NewSyncedEvt } from "../../domain/Content/api.ts";
 import { onNewSynced } from "./policy.ts";
 
 const run = async (evt: NewSyncedEvt) => {

@@ -1,7 +1,7 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../server/container.ts";
-import { errorResponse } from "../../server/http.ts";
+import { errorResponse } from "../../server/http/error.ts";
 
 // 新着動画のプッシュ通知の購読（端末ごと）。購読の作成はブラウザ（src/lib/push.ts）が行い、ここには結果を保存する
 

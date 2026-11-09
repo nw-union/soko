@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { newDatabaseError, newExternalError } from "../domain/shared/error.ts";
+import {
+  newDatabaseError,
+  newExternalError,
+} from "../../domain/shared/error.ts";
 import { logAppError, newLogger } from "./logger.ts";
 
 // console.log に出た行を集める

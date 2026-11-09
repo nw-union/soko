@@ -1,7 +1,7 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../server/container.ts";
-import { errorResponse } from "../../server/http.ts";
+import { errorResponse } from "../../server/http/error.ts";
 
 // アイコン画像をアップロードする（multipart の "file"）。ブラウザ（ProfileSheet.svelte）が切り抜き・縮小したものが届く
 export const POST = defineHandler(async (c) => {

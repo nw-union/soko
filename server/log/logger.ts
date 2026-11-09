@@ -1,9 +1,9 @@
 // ログ。@nw-union/nw-utils のロガー（Logger・newLogJson・newLogConsole）を使う。
-// 環境変数は読まない（読むのは server/log.ts）。auth.ts から辿られるので、相対 import には .ts を付けること
+// 環境変数は読まない（読むのは server/log/log.ts）。auth.ts から辿られるので、相対 import には .ts を付けること
 import { type Logger, type LogLevel, SystemError } from "@nw-union/nw-utils";
 import { newLogConsole } from "@nw-union/nw-utils/adapter/log-console";
 import { newLogJson } from "@nw-union/nw-utils/adapter/log-json";
-import type { AppError } from "../domain/shared/error.ts";
+import type { AppError } from "../../domain/shared/error.ts";
 
 const LEVELS: readonly LogLevel[] = ["debug", "info", "warn", "error"];
 

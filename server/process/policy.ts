@@ -1,7 +1,7 @@
 // ポリシー（イベストの紫の付箋）: イベントを受けて、次のコマンドを起動する。
 // ドメインのコンテキスト同士は互いを知らないので、イベントとコマンドのつなぎはここ（Web 層の手前）で行う。
 // 副作用（実際に通知を送る処理）は引数で受け取る。container に依存しないので、bun test で確かめられる
-import type { NewSyncedEvt } from "../domain/Content/api.ts";
+import type { NewSyncedEvt } from "../../domain/Content/api.ts";
 
 /**
  * 新規追加動画があった場合 → Push 通知する
