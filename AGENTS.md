@@ -33,8 +33,8 @@
 - `domain/` は `void/*`・`hono`・`better-auth`・`svelte`・`@schema` や外側の層を import しない（Biome で禁止している）
 - Port（`port.ts`）は `type.ts` のドメインの型を返す。`api.ts` の DTO を返さない（DTO への変換は `logic.ts` の `convTo…Dto` で行う）
 - Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は DB を直接触らない。必要なら WorkFlow か Query を足して `server/container.ts` から呼ぶ（Biome で禁止している）
-- `auth.ts` は Void の CLI（`void db generate` など）から Node で直接読み込まれる。そこから辿られる `domain/`・`schema/`・`adapter/`・`server/` では:
-  - 相対 import に必ず `.ts` を付ける（`lib/` も同じ）（拡張子なしは解決できない。Biome で強制している）
+- `auth.ts` は Void の CLI（`void db generate` など）から Node で直接読み込まれる。そこから辿られる `domain/`・`adapter/`・`server/`・`lib/` では:
+  - 相対 import に必ず `.ts` を付ける（拡張子なしは解決できない。Biome で強制している）
   - `@schema` などの Vite のエイリアスを使わない。`db/schema.ts` は相対パスで読む（Biome で禁止している）
   - 型だけの import は `import type` にし、enum など型を消すだけで動かない構文を使わない（`verbatimModuleSyntax`・`erasableSyntaxOnly`）
 - ブラウザからも使う定数や判定は、zod に依存しないファイル（例: `domain/Member/profile/rule.ts`）に置く。zod の VO を import すると、ツリーシェイキングで消えずにクライアントのバンドルに入る
