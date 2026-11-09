@@ -18,7 +18,7 @@
 | `adapter/` | Port の実装（`drizzle/`・`r2/`・`webpush/`・`youtube/`・`system.ts`）。SQL はここにだけ書く |
 | `server/` | Web 層とドメインをつなぐもの。直下に `container.ts`（Composition Root）。`process/`（コンテキストをつなぐ流れ: `policy.ts`（ポリシー）・`sync.ts`・`notify.ts`）・`http/`（HTTP の都合: `error.ts`（AppError → HTTP）・`invite-cookie.ts`・`avatar-file.ts`）・`log/`（ロガー） |
 | `lib/` | どの層からも使う、アプリに依存しない汎用の関数（`base64url.ts`）。フレームワークやアプリの層を import しない（Biome で禁止している） |
-| `src/lib/` | ブラウザと UI のコードだけ |
+| `src/lib/` | ブラウザと UI のコードだけ。`components/`（Svelte のコンポーネント）・`client/`（ブラウザで動く処理: `push.ts`・`pwa.ts`・`youtube-player.ts`・`thumbnail.ts` など）・`styles/`（共通の CSS） |
 
 ### WorkFlows と Queries
 

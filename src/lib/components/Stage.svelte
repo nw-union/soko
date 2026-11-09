@@ -1,12 +1,12 @@
 <script lang="ts">
 import { onMount, type Snippet } from "svelte";
-import "./glass.css";
-import sokoPng from "../assets/nwu-soko.png";
-import sokoWebp from "../assets/nwu-soko.webp";
-import sokoWidePng from "../assets/nwu-soko-wide.png";
-import sokoWideWebp from "../assets/nwu-soko-wide.webp";
+import "../styles/glass.css";
+import sokoPng from "../../assets/nwu-soko.png";
+import sokoWebp from "../../assets/nwu-soko.webp";
+import sokoWidePng from "../../assets/nwu-soko-wide.png";
+import sokoWideWebp from "../../assets/nwu-soko-wide.webp";
 // 18x24 の極小画像（約 1KB）。?inline で data URI として HTML に埋め込まれ、追加リクエストが要らない
-import placeholder from "../assets/nwu-soko-lqip.png?inline";
+import placeholder from "../../assets/nwu-soko-lqip.png?inline";
 
 let { children }: { children?: Snippet } = $props();
 let canvas: HTMLCanvasElement;

@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { Props } from "../../pages/index.server";
+import type { Props } from "../../../pages/index.server";
 import DurationLabel from "./DurationLabel.svelte";
 import NewLabel from "./NewLabel.svelte";
-import { swipeToClose } from "./swipe-to-close";
-import { splitLinks } from "./url";
-import { thumbnailFallback } from "./youtube";
+import { swipeToClose } from "../client/swipe-to-close";
+import { splitLinks } from "../client/link";
+import { thumbnailFallback } from "../client/thumbnail";
 
 // プレイリストの全動画を縦のリストで見せる、右から出る全画面のシート（iOS のナビゲーションの push と同じ動き）。
 // URL は変えず、トップページの上に重ねる。動画を押すと、再生画面がこの上に開き、閉じるとここへ戻る

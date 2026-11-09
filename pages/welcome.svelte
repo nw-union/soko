@@ -5,8 +5,8 @@ export const layout = false;
 
 <script lang="ts">
   import { useRouter, useShared } from "@void/svelte";
-  import Stage from "../src/lib/Stage.svelte";
-  import { authClient, isPasskeyCancelled } from "../src/lib/auth-client";
+  import Stage from "../src/lib/components/Stage.svelte";
+  import { authClient, isPasskeyCancelled } from "../src/lib/client/auth-client";
   import { GUEST_NAME, NAME_MAX } from "../domain/Member/profile/rule.ts";
 
   const router = useRouter();

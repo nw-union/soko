@@ -1,7 +1,7 @@
 <script lang="ts">
-import Stage from "../src/lib/Stage.svelte";
-import { registerServiceWorker } from "../src/lib/pwa";
-import { resyncPush, syncBadge } from "../src/lib/push";
+import Stage from "../src/lib/components/Stage.svelte";
+import { registerServiceWorker } from "../src/lib/client/pwa";
+import { resyncPush, syncBadge } from "../src/lib/client/push";
 import { onMount } from "svelte";
 import { useShared } from "@void/svelte";
 

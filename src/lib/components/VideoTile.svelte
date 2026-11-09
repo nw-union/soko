@@ -2,7 +2,7 @@
 import { onMount } from "svelte";
 import DurationLabel from "./DurationLabel.svelte";
 import NewLabel from "./NewLabel.svelte";
-import { thumbnailFallback, thumbnailTint } from "./youtube";
+import { thumbnailFallback, thumbnailTint } from "../client/thumbnail";
 // YouTube の動画のカード（ホームの横スライド用）。上にサムネイル、下にタイトル・タグ・動画時間（視聴済みなら ▶ の代わりに緑のチェック）。
 // 押すと onplay でアプリ内再生にする。修飾キー付きは onexternal を呼んで、そのまま YouTube へ（JS が動かない場合も YouTube へ）
 let {

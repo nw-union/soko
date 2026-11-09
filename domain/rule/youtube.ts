@@ -14,7 +14,7 @@ export const studioUrl = (id: string) =>
 export const shortUrl = (id: string) => `https://youtu.be/${id}`;
 
 // maxresdefault は黒帯のない 16:9（1280×720）。古い動画などでは存在せず 404 になるので、
-// そのときは src/lib/youtube.ts の thumbnailFallback が 4:3 の hqdefault に差し替える（16:9 の枠に cover で入れると黒帯が切れてちょうど収まる）
+// そのときは src/lib/client/thumbnail.ts の thumbnailFallback が 4:3 の hqdefault に差し替える（16:9 の枠に cover で入れると黒帯が切れてちょうど収まる）
 export const thumbnailUrl = (id: string) =>
   `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 
@@ -25,7 +25,7 @@ export const embedUrl = (id: string) =>
 
 // トップの大きな動画で、ミュートのまま繰り返し流すプレビュー用の埋め込み。
 // controls=0 で操作部を隠し、loop は playlist に同じ動画を指定しないと効かない。
-// enablejsapi=1 は、再生が始まったことを知るため（src/lib/youtube-player.ts）
+// enablejsapi=1 は、再生が始まったことを知るため（src/lib/client/youtube-player.ts）
 export const previewUrl = (id: string) =>
   `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&rel=0&modestbranding=1&disablekb=1&iv_load_policy=3&fs=0&enablejsapi=1`;
 

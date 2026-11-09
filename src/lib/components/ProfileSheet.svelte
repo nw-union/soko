@@ -2,19 +2,19 @@
 import { useShared } from "@void/svelte";
 import Avatar from "./Avatar.svelte";
 import ConfirmDialog from "./ConfirmDialog.svelte";
-import { authClient, isPasskeyCancelled } from "./auth-client";
+import { authClient, isPasskeyCancelled } from "../client/auth-client";
 import {
 	AVATAR_SIZE,
 	isHexColor,
 	NAME_MAX,
-} from "../../domain/Member/profile/rule.ts";
+} from "../../../domain/Member/profile/rule.ts";
 import {
 	disablePush,
 	enablePush,
 	type PushState,
 	pushState,
-} from "./push";
-import { swipeToClose } from "./swipe-to-close";
+} from "../client/push";
+import { swipeToClose } from "../client/swipe-to-close";
 
 // アプリのページはログイン必須（middleware/01.auth.ts）なので、user は必ずある
 const user = useShared().auth.user;
