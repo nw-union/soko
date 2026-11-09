@@ -1,7 +1,7 @@
 import { defineMiddleware } from "void";
 import { getUser } from "void/auth";
 import { container } from "../server/container.ts";
-import { throwError } from "../server/http.ts";
+import { throwError } from "../server/http/error.ts";
 
 declare module "void" {
   interface CloudContextVariables {

@@ -1,7 +1,7 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../server/container.ts";
-import { errorResponse } from "../../server/http.ts";
+import { errorResponse } from "../../server/http/error.ts";
 
 // 動画を見たことを記録する。再生が始まったとき・YouTube で開いたときに、ブラウザ（pages/index.svelte）が送る。
 // 登録済みの動画だけを受け付け、同じ動画を何度送っても 1 行のまま（最初に見た日時が残る）

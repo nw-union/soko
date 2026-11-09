@@ -3,22 +3,22 @@ import { useRouter, useShared } from "@void/svelte";
 import { onMount } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
 import type { Props } from "./index.server";
-import { syncBadge } from "../src/lib/push";
-import { splitLinks } from "../src/lib/url";
-import { previewUrl, shortUrl, studioUrl } from "../domain/youtube.ts";
-import { thumbnailFallback, thumbnailTintVar } from "../src/lib/youtube";
-import Avatar from "../src/lib/Avatar.svelte";
-import PlaylistSheet from "../src/lib/PlaylistSheet.svelte";
-import ProfileSheet from "../src/lib/ProfileSheet.svelte";
-import { swipeToClose } from "../src/lib/swipe-to-close";
-import DurationLabel from "../src/lib/DurationLabel.svelte";
-import NewLabel from "../src/lib/NewLabel.svelte";
-import VideoTile from "../src/lib/VideoTile.svelte";
+import { syncBadge } from "../src/lib/client/push";
+import { splitLinks } from "../src/lib/client/link";
+import { previewUrl, shortUrl, studioUrl } from "../domain/rule/youtube.ts";
+import { thumbnailFallback, thumbnailTintVar } from "../src/lib/client/thumbnail";
+import Avatar from "../src/lib/components/Avatar.svelte";
+import PlaylistSheet from "../src/lib/components/PlaylistSheet.svelte";
+import ProfileSheet from "../src/lib/components/ProfileSheet.svelte";
+import { swipeToClose } from "../src/lib/client/swipe-to-close";
+import DurationLabel from "../src/lib/components/DurationLabel.svelte";
+import NewLabel from "../src/lib/components/NewLabel.svelte";
+import VideoTile from "../src/lib/components/VideoTile.svelte";
 import {
 	isPlayingState,
 	type YouTubePlayer,
 	youtubePlayer,
-} from "../src/lib/youtube-player";
+} from "../src/lib/client/youtube-player";
 
 let { newVideos, randomVideos, playlists }: Props = $props();
 

@@ -25,7 +25,7 @@ export const videos = sqliteTable("videos", {
   publishedAt: text("published_at"),
   // 概要欄のハッシュタグ（# なし）の JSON 配列。絞り込みに使う。crons/sync-videos.ts が埋める
   tags: text("tags").notNull().default("[]"),
-  // 新着通知を送った（送らないと決めた）日時。空なら未通知。src/lib/push-notify.ts が埋める
+  // 新着通知を送った（送らないと決めた）日時。空なら未通知。通知の WorkFlow（notifyNew）が埋める
   notifiedAt: text("notified_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });

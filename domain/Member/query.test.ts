@@ -3,9 +3,14 @@ import { newMemberQueries } from "./query.ts";
 
 describe("newMemberQueries", () => {
   test("Invite と Profile の Query をまとめて返す", () => {
-    const qs = newMemberQueries({} as never, {} as never, {} as never);
+    const qs = newMemberQueries(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     expect(Object.keys(qs).sort()).toEqual(
-      ["getDisplayUser", "hasPasskey", "listInvites"].sort(),
+      ["getAvatarFile", "getDisplayUser", "hasPasskey", "listInvites"].sort(),
     );
   });
 });

@@ -4,9 +4,10 @@ import {
   newConflictError,
   newValidationErrorWithMessage,
   type ValidationError,
-} from "../../../error.ts";
-import type { UserId } from "../../vo.ts";
-import type { InviteUsage, NewInvite } from "./type.ts";
+} from "../../shared/error.ts";
+import type { UserId } from "../../shared/vo.ts";
+import type { InviteDto } from "../api.ts";
+import type { InviteUsage, IssuedInvite, NewInvite } from "./type.ts";
 import {
   type InviteId,
   type InviteToken,
@@ -121,3 +122,20 @@ export const validateInviteId = (
  */
 export const formatToken = (token: InviteToken): string =>
   token.match(/.{1,4}/g)?.join("-") ?? "";
+
+/**
+ * 発行済みの招待を, 画面に出す形にする
+ */
+export const convToInviteDto = ({
+  id,
+  createdAt,
+  expiresAt,
+  usedAt,
+  usedByName,
+}: IssuedInvite): InviteDto => ({
+  id,
+  createdAt,
+  expiresAt,
+  usedAt,
+  usedByName,
+});

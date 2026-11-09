@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { newVo } from "../../vo.ts";
+import * as v from "valibot";
+import { newVo } from "../../shared/vo.ts";
 
 /**
  * トークンに使う文字. 紛らわしい文字 (0 O 1 I L) を除いた 31 文字. 16 文字で約 80 ビット
@@ -12,11 +12,12 @@ export const TOKEN_LENGTH = 16;
  *
  * DB には保存しない. 発行した本人に 1 回だけ見せる
  */
-const inviteToken = z
-  .string()
-  .regex(new RegExp(`^[${TOKEN_ALPHABET}]{${TOKEN_LENGTH}}$`))
-  .brand("InviteToken");
-export type InviteToken = z.infer<typeof inviteToken>;
+const inviteToken = v.pipe(
+  v.string(),
+  v.regex(new RegExp(`^[${TOKEN_ALPHABET}]{${TOKEN_LENGTH}}$`)),
+  v.brand("InviteToken"),
+);
+export type InviteToken = v.InferOutput<typeof inviteToken>;
 export const newInviteToken = newVo(inviteToken, "InviteToken");
 
 /**
@@ -25,7 +26,8 @@ export const newInviteToken = newVo(inviteToken, "InviteToken");
  * @param bytes - 暗号論的に安全な乱数 (TOKEN_LENGTH バイト)
  */
 export const createInviteToken = (bytes: Uint8Array): InviteToken =>
-  inviteToken.parse(
+  v.parse(
+    inviteToken,
     // 256 % 31 の偏りは 16 文字・約 80 ビットでは無視できる
     Array.from(
       bytes.slice(0, TOKEN_LENGTH),
@@ -38,11 +40,12 @@ export const createInviteToken = (bytes: Uint8Array): InviteToken =>
  *
  * DB にはトークンそのものではなく, これだけを保存する (DB が見られても使えないように)
  */
-const tokenHash = z
-  .string()
-  .regex(/^[0-9a-f]{64}$/)
-  .brand("TokenHash");
-export type TokenHash = z.infer<typeof tokenHash>;
+const tokenHash = v.pipe(
+  v.string(),
+  v.regex(/^[0-9a-f]{64}$/),
+  v.brand("TokenHash"),
+);
+export type TokenHash = v.InferOutput<typeof tokenHash>;
 
 export const createTokenHash = async (
   token: InviteToken,
@@ -51,7 +54,8 @@ export const createTokenHash = async (
     "SHA-256",
     new TextEncoder().encode(token),
   );
-  return tokenHash.parse(
+  return v.parse(
+    tokenHash,
     [...new Uint8Array(digest)]
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join(""),
@@ -63,6 +67,13 @@ export const createTokenHash = async (
  *
  * クエリ文字列から来るので, 数値に変換してから整数か確かめる
  */
-const inviteId = z.coerce.number().int().brand("InviteId");
-export type InviteId = z.infer<typeof inviteId>;
+// クエリ文字列のまま受け取るので, 数値に変換してから確かめる
+const inviteId = v.pipe(
+  v.unknown(),
+  v.transform(Number),
+  v.number(),
+  v.safeInteger(),
+  v.brand("InviteId"),
+);
+export type InviteId = v.InferOutput<typeof inviteId>;
 export const newInviteId = newVo(inviteId, "InviteId");

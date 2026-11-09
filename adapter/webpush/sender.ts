@@ -2,9 +2,9 @@
 // WebCrypto だけで書く。暗号化は RFC 8291（aes128gcm）、送信者の認証は RFC 8292（VAPID）。
 // encrypt 以降は src/lib/web-push.ts から変えずに移したもの
 import { ResultAsync } from "neverthrow";
-import { base64urlToBytes, bytesToBase64url } from "../../domain/base64url.ts";
 import type { PushSenderPort } from "../../domain/Notification/port.ts";
 import type { VapidKeys } from "../../domain/Notification/type.ts";
+import { base64urlToBytes, bytesToBase64url } from "../../lib/base64url.ts";
 
 type PushSubscriptionKeys = {
   endpoint: string;

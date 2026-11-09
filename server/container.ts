@@ -34,6 +34,7 @@ export const container = () => {
   const contentRepository = newContentRepository(db);
   const inviteRepository = newInviteRepository(db);
   const profileRepository = newProfileRepository(db);
+  const avatarStorage = newAvatarStorage(storage);
   const vapid = vapidKeys();
   // コンテンツ集約の Read Model: ホーム・バッジの本数・プレイリストの一覧
   const contentQueries = newContentQueries(contentRepository, cryptoRandom);
@@ -49,13 +50,14 @@ export const container = () => {
     memberWorkFlows: newMemberWorkFlows(
       inviteRepository,
       profileRepository,
-      newAvatarStorage(storage),
+      avatarStorage,
       systemClock,
       cryptoRandom,
     ),
     memberQueries: newMemberQueries(
       inviteRepository,
       profileRepository,
+      avatarStorage,
       systemClock,
     ),
     // 通知集約

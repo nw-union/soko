@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { bytesToBase64url } from "../base64url.ts";
-import { mustUserId } from "../vo.test.ts";
+import { bytesToBase64url } from "../../lib/base64url.ts";
+import { mustUserId } from "../shared/vo.test.ts";
 import {
   buildPayload,
   classifySendResult,

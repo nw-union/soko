@@ -1,8 +1,8 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { MemberQueries } from "../../../schema/service.ts";
-import type { ClockPort } from "../../port.ts";
-import { newUserId } from "../../vo.ts";
-import { limitOf, remainingOf } from "./logic.ts";
+import type { ClockPort } from "../../shared/port.ts";
+import { newUserId } from "../../shared/vo.ts";
+import type { MemberQueries } from "../api.ts";
+import { convToInviteDto, limitOf, remainingOf } from "./logic.ts";
 import type { InviteRepositoryPort } from "./port.ts";
 
 /**
@@ -19,7 +19,7 @@ export const newInviteQueries = (
     okAsync(userId)
       // Step 1. バリデーション: string -> UserId
       .andThen((id) => newUserId(id))
-      // Step 2. 一覧と利用状況の取得: UserId -> [InviteDto[], InviteUsage]
+      // Step 2. 一覧と利用状況の取得: UserId -> [IssuedInvite[], InviteUsage]
       .andThen((inviter) =>
         ResultAsync.combine([
           r.listInvites(inviter),
@@ -30,6 +30,6 @@ export const newInviteQueries = (
       .map(([invites, usage]) => ({
         limit: limitOf(usage),
         remaining: remainingOf(usage),
-        invites,
+        invites: invites.map(convToInviteDto),
       })),
 });

@@ -1,22 +1,22 @@
 import { errAsync, okAsync, Result, ResultAsync } from "neverthrow";
-import { type AppError, newConflictError } from "../../error.ts";
+import { type AppError, newConflictError } from "../shared/error.ts";
+import { newUserId } from "../shared/vo.ts";
 import type {
   AllSyncedEvt,
   ContentWorkFlows,
   NewSyncedEvt,
   PlaylistSettingDto,
-} from "../../schema/service.ts";
-import { newUserId } from "../vo.ts";
+} from "./api.ts";
+import { convToPlaylistSettingDto } from "./logic/dto.ts";
+import { validateWatchedVideo } from "./logic/feed.ts";
 import {
   canRemoveOrphans,
-  convToPlaylistSettingDto,
   planFullLinks,
   planNewLinks,
   playlistsToRename,
-  toFetchedVideos,
   unknownVideoIds,
-  validateWatchedVideo,
-} from "./logic.ts";
+} from "./logic/sync.ts";
+import { toFetchedVideos } from "./logic/youtube.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type { Playlist } from "./type.ts";
 import { newPlaylistId, newPlaylistRowId } from "./vo.ts";

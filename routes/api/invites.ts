@@ -1,7 +1,7 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../server/container.ts";
-import { errorResponse } from "../../server/http.ts";
+import { errorResponse } from "../../server/http/error.ts";
 
 // 自分が発行した招待の一覧と、あと何回発行できるか
 export const GET = defineHandler(async (c) => {

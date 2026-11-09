@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { errAsync, okAsync } from "neverthrow";
-import { newDatabaseError } from "../../error.ts";
-import { bytesToBase64url } from "../base64url.ts";
-import type { ClockPort } from "../port.ts";
+import { bytesToBase64url } from "../../lib/base64url.ts";
+import { newDatabaseError } from "../shared/error.ts";
+import type { ClockPort } from "../shared/port.ts";
 import type {
   BadgeCounterPort,
   PushRepositoryPort,

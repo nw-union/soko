@@ -1,7 +1,7 @@
 import type { ResultAsync } from "neverthrow";
-import type { AppError } from "../../../error.ts";
-import type { UserId } from "../../vo.ts";
-import type { ImageFile } from "./type.ts";
+import type { AppError } from "../../shared/error.ts";
+import type { UserId } from "../../shared/vo.ts";
+import type { AvatarFile, ImageFile } from "./type.ts";
 import type { AvatarKey } from "./vo.ts";
 
 /**
@@ -32,4 +32,6 @@ export interface ProfileRepositoryPort {
 export interface AvatarStoragePort {
   putAvatar(key: AvatarKey, file: ImageFile): ResultAsync<void, AppError>;
   deleteAvatar(key: AvatarKey): ResultAsync<void, AppError>;
+  // 保存されている画像. なければ null
+  getAvatar(key: AvatarKey): ResultAsync<AvatarFile | null, AppError>;
 }

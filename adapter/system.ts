@@ -1,5 +1,5 @@
 // 実行環境 (Workers) の時計と乱数
-import type { ClockPort, RandomPort } from "../domain/port.ts";
+import type { ClockPort, RandomPort } from "../domain/shared/port.ts";
 
 export const systemClock: ClockPort = {
   now: () => new Date(),

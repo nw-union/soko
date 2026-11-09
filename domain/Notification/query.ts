@@ -1,5 +1,5 @@
 import { okAsync } from "neverthrow";
-import type { NotificationQueries } from "../../schema/service.ts";
+import type { NotificationQueries } from "./api.ts";
 import type { VapidKeys } from "./type.ts";
 
 /**

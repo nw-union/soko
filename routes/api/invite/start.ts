@@ -1,11 +1,11 @@
 import { setCookie } from "hono/cookie";
 import { defineHandler } from "void";
 import { container } from "../../../server/container.ts";
-import { errorResponse } from "../../../server/http.ts";
+import { errorResponse } from "../../../server/http/error.ts";
 import {
   INVITE_COOKIE,
   INVITE_COOKIE_MAX_AGE,
-} from "../../../server/invite-cookie.ts";
+} from "../../../server/http/invite-cookie.ts";
 
 // 登録の入口。招待トークンが使えるか確かめて、使えるなら短命の Cookie に入れる。
 // この後の sign-up でユーザーが作られるときに、auth.ts がこの Cookie の招待を使用済みにする

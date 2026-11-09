@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { errAsync, okAsync } from "neverthrow";
-import { newDatabaseError } from "../../error.ts";
+import { newDatabaseError } from "../shared/error.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type {
   FetchedVideo,

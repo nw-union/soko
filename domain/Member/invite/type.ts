@@ -1,4 +1,4 @@
-import type { UserId } from "../../vo.ts";
+import type { UserId } from "../../shared/vo.ts";
 import type { InviteToken, TokenHash } from "./vo.ts";
 
 /**
@@ -12,6 +12,23 @@ export interface NewInvite {
   readonly tokenHash: TokenHash;
   readonly inviterUserId: UserId;
   readonly expiresAt: Date;
+}
+
+/**
+ * 発行済みの招待 (一覧に出すもの)
+ *
+ * 日時は SQLite の "YYYY-MM-DD HH:MM:SS" (UTC) のまま持つ
+ */
+export interface IssuedInvite {
+  readonly type: "IssuedInvite";
+  readonly id: number;
+  readonly createdAt: string;
+  // 空なら無期限
+  readonly expiresAt: string | null;
+  // 空なら未使用
+  readonly usedAt: string | null;
+  // 使ったユーザーの名前. 未使用やユーザー削除済みなら空
+  readonly usedByName: string | null;
 }
 
 /**

@@ -8,20 +8,21 @@
 
 ## アーキテクチャ（Functional DDD）
 
-ビジネスロジックは `domain/` に閉じ込める。依存の向きは `pages/ routes/ middleware/ crons/ auth.ts → server/ → domain/ ← adapter/`。
+ビジネスロジックは `domain/` に閉じ込める。依存の向きは `pages/ routes/ middleware/ crons/ auth.ts → server/ → domain/ ← adapter/`。コンテキストの入口の I/F は `api.ts`、出口の I/F（副作用）は `port.ts`。
 
 | ディレクトリ | 役割 |
 | :-- | :-- |
-| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/policy.ts`（ポリシー）と `server/container.ts` |
-| `domain/*.ts` | コンテキストをまたいで使うもの（`vo.ts`・`port.ts`、ブラウザからも使う `youtube.ts`・`url.ts`・`base64url.ts`） |
-| `schema/service.ts` | 集約ごとの WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO。Web 層はここに定義した WorkFlows と Queries だけを呼ぶ |
-| `error.ts` | `AppError`（判別共用体）。エラーは例外ではなく `Result` で返す |
+| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。コンテキストのフォルダ直下に `api.ts`（入口の I/F。WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO）を置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数。大きくなったら `logic/` フォルダに中身ごとに分ける。例: `domain/Content/logic/` の `feed.ts`・`sync.ts`・`youtube.ts`・`dto.ts`）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/process/`（ポリシー）と `server/container.ts` |
+| `domain/shared/` | コンテキストをまたいで使うドメインの概念。`error.ts`（`AppError`。判別共用体で、エラーは例外ではなく `Result` で返す）・`vo.ts`・`port.ts`（`ClockPort`・`RandomPort`） |
+| `domain/rule/` | ブラウザからも import するルール（`youtube.ts`・`url.ts`）。各コンテキストの `rule.ts`（例: `domain/Member/profile/rule.ts`）と同じく、valibot・VO・`shared/error.ts` を import しない（Biome で禁止している） |
 | `adapter/` | Port の実装（`drizzle/`・`r2/`・`webpush/`・`youtube/`・`system.ts`）。SQL はここにだけ書く |
-| `server/` | `container.ts`（Composition Root）・`http.ts`（AppError → HTTP）など、Web 層とドメインをつなぐもの |
-| `src/lib/` | ブラウザと UI のコードだけ |
+| `server/` | Web 層とドメインをつなぐもの。直下に `container.ts`（Composition Root）。`process/`（コンテキストをつなぐ流れ: `policy.ts`（ポリシー）・`sync.ts`・`notify.ts`）・`http/`（HTTP の都合: `error.ts`（AppError → HTTP）・`invite-cookie.ts`・`avatar-file.ts`）・`log/`（ロガー） |
+| `lib/` | どの層からも使う、アプリに依存しない汎用の関数（`base64url.ts`）。フレームワークやアプリの層を import しない（Biome で禁止している） |
+| `src/lib/` | ブラウザと UI のコードだけ。`components/`（Svelte のコンポーネント）・`client/`（ブラウザで動く処理: `push.ts`・`pwa.ts`・`youtube-player.ts`・`thumbnail.ts` など）・`styles/`（共通の CSS） |
 
 ### WorkFlows と Queries
 
+- Web 層は `domain/<Context>/api.ts` の型と、`server/container.ts` が返す WorkFlows・Queries だけを使う
 - 状態を変えるもの（イベストの「〜する」）は WorkFlows（`workflow.ts`）、読むだけのもの（Read Model）は Queries（`query.ts`）に置く
 - better-auth の手前のチェック（`validateProfileUpdate`・`validateSignUp`・`checkPasskeyDeletion`）と、登録の入口のチェック（`startInvite`）は、書き込み（登録・更新・削除）の前提を確かめるコマンドの一部なので WorkFlows に置く
 - 名前: コマンドの入力は `…Cmd`、結果は `…Evt`（起きたこと）。Query の入力は `…Query`、戻り値は `…View`（画面 1 つ分などのまとまり）か `…Dto`（その中の 1 件）
@@ -30,17 +31,19 @@
 ### 守ること
 
 - `domain/` は `void/*`・`hono`・`better-auth`・`svelte`・`@schema` や外側の層を import しない（Biome で禁止している）
+- Port（`port.ts`）は `type.ts` のドメインの型を返す。`api.ts` の DTO を返さない（DTO への変換は `logic.ts`（`logic/` に分けたら `logic/dto.ts`）の `convTo…Dto` で行う）
 - Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は DB を直接触らない。必要なら WorkFlow か Query を足して `server/container.ts` から呼ぶ（Biome で禁止している）
-- `auth.ts` は Void の CLI（`void db generate` など）から Node で直接読み込まれる。そこから辿られる `domain/`・`schema/`・`adapter/`・`server/` では:
+- `auth.ts` は Void の CLI（`void db generate` など）から Node で直接読み込まれる。そこから辿られる `domain/`・`adapter/`・`server/`・`lib/` では:
   - 相対 import に必ず `.ts` を付ける（拡張子なしは解決できない。Biome で強制している）
   - `@schema` などの Vite のエイリアスを使わない。`db/schema.ts` は相対パスで読む（Biome で禁止している）
   - 型だけの import は `import type` にし、enum など型を消すだけで動かない構文を使わない（`verbatimModuleSyntax`・`erasableSyntaxOnly`）
-- ブラウザからも使う定数や判定は、zod に依存しないファイル（例: `domain/Member/profile/rule.ts`）に置く。zod の VO を import すると、ツリーシェイキングで消えずにクライアントのバンドルに入る
+- 入力の検証（VO のスキーマ）は valibot で書き、`domain/shared/vo.ts` の `newVo`・`newVoOrNone` で VO を作る関数にする（`@nw-union/nw-utils/lib/valibot` の `newType` は nw-utils のエラーを返すので使わない）。文字数の上限は、ユーザーが入力するものはコードポイントで数える（`v.maxLength` は UTF-16 の長さで数える）
+- ブラウザからも使う定数や判定は、valibot に依存しないファイル（例: `domain/Member/profile/rule.ts`）に置く。VO を import すると、スキーマや `neverthrow` などがクライアントのバンドルに入る
 - 確認と書き込みを 1 文で行う必要がある操作（招待の発行と消費、通知済みにする、など）は、Port の 1 メソッドにして、その契約をコメントに書く
 - drizzle の `db.batch` は `db.run(sql)` を受け付けない。複数の文は 1 つずつ実行する
 - 日時は `ClockPort`、乱数は `RandomPort` から受け取る（ドメインで `new Date()`・`Math.random()` を直接使わない）
-- ログは `server/log.ts` の `log()`（`@nw-union/nw-utils` の `Logger`）から出す。`console.*` を直接使わない。出力先と最小レベルは環境変数 `LOG_ADAPTER`（json / console）と `LOG_LEVEL`。DB・ストレージ・外部サービスのエラーは `logAppError`（`server/logger.ts`）で残し、画面には出さない
-- `@nw-union/nw-utils` のエラークラス（`AppError`・`ValidationError` など）はドメインのエラーには使わない。`error.ts` の判別共用体（`type`）で `ts-pattern` の `.exhaustive()` を使うため。nw-utils のエラーを使うのは、ロガーに渡すときの `SystemError` だけ
+- ログは `server/log/log.ts` の `log()`（`@nw-union/nw-utils` の `Logger`）から出す。`console.*` を直接使わない。出力先と最小レベルは環境変数 `LOG_ADAPTER`（json / console）と `LOG_LEVEL`。DB・ストレージ・外部サービスのエラーは `logAppError`（`server/log/logger.ts`）で残し、画面には出さない
+- `@nw-union/nw-utils` のエラークラス（`AppError`・`ValidationError` など）はドメインのエラーには使わない。`domain/shared/error.ts` の判別共用体（`type`）で `ts-pattern` の `.exhaustive()` を使うため。nw-utils のエラーを使うのは、ロガーに渡すときの `SystemError` だけ
 
 ### テスト
 

@@ -1,7 +1,7 @@
 import { defineHandler, defineHead, type InferProps } from "void";
 import { getUser } from "void/auth";
 import { container } from "../server/container.ts";
-import { throwError } from "../server/http.ts";
+import { throwError } from "../server/http/error.ts";
 
 export type Props = InferProps<typeof loader>;
 
