@@ -5,20 +5,20 @@
 // domain/ は auth.ts から import されるので、その先もすべて拡張子付きにする必要がある
 import { err, ok, type Result } from "neverthrow";
 import { match } from "ts-pattern";
-import { z } from "zod";
+import * as v from "valibot";
 import { isYoutubeId } from "../rule/youtube.ts";
 import { newValidationError, type ValidationError } from "./error.ts";
 
 /**
  * newVo は, Value Object を生成する関数を作るためのヘルパー関数
  *
- * @param schema zod のスキーマ (`.brand()` を付けたもの)
+ * @param schema valibot のスキーマ (`v.brand()` を付けたもの)
  * @param type VO の型名. エラーのフィールド名の既定値になる
  *
  * @example
  * ```typescript
- * const youtubeId = z.string().regex(/^[\w-]{11}$/).brand("YoutubeId");
- * export type YoutubeId = z.infer<typeof youtubeId>;
+ * const youtubeId = v.pipe(v.string(), v.regex(/^[\w-]{11}$/), v.brand("YoutubeId"));
+ * export type YoutubeId = v.InferOutput<typeof youtubeId>;
  * export const newYoutubeId = newVo(youtubeId, "YoutubeId");
  *
  * newYoutubeId(str); // VO の生成
@@ -26,12 +26,12 @@ import { newValidationError, type ValidationError } from "./error.ts";
  * ```
  */
 export const newVo =
-  <T extends z.ZodType>(schema: T, type: string) =>
-  (src: unknown, name?: string): Result<z.infer<T>, ValidationError> =>
-    match(schema.safeParse(src))
-      .with({ success: true }, ({ data }) => ok(data))
-      .with({ success: false }, ({ error }) =>
-        err(newValidationError(name || type, error)),
+  <T extends v.GenericSchema>(schema: T, type: string) =>
+  (src: unknown, name?: string): Result<v.InferOutput<T>, ValidationError> =>
+    match(v.safeParse(schema, src))
+      .with({ success: true }, ({ output }) => ok(output))
+      .with({ success: false }, ({ issues }) =>
+        err(newValidationError(name || type, issues)),
       )
       .exhaustive();
 
@@ -40,12 +40,15 @@ export const newVo =
  *
  * 入力が null / undefined / 空文字のときは null. それ以外は `newVo` と同じ
  *
- * @param schema zod のスキーマ (`.brand()` を付けたもの)
+ * @param schema valibot のスキーマ (`v.brand()` を付けたもの)
  * @param type VO の型名
  */
 export const newVoOrNone =
-  <T extends z.ZodType>(schema: T, type: string) =>
-  (src: unknown, name?: string): Result<z.infer<T> | null, ValidationError> =>
+  <T extends v.GenericSchema>(schema: T, type: string) =>
+  (
+    src: unknown,
+    name?: string,
+  ): Result<v.InferOutput<T> | null, ValidationError> =>
     src === null || src === undefined || src === ""
       ? ok(null)
       : newVo(schema, type)(src, name);
@@ -57,8 +60,8 @@ export const newVoOrNone =
  *
  * 形式は better-auth が決めるので, 空でない文字列であることだけを確かめる
  */
-const userId = z.string().min(1).brand("UserId");
-export type UserId = z.infer<typeof userId>;
+const userId = v.pipe(v.string(), v.minLength(1), v.brand("UserId"));
+export type UserId = v.InferOutput<typeof userId>;
 export const newUserId = newVo(userId, "UserId");
 
 /**
@@ -66,6 +69,10 @@ export const newUserId = newVo(userId, "UserId");
  *
  * href / src に埋め込むので, 必ずこの検証を通してから使う
  */
-const youtubeId = z.string().refine(isYoutubeId).brand("YoutubeId");
-export type YoutubeId = z.infer<typeof youtubeId>;
+const youtubeId = v.pipe(
+  v.string(),
+  v.check(isYoutubeId),
+  v.brand("YoutubeId"),
+);
+export type YoutubeId = v.InferOutput<typeof youtubeId>;
 export const newYoutubeId = newVo(youtubeId, "YoutubeId");

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import { newVo } from "../shared/vo.ts";
 
 // 送れる先は, ブラウザのプッシュサービスだけにする. 購読はユーザーが送ってくるので,
@@ -29,24 +29,35 @@ const BASE64URL = /^[A-Za-z0-9_-]+$/;
 /**
  * PushEndpoint 購読の送り先 (プッシュサービスの URL)
  */
-const pushEndpoint = z
-  .string()
-  .max(1024)
-  .refine(isPushEndpoint)
-  .brand("PushEndpoint");
-export type PushEndpoint = z.infer<typeof pushEndpoint>;
+const pushEndpoint = v.pipe(
+  v.string(),
+  v.maxLength(1024),
+  v.check(isPushEndpoint),
+  v.brand("PushEndpoint"),
+);
+export type PushEndpoint = v.InferOutput<typeof pushEndpoint>;
 export const newPushEndpoint = newVo(pushEndpoint, "PushEndpoint");
 
 /**
  * PushP256dh 端末の公開鍵 (base64url). 形の確認だけで, 曲線上の点かは logic.ts の validateSubscription で確かめる
  */
-const pushP256dh = z.string().max(200).regex(BASE64URL).brand("PushP256dh");
-export type PushP256dh = z.infer<typeof pushP256dh>;
+const pushP256dh = v.pipe(
+  v.string(),
+  v.maxLength(200),
+  v.regex(BASE64URL),
+  v.brand("PushP256dh"),
+);
+export type PushP256dh = v.InferOutput<typeof pushP256dh>;
 export const newPushP256dh = newVo(pushP256dh, "PushP256dh");
 
 /**
  * PushAuth 端末の認証用の乱数 (base64url)
  */
-const pushAuth = z.string().max(100).regex(BASE64URL).brand("PushAuth");
-export type PushAuth = z.infer<typeof pushAuth>;
+const pushAuth = v.pipe(
+  v.string(),
+  v.maxLength(100),
+  v.regex(BASE64URL),
+  v.brand("PushAuth"),
+);
+export type PushAuth = v.InferOutput<typeof pushAuth>;
 export const newPushAuth = newVo(pushAuth, "PushAuth");

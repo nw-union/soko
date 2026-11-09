@@ -143,7 +143,7 @@
     },
     {
       // ブラウザからも import するルール（domain/rule/ と各コンテキストの rule.ts）。
-      // zod や VO を import すると、ツリーシェイキングで消えずにクライアントのバンドルに入るので禁止する
+      // valibot（VO のスキーマ）や VO・エラーを import すると、クライアントのバンドルに入るので禁止する
       "includes": ["domain/rule/**", "domain/**/rule.ts"],
       "linter": {
         "rules": {
@@ -184,12 +184,12 @@
                   },
                   {
                     "group": [
-                      "zod",
-                      "zod/**",
+                      "valibot",
+                      "valibot/**",
                       "**/vo.ts",
                       "**/shared/error.ts"
                     ],
-                    "message": "ブラウザからも使うファイルでは zod（VO・エラー）を import しない。クライアントのバンドルに入る"
+                    "message": "ブラウザからも使うファイルでは valibot・VO・エラーを import しない。クライアントのバンドルに入る"
                   }
                 ]
               }

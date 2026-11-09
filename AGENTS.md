@@ -14,7 +14,7 @@
 | :-- | :-- |
 | `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。コンテキストのフォルダ直下に `api.ts`（入口の I/F。WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO）を置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数。大きくなったら `logic/` フォルダに中身ごとに分ける。例: `domain/Content/logic/` の `feed.ts`・`sync.ts`・`youtube.ts`・`dto.ts`）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/process/`（ポリシー）と `server/container.ts` |
 | `domain/shared/` | コンテキストをまたいで使うドメインの概念。`error.ts`（`AppError`。判別共用体で、エラーは例外ではなく `Result` で返す）・`vo.ts`・`port.ts`（`ClockPort`・`RandomPort`） |
-| `domain/rule/` | ブラウザからも import するルール（`youtube.ts`・`url.ts`）。各コンテキストの `rule.ts`（例: `domain/Member/profile/rule.ts`）と同じく、zod・VO・`shared/error.ts` を import しない（Biome で禁止している） |
+| `domain/rule/` | ブラウザからも import するルール（`youtube.ts`・`url.ts`）。各コンテキストの `rule.ts`（例: `domain/Member/profile/rule.ts`）と同じく、valibot・VO・`shared/error.ts` を import しない（Biome で禁止している） |
 | `adapter/` | Port の実装（`drizzle/`・`r2/`・`webpush/`・`youtube/`・`system.ts`）。SQL はここにだけ書く |
 | `server/` | Web 層とドメインをつなぐもの。直下に `container.ts`（Composition Root）。`process/`（コンテキストをつなぐ流れ: `policy.ts`（ポリシー）・`sync.ts`・`notify.ts`）・`http/`（HTTP の都合: `error.ts`（AppError → HTTP）・`invite-cookie.ts`・`avatar-file.ts`）・`log/`（ロガー） |
 | `lib/` | どの層からも使う、アプリに依存しない汎用の関数（`base64url.ts`）。フレームワークやアプリの層を import しない（Biome で禁止している） |
@@ -37,7 +37,8 @@
   - 相対 import に必ず `.ts` を付ける（拡張子なしは解決できない。Biome で強制している）
   - `@schema` などの Vite のエイリアスを使わない。`db/schema.ts` は相対パスで読む（Biome で禁止している）
   - 型だけの import は `import type` にし、enum など型を消すだけで動かない構文を使わない（`verbatimModuleSyntax`・`erasableSyntaxOnly`）
-- ブラウザからも使う定数や判定は、zod に依存しないファイル（例: `domain/Member/profile/rule.ts`）に置く。zod の VO を import すると、ツリーシェイキングで消えずにクライアントのバンドルに入る
+- 入力の検証（VO のスキーマ）は valibot で書き、`domain/shared/vo.ts` の `newVo`・`newVoOrNone` で VO を作る関数にする（`@nw-union/nw-utils/lib/valibot` の `newType` は nw-utils のエラーを返すので使わない）。文字数の上限は、ユーザーが入力するものはコードポイントで数える（`v.maxLength` は UTF-16 の長さで数える）
+- ブラウザからも使う定数や判定は、valibot に依存しないファイル（例: `domain/Member/profile/rule.ts`）に置く。VO を import すると、スキーマや `neverthrow` などがクライアントのバンドルに入る
 - 確認と書き込みを 1 文で行う必要がある操作（招待の発行と消費、通知済みにする、など）は、Port の 1 メソッドにして、その契約をコメントに書く
 - drizzle の `db.batch` は `db.run(sql)` を受け付けない。複数の文は 1 つずつ実行する
 - 日時は `ClockPort`、乱数は `RandomPort` から受け取る（ドメインで `new Date()`・`Math.random()` を直接使わない）

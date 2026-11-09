@@ -1,5 +1,3 @@
-import type { ZodError } from "zod";
-
 /**
  * アプリケーションエラー
  *
@@ -85,13 +83,16 @@ export interface ExternalError {
 // ----------------------------------------------------------------------------
 // Constructor
 // ----------------------------------------------------------------------------
+/**
+ * スキーマの検証 (valibot の safeParse など) の結果の issues から作る
+ */
 export const newValidationError = (
   name: string,
-  e: ZodError,
+  issues: readonly { readonly message: string }[],
 ): ValidationError => ({
   type: "ValidationError",
   message: `${name} is invalid`,
-  issues: { [name]: e.issues.map((issue) => issue.message) },
+  issues: { [name]: issues.map((issue) => issue.message) },
 });
 
 export const newValidationErrorWithMessage = (
