@@ -12,7 +12,7 @@
 
 | ディレクトリ | 役割 |
 | :-- | :-- |
-| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。コンテキストのフォルダ直下に `api.ts`（入口の I/F。WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO）を置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/process/`（ポリシー）と `server/container.ts` |
+| `domain/<Context>/` | コンテキスト（イベストの集約）ごとのドメイン。コンテキストは Content・Member・Notification の 3 つ。Content と Notification はフォルダの直下に置く。Member は `invite/`（招待）と `profile/`（プロフィール・ログイン）にサブフォルダで分け、`workflow.ts`・`query.ts` でそれぞれの WorkFlows・Queries を 1 つにまとめる。コンテキストのフォルダ直下に `api.ts`（入口の I/F。WorkFlows（コマンド）と Queries（Read Model）の I/F と、Cmd / Evt / Query / View / DTO）を置く。各フォルダに、`vo.ts`（Value Object）・`type.ts`（型）・`logic.ts`（純粋な関数。大きくなったら `logic/` フォルダに中身ごとに分ける。例: `domain/Content/logic/` の `feed.ts`・`sync.ts`・`youtube.ts`・`dto.ts`）・`port.ts`（副作用のインターフェース）・`workflow.ts`（コマンド。`okAsync(...).andThen(...)` でつなぐユースケース）・`query.ts`（Read Model。状態を変えずに読むだけ）を置く。コンテキスト同士は互いを知らず、つなぐのは `server/process/`（ポリシー）と `server/container.ts` |
 | `domain/shared/` | コンテキストをまたいで使うドメインの概念。`error.ts`（`AppError`。判別共用体で、エラーは例外ではなく `Result` で返す）・`vo.ts`・`port.ts`（`ClockPort`・`RandomPort`） |
 | `domain/rule/` | ブラウザからも import するルール（`youtube.ts`・`url.ts`）。各コンテキストの `rule.ts`（例: `domain/Member/profile/rule.ts`）と同じく、zod・VO・`shared/error.ts` を import しない（Biome で禁止している） |
 | `adapter/` | Port の実装（`drizzle/`・`r2/`・`webpush/`・`youtube/`・`system.ts`）。SQL はここにだけ書く |
@@ -31,7 +31,7 @@
 ### 守ること
 
 - `domain/` は `void/*`・`hono`・`better-auth`・`svelte`・`@schema` や外側の層を import しない（Biome で禁止している）
-- Port（`port.ts`）は `type.ts` のドメインの型を返す。`api.ts` の DTO を返さない（DTO への変換は `logic.ts` の `convTo…Dto` で行う）
+- Port（`port.ts`）は `type.ts` のドメインの型を返す。`api.ts` の DTO を返さない（DTO への変換は `logic.ts`（`logic/` に分けたら `logic/dto.ts`）の `convTo…Dto` で行う）
 - Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は DB を直接触らない。必要なら WorkFlow か Query を足して `server/container.ts` から呼ぶ（Biome で禁止している）
 - `auth.ts` は Void の CLI（`void db generate` など）から Node で直接読み込まれる。そこから辿られる `domain/`・`adapter/`・`server/`・`lib/` では:
   - 相対 import に必ず `.ts` を付ける（拡張子なしは解決できない。Biome で強制している）

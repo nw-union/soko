@@ -7,16 +7,16 @@ import type {
   NewSyncedEvt,
   PlaylistSettingDto,
 } from "./api.ts";
+import { convToPlaylistSettingDto } from "./logic/dto.ts";
+import { validateWatchedVideo } from "./logic/feed.ts";
 import {
   canRemoveOrphans,
-  convToPlaylistSettingDto,
   planFullLinks,
   planNewLinks,
   playlistsToRename,
-  toFetchedVideos,
   unknownVideoIds,
-  validateWatchedVideo,
-} from "./logic.ts";
+} from "./logic/sync.ts";
+import { toFetchedVideos } from "./logic/youtube.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type { Playlist } from "./type.ts";
 import { newPlaylistId, newPlaylistRowId } from "./vo.ts";
