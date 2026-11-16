@@ -13,7 +13,7 @@ export type SyncSkipped =
 // Commands
 // ----------------------------------------------------------------------------
 /**
- * SyancAll 全件同期する
+ * SyncAll 全件同期する
  *
  * playlists に登録されたプレイリストの全動画を取り直して
  * videos に反映し (タイトル・概要欄などの変更も直す), 紐付けを作り直す.
@@ -23,9 +23,24 @@ export type SyncSkipped =
  * 先に YouTube からすべて取得し, 1 つでも失敗したら DB は何も変えない
  * (DB への書き込みが始まった後の失敗では, 一部だけ反映されることがある. 次回の同期で直る)
  */
-type SyncAll = () => ResultAsync<CreateEvt, AppError>;
+type SyncAll = () => ResultAsync<AllSyncedEvt, AppError>;
 
-export type AllSyncedEvt = SyncSkipped | { type: "Synced" };
+export type AllSyncedEvt =
+  | SyncSkipped
+  | {
+      type: "Synced";
+      // 表示対象として取得できた動画の数
+      videos: number;
+      playlists: number;
+      // 結んだ紐付けの数
+      links: number;
+      // 消した動画の数
+      removed: number;
+      // 取得できた動画が 0 件だったので, 動画を消さなかった
+      removalSkipped: boolean;
+      // 名前・説明を更新したプレイリストの数
+      renamed: number;
+    };
 
 /**
  * SyncNew 差分同期する
@@ -35,7 +50,15 @@ export type AllSyncedEvt = SyncSkipped | { type: "Synced" };
  */
 type SyncNew = () => ResultAsync<NewSyncedEvt, AppError>;
 
-export type NewSyncedEvt = SyncSkipped | { type: "Synced" };
+export type NewSyncedEvt =
+  | SyncSkipped
+  | {
+      type: "Synced";
+      // 足した動画の数 (1 本以上なら, ポリシーが新着を通知する)
+      added: number;
+      // 足した紐付けの数
+      links: number;
+    };
 
 /**
  * CreatePlaylist プレイリスト追加する

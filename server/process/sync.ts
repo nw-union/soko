@@ -11,7 +11,7 @@ import { onNewSynced } from "./policy.ts";
 /** 全件の同期. 同期できたら新着を通知する */
 export const runSyncAll = async (): Promise<AllSyncedEvt> => {
   const evt = await container()
-    .contentWorkFlows.syncAll()
+    .contentUsecase.syncAll()
     .match((e) => e, throwError);
   const done = match(evt)
     .with({ type: "NoApiKey" }, () => {
@@ -44,7 +44,7 @@ export const runSyncAll = async (): Promise<AllSyncedEvt> => {
 /** 差分の同期. 動画が増えたら, ポリシーが新着を通知する */
 export const runSyncNew = async (): Promise<NewSyncedEvt> => {
   const evt = await container()
-    .contentWorkFlows.syncNew()
+    .contentUsecase.syncNew()
     .match((e) => e, throwError);
   // 未設定・未登録の警告は、全件の同期が出す
   if (evt.type !== "Synced") return evt;

@@ -11,7 +11,7 @@ export const POST = defineHandler(async (c) => {
     youtubeId?: unknown;
   } | null;
   return container()
-    .contentWorkFlows.watch({
+    .contentUsecase.watch({
       userId: user.id,
       youtubeId: body?.youtubeId,
     })
@@ -25,7 +25,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .contentWorkFlows.unwatch({
+    .contentUsecase.unwatch({
       userId: user.id,
       youtubeId: c.req.query("youtubeId"),
     })

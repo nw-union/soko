@@ -7,7 +7,7 @@ import { errorResponse } from "../../../../server/http/error.ts";
 export const DELETE = defineHandler(async (c) => {
   requireAuth(c);
   return container()
-    .contentWorkFlows.deletePlaylist({ id: Number(c.req.param("id")) })
+    .contentUsecase.deletePlaylist({ id: c.req.param("id") ?? "" })
     .match(
       () => null,
       (e) => errorResponse(c, e),

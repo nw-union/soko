@@ -1,7 +1,7 @@
 import { okAsync, Result, ResultAsync } from "neverthrow";
 import type { RandomPort } from "../shared/port.ts";
 import { newUserId } from "../shared/vo.ts";
-import type { ContentQueries } from "./api.ts";
+import type { ContentUsecase } from "./api.ts";
 import { convToPlaylistSettingDto } from "./logic/dto.ts";
 import {
   buildHomeFeed,
@@ -10,8 +10,13 @@ import {
 } from "./logic/feed.ts";
 import type { ContentRepositoryPort } from "./port.ts";
 
+type ContentQueries = Pick<
+  ContentUsecase,
+  "listPlaylists" | "getHomeFeed" | "getBadgeCount" | "countUnwatchedNew"
+>;
+
 /**
- * コンテンツ集約の Queries (Read Model). ホーム・バッジの本数・プレイリストの一覧
+ * コンテンツ集約のユースケースのうち, Query (Read Model. 読むだけ). ホーム・バッジの本数・プレイリストの一覧
  */
 export const newContentQueries = (
   r: ContentRepositoryPort,

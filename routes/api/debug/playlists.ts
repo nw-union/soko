@@ -7,7 +7,7 @@ import { errorResponse } from "../../../server/http/error.ts";
 export const GET = defineHandler(async (c) => {
   requireAuth(c);
   return container()
-    .contentQueries.listPlaylists()
+    .contentUsecase.listPlaylists()
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -21,9 +21,12 @@ export const POST = defineHandler(async (c) => {
     playlistId?: unknown;
   } | null;
   return container()
-    .contentWorkFlows.createPlaylist({ playlistId: body?.playlistId })
+    .contentUsecase.createPlaylist({
+      // 文字列でなければ空にする (形式の検証はドメインで行う)
+      playlistId: typeof body?.playlistId === "string" ? body.playlistId : "",
+    })
     .match(
-      (dto) => dto,
+      (evt) => evt,
       (e) => errorResponse(c, e),
     );
 });

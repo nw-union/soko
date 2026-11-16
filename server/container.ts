@@ -12,8 +12,7 @@ import { newAvatarStorage } from "../adapter/r2/avatar.ts";
 import { cryptoRandom, systemClock } from "../adapter/system.ts";
 import { webPushSender } from "../adapter/webpush/sender.ts";
 import { newYoutubeApi } from "../adapter/youtube/api.ts";
-import { newContentQueries } from "../domain/Content/query.ts";
-import { newContentWorkFlows } from "../domain/Content/workflow.ts";
+import { newContentUsecase } from "../domain/Content/usecase.ts";
 import { newMemberQueries } from "../domain/Member/query.ts";
 import { newMemberWorkFlows } from "../domain/Member/workflow.ts";
 import { newNotificationQueries } from "../domain/Notification/query.ts";
@@ -36,16 +35,15 @@ export const container = () => {
   const profileRepository = newProfileRepository(db);
   const avatarStorage = newAvatarStorage(storage);
   const vapid = vapidKeys();
-  // コンテンツ集約の Read Model: ホーム・バッジの本数・プレイリストの一覧
-  const contentQueries = newContentQueries(contentRepository, cryptoRandom);
+  // コンテンツ集約: 動画の自動取得・プレイリストの登録・視聴記録と、ホーム・バッジの本数・プレイリストの一覧。
+  // YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
+  const contentUsecase = newContentUsecase(
+    contentRepository,
+    env.YOUTUBE_API_KEY ? newYoutubeApi(env.YOUTUBE_API_KEY) : null,
+    cryptoRandom,
+  );
   return {
-    // コンテンツ集約: 動画の自動取得・プレイリストの登録・視聴記録。
-    // YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
-    contentWorkFlows: newContentWorkFlows(
-      contentRepository,
-      env.YOUTUBE_API_KEY ? newYoutubeApi(env.YOUTUBE_API_KEY) : null,
-    ),
-    contentQueries,
+    contentUsecase,
     // メンバー集約: 招待（Invite）と、プロフィール・ログイン（Profile）
     memberWorkFlows: newMemberWorkFlows(
       inviteRepository,
@@ -67,7 +65,7 @@ export const container = () => {
       // バッジの本数はコンテンツ集約の Read Model を使う
       {
         countUnwatchedNew: (userIds) =>
-          contentQueries.countUnwatchedNew({ userIds }).map((v) => v.counts),
+          contentUsecase.countUnwatchedNew({ userIds }).map((v) => v.counts),
       },
       systemClock,
       vapid,
