@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { unwrap, unwrapErr } from "../../../lib/rslt-test.ts";
 import { mustUserId } from "../../shared/vo.test.ts";
 import {
   convToInviteDto,
@@ -22,7 +24,7 @@ import {
   TOKEN_ALPHABET,
 } from "./vo.ts";
 
-export const mustInviteToken = (s: string) => newInviteToken(s)._unsafeUnwrap();
+export const mustInviteToken = (s: string) => unwrap(newInviteToken(s));
 
 const TOKEN = "ABCDEFGHJKMNPQRS";
 const usage = (limit: number | null, used: number): InviteUsage => ({
@@ -56,7 +58,7 @@ describe("createInviteToken", () => {
     const actual = createInviteToken(bytes);
 
     // Assert:
-    expect(newInviteToken(actual).isOk()).toBeTrue();
+    expect(isErr(newInviteToken(actual))).toBeFalse();
   });
 });
 
@@ -117,14 +119,14 @@ describe("ensureIssued", () => {
     const actual = ensureIssued(false);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toEqual({
+    expect(unwrapErr(actual)).toEqual({
       type: "ConflictError",
       message: "招待の発行上限に達しています",
     });
   });
 
   it("保存できた場合, 成功となる", () => {
-    expect(ensureIssued(true).isOk()).toBeTrue();
+    expect(isErr(ensureIssued(true))).toBeFalse();
   });
 });
 
@@ -134,7 +136,7 @@ describe("ensureUsable", () => {
     const actual = ensureUsable(false);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       token: ["招待コードが正しくないか、期限切れです"],
     });
   });
@@ -155,7 +157,7 @@ describe("validateToken", () => {
     const actual = validateToken("abcd-efgh-jkmn-pqrs");
 
     // Assert:
-    expect<string>(actual._unsafeUnwrap()).toBe(TOKEN);
+    expect<string>(unwrap(actual)).toBe(TOKEN);
   });
 
   it.each([
@@ -169,7 +171,7 @@ describe("validateToken", () => {
     const actual = validateToken(input);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       token: ["招待コードが正しくないか、期限切れです"],
     });
   });
@@ -177,7 +179,7 @@ describe("validateToken", () => {
 
 describe("validateInviteId", () => {
   it("整数の文字列の場合, InviteId になる", () => {
-    expect<number>(validateInviteId("12")._unsafeUnwrap()).toBe(12);
+    expect<number>(unwrap(validateInviteId("12"))).toBe(12);
   });
 
   it.each([
@@ -189,7 +191,7 @@ describe("validateInviteId", () => {
     const actual = validateInviteId(input);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       id: ["id が正しくありません"],
     });
   });

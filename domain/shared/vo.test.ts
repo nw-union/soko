@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { unwrap, unwrapErr } from "../../lib/rslt-test.ts";
 import { newUserId, newYoutubeId } from "./vo.ts";
 
 // 他のテストで、検証済みの VO を手早く作るためのもの
-export const mustUserId = (s: string) => newUserId(s)._unsafeUnwrap();
-export const mustYoutubeId = (s: string) => newYoutubeId(s)._unsafeUnwrap();
+export const mustUserId = (s: string) => unwrap(newUserId(s));
+export const mustYoutubeId = (s: string) => unwrap(newYoutubeId(s));
 
 // ----------------------------------------------------------------------------
 
@@ -13,7 +15,7 @@ describe("newUserId", () => {
     const actual = newUserId("abcDEF123");
 
     // Assert:
-    expect<string>(actual._unsafeUnwrap()).toBe("abcDEF123");
+    expect<string>(unwrap(actual)).toBe("abcDEF123");
   });
 
   it("空文字の場合, ValidationError となる", () => {
@@ -21,7 +23,7 @@ describe("newUserId", () => {
     const actual = newUserId("");
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 
   it("文字列でない場合, ValidationError となる", () => {
@@ -29,7 +31,7 @@ describe("newUserId", () => {
     const actual = newUserId(undefined);
 
     // Assert:
-    expect(actual.isErr()).toBeTrue();
+    expect(isErr(actual)).toBeTrue();
   });
 });
 
@@ -39,7 +41,7 @@ describe("newYoutubeId", () => {
     const actual = newYoutubeId("dQw4w9WgX-_");
 
     // Assert:
-    expect<string>(actual._unsafeUnwrap()).toBe("dQw4w9WgX-_");
+    expect<string>(unwrap(actual)).toBe("dQw4w9WgX-_");
   });
 
   it.each([
@@ -52,7 +54,7 @@ describe("newYoutubeId", () => {
     const actual = newYoutubeId(input);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 
   it("フィールド名を指定した場合, そのフィールド名でエラーを返す", () => {
@@ -60,6 +62,6 @@ describe("newYoutubeId", () => {
     const actual = newYoutubeId("bad", "videoId");
 
     // Assert:
-    expect(Object.keys(actual._unsafeUnwrapErr().issues)).toEqual(["videoId"]);
+    expect(Object.keys(unwrapErr(actual).issues)).toEqual(["videoId"]);
   });
 });

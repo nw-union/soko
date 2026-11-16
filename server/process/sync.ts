@@ -1,18 +1,16 @@
 // 動画の同期の実行. cron (crons/sync-videos.ts・crons/sync-new-videos.ts) と, デバッグ画面 (routes/api/debug/) から呼ぶ.
 // 同期の結果をログに残し, 通知まで行う. 結果のイベントは呼び出し元に返す
-import { match } from "ts-pattern";
+import { match } from "@nw-union/nw-utils/lib/match";
 import type { AllSyncedEvt, NewSyncedEvt } from "../../domain/Content/api.ts";
 import { container } from "../container.ts";
-import { throwError } from "../http/error.ts";
+import { valueOrThrow } from "../http/error.ts";
 import { log } from "../log/log.ts";
 import { notifyNew } from "./notify.ts";
 import { onNewSynced } from "./policy.ts";
 
 /** 全件の同期. 同期できたら新着を通知する */
 export const runSyncAll = async (): Promise<AllSyncedEvt> => {
-  const evt = await container()
-    .contentUsecase.syncAll()
-    .match((e) => e, throwError);
+  const evt = await valueOrThrow(container().contentUsecase.syncAll());
   const done = match(evt)
     .with({ type: "NoApiKey" }, () => {
       log().warn(
@@ -43,9 +41,7 @@ export const runSyncAll = async (): Promise<AllSyncedEvt> => {
 
 /** 差分の同期. 動画が増えたら, ポリシーが新着を通知する */
 export const runSyncNew = async (): Promise<NewSyncedEvt> => {
-  const evt = await container()
-    .contentUsecase.syncNew()
-    .match((e) => e, throwError);
+  const evt = await valueOrThrow(container().contentUsecase.syncNew());
   // 未設定・未登録の警告は、全件の同期が出す
   if (evt.type !== "Synced") return evt;
   if (evt.added > 0 || evt.links > 0)

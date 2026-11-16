@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { unwrap, unwrapErr } from "../../../lib/rslt-test.ts";
 import { mustUserId } from "../../shared/vo.test.ts";
 import type { VideoItemDto } from "../api.ts";
 import type { Playlist, PlaylistVideo, StoredVideo } from "../type.ts";
@@ -245,7 +247,7 @@ describe("validateWatchedVideo", () => {
     ["短い", "abc"],
     ["空", undefined],
   ])("%s場合, ValidationError となる", (_, id) => {
-    expect(validateWatchedVideo(id)._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateWatchedVideo(id)).issues).toEqual({
       youtubeId: ["動画の指定が正しくありません"],
     });
   });
@@ -253,13 +255,11 @@ describe("validateWatchedVideo", () => {
 
 describe("validateJoinedAt", () => {
   it("Date も ISO 8601 もミリ秒にする", () => {
-    expect(validateJoinedAt(new Date(JOINED))._unsafeUnwrap()).toBe(JOINED);
-    expect(validateJoinedAt("2026-10-01T00:00:00Z")._unsafeUnwrap()).toBe(
-      JOINED,
-    );
+    expect(unwrap(validateJoinedAt(new Date(JOINED)))).toBe(JOINED);
+    expect(unwrap(validateJoinedAt("2026-10-01T00:00:00Z"))).toBe(JOINED);
   });
 
   it("読めない場合, ValidationError となる", () => {
-    expect(validateJoinedAt("x").isErr()).toBeTrue();
+    expect(isErr(validateJoinedAt("x"))).toBeTrue();
   });
 });

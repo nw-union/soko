@@ -1,4 +1,9 @@
-import { okAsync, Result, ResultAsync } from "neverthrow";
+import {
+  ok,
+  sequence,
+  sequenceAsync,
+  stepAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import type { RandomPort } from "../shared/port.ts";
 import { newUserId } from "../shared/vo.ts";
 import type { ContentUsecase } from "./api.ts";
@@ -24,70 +29,66 @@ export const newContentQueries = (
 ): ContentQueries => {
   // ユーザーごとの, 未視聴の New の本数 (getBadgeCount と countUnwatchedNew で使う)
   const counts = (userIds: string[]) =>
-    // Step 1. バリデーション: string[] -> UserId[]
-    okAsync(userIds)
-      .andThen((ids) => Result.combine(ids.map((id) => newUserId(id))))
+    stepAsync(
+      // Step 1. バリデーション: string[] -> UserId[]
+      sequence(userIds.map((id) => newUserId(id))),
       // Step 2. 取得: UserId[] -> [Member[], VideoDate[], Watch[]]
-      .andThen((users) =>
+      (users) =>
         users.length === 0
-          ? okAsync(new Map<string, number>())
-          : ResultAsync.combine([
-              r.listMembers(users),
-              r.listPlaylistVideoDates(),
-              r.listWatches(users),
-            ])
+          ? ok(new Map<string, number>())
+          : stepAsync(
+              sequenceAsync([
+                r.listMembers(users),
+                r.listPlaylistVideoDates(),
+                r.listWatches(users),
+              ]),
               // Step 3. 数える
-              .map(([members, videos, watches]) =>
+              ([members, videos, watches]) =>
                 countUnwatchedNew(members, videos, watches),
-              ),
-      );
+            ),
+    );
 
   return {
     /**
      * プレイリストの一覧
      */
     listPlaylists: () =>
-      r
-        .listPlaylists()
-        .map((lists) => ({ playlists: lists.map(convToPlaylistSettingDto) })),
+      stepAsync(r.listPlaylists(), (lists) => ({
+        playlists: lists.map(convToPlaylistSettingDto),
+      })),
 
     /**
      * ホームに並べる動画
      */
     getHomeFeed: ({ userId, joinedAt }) =>
-      // Step 1. バリデーション: [string, Date] -> [UserId, number]
-      okAsync(undefined)
-        .andThen(() =>
-          Result.combine([newUserId(userId), validateJoinedAt(joinedAt)]),
-        )
+      stepAsync(
+        // Step 1. バリデーション: [string, Date] -> [UserId, number]
+        sequence([newUserId(userId), validateJoinedAt(joinedAt)]),
         // Step 2. 取得: [UserId, number] -> [Playlist[], PlaylistVideo[], string[], number]
-        .andThen(([user, joined]) =>
-          ResultAsync.combine([
-            r.listPlaylists(),
-            r.listPlaylistVideos(),
-            r.listWatchedIds(user),
-          ]).map(([lists, rows, watched]) => ({
-            lists,
-            rows,
-            watched,
-            joined,
-          })),
-        )
+        ([user, joined]) =>
+          stepAsync(
+            sequenceAsync([
+              r.listPlaylists(),
+              r.listPlaylistVideos(),
+              r.listWatchedIds(user),
+            ]),
+            ([lists, rows, watched]) => ({ lists, rows, watched, joined }),
+          ),
         // Step 3. 組み立て
-        .map(({ lists, rows, watched, joined }) =>
+        ({ lists, rows, watched, joined }) =>
           buildHomeFeed(lists, rows, new Set(watched), joined, random.float),
-        ),
+      ),
 
     /**
      * バッジに出す, 未視聴の New の本数
      */
     getBadgeCount: ({ userId }) =>
-      counts([userId]).map((m) => ({ count: m.get(userId) ?? 0 })),
+      stepAsync(counts([userId]), (m) => ({ count: m.get(userId) ?? 0 })),
 
     /**
      * ユーザーごとの, 未視聴の New の本数
      */
     countUnwatchedNew: ({ userIds }) =>
-      counts([...new Set(userIds)]).map((m) => ({ counts: m })),
+      stepAsync(counts([...new Set(userIds)]), (m) => ({ counts: m })),
   };
 };

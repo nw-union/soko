@@ -1,5 +1,10 @@
 // YouTube Data API v3 のクライアント。API の値をそのまま返す（表示対象かどうかは domain/Content が決める）
-import { ResultAsync } from "neverthrow";
+import {
+  ok,
+  type ResultAsync,
+  rslt,
+  stepAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import type { YoutubePort } from "../../domain/Content/port.ts";
 import type {
   PlaylistInfo,
@@ -39,8 +44,8 @@ export const newYoutubeApi = (
     path: string,
     params: Record<string, string>,
   ): ResultAsync<T, ExternalError> =>
-    ResultAsync.fromPromise(
-      (async () => {
+    rslt.tryAsync(
+      async () => {
         const res = await fetcher(
           `${API}/${path}?${new URLSearchParams({ ...params, key })}`,
         );
@@ -49,7 +54,7 @@ export const newYoutubeApi = (
             `YouTube API ${path}: ${res.status} ${await res.text()}`,
           );
         return (await res.json()) as T;
-      })(),
+      },
       (e) => newExternalError(`YouTube API ${path} に失敗しました`, e),
     );
 
@@ -58,12 +63,12 @@ export const newYoutubeApi = (
     ids: string[],
     f: (page: string[]) => ResultAsync<T[], ExternalError>,
   ): ResultAsync<T[], ExternalError> => {
-    let acc = ResultAsync.fromSafePromise<T[], ExternalError>(
-      Promise.resolve([]),
-    );
+    let acc: ResultAsync<T[], ExternalError> = Promise.resolve(ok([]));
     for (let i = 0; i < ids.length; i += PAGE) {
       const page = ids.slice(i, i + PAGE);
-      acc = acc.andThen((out) => f(page).map((items) => [...out, ...items]));
+      acc = stepAsync(acc, (out) =>
+        stepAsync(f(page), (items) => [...out, ...items]),
+      );
     }
     return acc;
   };
@@ -74,70 +79,78 @@ export const newYoutubeApi = (
         pageToken: string | undefined,
         ids: string[],
       ): ResultAsync<string[], ExternalError> =>
-        call<{
-          items: { contentDetails: { videoId: string } }[];
-          nextPageToken?: string;
-        }>("playlistItems", {
-          part: "contentDetails",
-          playlistId,
-          maxResults: String(PAGE),
-          ...(pageToken ? { pageToken } : {}),
-        }).andThen((res) => {
-          const next = [
-            ...ids,
-            ...res.items.map((item) => item.contentDetails.videoId),
-          ];
-          return res.nextPageToken
-            ? page(res.nextPageToken, next)
-            : ResultAsync.fromSafePromise(Promise.resolve(next));
-        });
+        stepAsync(
+          call<{
+            items: { contentDetails: { videoId: string } }[];
+            nextPageToken?: string;
+          }>("playlistItems", {
+            part: "contentDetails",
+            playlistId,
+            maxResults: String(PAGE),
+            ...(pageToken ? { pageToken } : {}),
+          }),
+          (res) => {
+            const next = [
+              ...ids,
+              ...res.items.map((item) => item.contentDetails.videoId),
+            ];
+            return res.nextPageToken ? page(res.nextPageToken, next) : next;
+          },
+        );
       return page(undefined, []);
     },
 
     fetchPlaylistInfos: (playlistIds) =>
-      inPages(playlistIds, (ids) =>
-        call<{
-          items?: {
-            id: string;
-            snippet: { title: string; description: string };
-          }[];
-        }>("playlists", {
-          part: "snippet",
-          id: ids.join(","),
-          maxResults: String(PAGE),
-        }).map((res) =>
-          (res.items ?? []).map(
-            (item) =>
-              [
-                item.id,
-                {
-                  title: item.snippet.title.trim(),
-                  description: item.snippet.description.trim(),
-                },
-              ] as [string, PlaylistInfo],
+      stepAsync(
+        inPages(playlistIds, (ids) =>
+          stepAsync(
+            call<{
+              items?: {
+                id: string;
+                snippet: { title: string; description: string };
+              }[];
+            }>("playlists", {
+              part: "snippet",
+              id: ids.join(","),
+              maxResults: String(PAGE),
+            }),
+            (res) =>
+              (res.items ?? []).map(
+                (item) =>
+                  [
+                    item.id,
+                    {
+                      title: item.snippet.title.trim(),
+                      description: item.snippet.description.trim(),
+                    },
+                  ] as [string, PlaylistInfo],
+              ),
           ),
         ),
-      ).map((pairs) => new Map(pairs)),
+        (pairs) => new Map(pairs),
+      ),
 
     fetchVideoItems: (videoIds) =>
       inPages(videoIds, (ids) =>
-        call<{ items: VideoResource[] }>("videos", {
-          part: "snippet,contentDetails,status,player",
-          id: ids.join(","),
-        }).map((res) =>
-          res.items.map(
-            (item): YoutubeVideoItem => ({
-              id: item.id,
-              title: item.snippet.title,
-              description: item.snippet.description,
-              publishedAt: item.snippet.publishedAt,
-              liveBroadcastContent: item.snippet.liveBroadcastContent,
-              duration: item.contentDetails.duration,
-              embedHtml: item.player?.embedHtml,
-              privacyStatus: item.status.privacyStatus,
-              embeddable: item.status.embeddable,
-            }),
-          ),
+        stepAsync(
+          call<{ items: VideoResource[] }>("videos", {
+            part: "snippet,contentDetails,status,player",
+            id: ids.join(","),
+          }),
+          (res) =>
+            res.items.map(
+              (item): YoutubeVideoItem => ({
+                id: item.id,
+                title: item.snippet.title,
+                description: item.snippet.description,
+                publishedAt: item.snippet.publishedAt,
+                liveBroadcastContent: item.snippet.liveBroadcastContent,
+                duration: item.contentDetails.duration,
+                embedHtml: item.player?.embedHtml,
+                privacyStatus: item.status.privacyStatus,
+                embeddable: item.status.embeddable,
+              }),
+            ),
         ),
       ),
   };

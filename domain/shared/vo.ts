@@ -3,8 +3,9 @@
 // domain/ の中の相対 import は、必ず拡張子（.ts）を付けること。
 // auth.ts は Void の CLI からも読み込まれ、そこでは拡張子なしの相対 import を解決できない。
 // domain/ は auth.ts から import されるので、その先もすべて拡張子付きにする必要がある
-import { err, ok, type Result } from "neverthrow";
-import { match } from "ts-pattern";
+
+import { match } from "@nw-union/nw-utils/lib/match";
+import { err, ok, type Result } from "@nw-union/nw-utils/lib/rslt";
 import * as v from "valibot";
 import { isYoutubeId } from "../rule/youtube.ts";
 import { newValidationError, type ValidationError } from "./error.ts";

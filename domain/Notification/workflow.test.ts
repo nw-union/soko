@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
 import { bytesToBase64url } from "../../lib/base64url.ts";
+import { errAsync, okAsync, unwrap, unwrapErr } from "../../lib/rslt-test.ts";
 import { newDatabaseError } from "../shared/error.ts";
 import type { ClockPort } from "../shared/port.ts";
 import type {
@@ -143,7 +144,7 @@ describe("subscribe", () => {
     });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(upserted).toHaveLength(1);
     expect(trimmed).toEqual([["user1", 10]]);
   });
@@ -156,7 +157,7 @@ describe("subscribe", () => {
     const actual = await wf.subscribe({ userId: "user1", body: {} });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(upserted).toHaveLength(0);
   });
 });
@@ -189,7 +190,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoRecentVideos" });
+    expect(unwrap(actual)).toEqual({ type: "NoRecentVideos" });
     expect(claimedAt).toEqual([NOW]);
     expect(sent).toHaveLength(0);
   });
@@ -206,7 +207,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoVapidKeys", videos: 1 });
+    expect(unwrap(actual)).toEqual({ type: "NoVapidKeys", videos: 1 });
     expect(sent).toHaveLength(0);
   });
 
@@ -221,7 +222,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Notified",
       videos: 1,
       sent: 2,
@@ -264,7 +265,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       sent: 1,
       total: 4,
       removed: 1,
@@ -286,7 +287,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       sent: 1,
       badgeError: "DatabaseError: boom",
     });

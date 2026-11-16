@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { errAsync, okAsync, unwrap, unwrapErr } from "../../lib/rslt-test.ts";
 import { newDatabaseError } from "../shared/error.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type {
@@ -79,7 +80,7 @@ describe("watch / unwatch", () => {
     const actual = await wf.watch({ userId: "user1", youtubeId: ID });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(inserted).toEqual([["user1", ID]]);
   });
 
@@ -91,7 +92,7 @@ describe("watch / unwatch", () => {
     const actual = await wf.watch({ userId: "user1", youtubeId: 1 });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(inserted).toHaveLength(0);
   });
 
@@ -242,7 +243,7 @@ describe("API キー・プレイリストがない場合", () => {
     const actual = await newContentWorkFlows(repo, null).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoApiKey" });
+    expect(unwrap(actual)).toEqual({ type: "NoApiKey" });
   });
 
   it("プレイリストが登録されていなければ, 何もしない", async () => {
@@ -253,7 +254,7 @@ describe("API キー・プレイリストがない場合", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoPlaylists" });
+    expect(unwrap(actual)).toEqual({ type: "NoPlaylists" });
   });
 });
 
@@ -285,7 +286,7 @@ describe("syncAll", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       videos: 2,
       playlists: 1,
@@ -312,7 +313,7 @@ describe("syncAll", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({ renamed: 1 });
+    expect(unwrap(actual)).toMatchObject({ renamed: 1 });
     expect(db.renamed).toEqual([
       [1, { title: "新しい名前", description: "説明" }],
     ]);
@@ -329,7 +330,7 @@ describe("syncAll", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       removed: 0,
       removalSkipped: true,
     });
@@ -347,7 +348,7 @@ describe("syncAll", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual.isErr()).toBeTrue();
+    expect(isErr(actual)).toBeTrue();
     expect(db.upserted).toHaveLength(0);
     expect(db.links).toHaveLength(0);
   });
@@ -369,7 +370,7 @@ describe("syncNew", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       added: 1,
       links: 1,
@@ -409,7 +410,7 @@ describe("syncNew", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       added: 0,
       links: 1,
@@ -429,7 +430,7 @@ describe("syncNew", () => {
     const actual = await newContentWorkFlows(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       added: 0,
       links: 0,
@@ -448,7 +449,7 @@ describe("syncNew", () => {
     ).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+    expect(unwrapErr(actual).type).toBe("DatabaseError");
   });
 });
 
@@ -474,7 +475,7 @@ describe("プレイリストの管理", () => {
       null,
     );
     const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
-    expect(actual._unsafeUnwrap().playlist.id).toBe(7);
+    expect(unwrap(actual).playlist.id).toBe(7);
     expect(saved).toEqual(["PLabcdefghij"]);
   });
 
@@ -484,13 +485,13 @@ describe("プレイリストの管理", () => {
       null,
     );
     const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
-    expect(actual._unsafeUnwrapErr().type).toBe("ConflictError");
+    expect(unwrapErr(actual).type).toBe("ConflictError");
   });
 
   it("createPlaylist: 不正な ID なら ValidationError で, DB に触らない", async () => {
     const wf = newContentWorkFlows(unusedRepo, null);
     const actual = await wf.createPlaylist({ playlistId: "x" });
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 
   it("deletePlaylist: 消す", async () => {
@@ -506,14 +507,14 @@ describe("プレイリストの管理", () => {
       null,
     );
     const actual = await wf.deletePlaylist({ id: "7" });
-    expect(actual.isOk()).toBe(true);
+    expect(isErr(actual)).toBeFalse();
     expect(deleted).toEqual([7]);
   });
 
   it("deletePlaylist: id が不正なら ValidationError", async () => {
     const wf = newContentWorkFlows(unusedRepo, null);
     const actual = await wf.deletePlaylist({ id: "-1" });
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 
   it.each(["", "abc", "1.5"])(
@@ -521,7 +522,7 @@ describe("プレイリストの管理", () => {
     async (id) => {
       const wf = newContentWorkFlows(unusedRepo, null);
       const actual = await wf.deletePlaylist({ id });
-      expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+      expect(unwrapErr(actual).type).toBe("ValidationError");
     },
   );
 });

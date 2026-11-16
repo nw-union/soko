@@ -1,13 +1,11 @@
 // 新着動画のプッシュ通知を送り、結果をログに残す。ポリシー（server/process/policy.ts）と、全件の同期の cron（crons/sync-videos.ts）から呼ぶ
-import { match } from "ts-pattern";
+import { match } from "@nw-union/nw-utils/lib/match";
 import { container } from "../container.ts";
-import { throwError } from "../http/error.ts";
+import { valueOrThrow } from "../http/error.ts";
 import { log } from "../log/log.ts";
 
 export const notifyNew = async () => {
-  const evt = await container()
-    .notificationUsecase.notifyNew()
-    .match((e) => e, throwError);
+  const evt = await valueOrThrow(container().notificationUsecase.notifyNew());
   match(evt)
     .with({ type: "NoRecentVideos" }, () => {})
     .with({ type: "NoVapidKeys" }, ({ videos }) =>

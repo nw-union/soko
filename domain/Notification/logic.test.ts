@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { bytesToBase64url } from "../../lib/base64url.ts";
+import { unwrap, unwrapErr } from "../../lib/rslt-test.ts";
 import { mustUserId } from "../shared/vo.test.ts";
 import {
   buildPayload,
@@ -137,7 +138,7 @@ describe("validateSubscription", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       type: "NewSubscription",
       endpoint: ENDPOINT,
       p256dh,
@@ -188,7 +189,7 @@ describe("validateSubscription", () => {
     );
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       subscription: ["購読の内容が正しくありません"],
     });
   });
@@ -196,8 +197,8 @@ describe("validateSubscription", () => {
 
 describe("validateEndpointToDelete", () => {
   it("空の場合, ValidationError となる", () => {
-    expect(
-      validateEndpointToDelete(undefined)._unsafeUnwrapErr().issues,
-    ).toEqual({ endpoint: ["endpoint がありません"] });
+    expect(unwrapErr(validateEndpointToDelete(undefined)).issues).toEqual({
+      endpoint: ["endpoint がありません"],
+    });
   });
 });

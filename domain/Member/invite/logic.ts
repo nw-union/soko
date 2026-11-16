@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "neverthrow";
+import { err, ok, type Result, rslt } from "@nw-union/nw-utils/lib/rslt";
 import {
   type ConflictError,
   newConflictError,
@@ -99,10 +99,10 @@ export const normalizeToken = (raw: string): string =>
 export const validateToken = (
   raw: unknown,
 ): Result<InviteToken, ValidationError> =>
-  newInviteToken(
-    normalizeToken(typeof raw === "string" ? raw : ""),
-    "token",
-  ).mapErr(invalidInvite);
+  rslt.pipe(
+    newInviteToken(normalizeToken(typeof raw === "string" ? raw : ""), "token"),
+    rslt.mapErr(invalidInvite),
+  );
 
 /**
  * 取り消す招待の ID を検証する
@@ -110,8 +110,11 @@ export const validateToken = (
 export const validateInviteId = (
   raw: unknown,
 ): Result<InviteId, ValidationError> =>
-  newInviteId(raw, "id").mapErr(() =>
-    newValidationErrorWithMessage("id", "id が正しくありません"),
+  rslt.pipe(
+    newInviteId(raw, "id"),
+    rslt.mapErr(() =>
+      newValidationErrorWithMessage("id", "id が正しくありません"),
+    ),
   );
 
 // ----------------------------------------------------------------------------

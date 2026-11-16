@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { unwrap } from "../../lib/rslt-test.ts";
 import { newNotificationQueries } from "./query.ts";
 
 describe("getPublicKey", () => {
@@ -11,7 +12,7 @@ describe("getPublicKey", () => {
     }).getPublicKey();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ publicKey: "PUBLIC" });
+    expect(unwrap(actual)).toEqual({ publicKey: "PUBLIC" });
   });
 
   it("鍵がなければ null を返す", async () => {
@@ -19,6 +20,6 @@ describe("getPublicKey", () => {
     const actual = await newNotificationQueries(null).getPublicKey();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ publicKey: null });
+    expect(unwrap(actual)).toEqual({ publicKey: null });
   });
 });

@@ -1,4 +1,12 @@
-import { err, ok, Result, ResultAsync } from "neverthrow";
+import {
+  err,
+  ok,
+  type Result,
+  type ResultAsync,
+  rslt,
+  sequence,
+  stepAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import { base64urlToBytes } from "../../lib/base64url.ts";
 import {
   newValidationErrorWithMessage,
@@ -118,27 +126,26 @@ export const validateSubscription = (
     endpoint?: unknown;
     keys?: { p256dh?: unknown; auth?: unknown };
   } | null;
-  return Result.combine([
-    newPushEndpoint(b?.endpoint),
-    newPushP256dh(b?.keys?.p256dh),
-    newPushAuth(b?.keys?.auth),
-  ])
-    .mapErr(invalidSubscription)
-    .asyncAndThen(([endpoint, p256dh, auth]) =>
-      ResultAsync.fromSafePromise(
-        isValidSubscriptionKeys(p256dh, auth),
-      ).andThen((valid) =>
-        valid
-          ? ok<NewSubscription, ValidationError>({
-              type: "NewSubscription",
-              userId,
-              endpoint,
-              p256dh,
-              auth,
-            })
-          : err(invalidSubscription()),
-      ),
-    );
+  return stepAsync(
+    rslt.pipe(
+      sequence([
+        newPushEndpoint(b?.endpoint),
+        newPushP256dh(b?.keys?.p256dh),
+        newPushAuth(b?.keys?.auth),
+      ]),
+      rslt.mapErr(invalidSubscription),
+    ),
+    async ([endpoint, p256dh, auth]) =>
+      (await isValidSubscriptionKeys(p256dh, auth))
+        ? ok<NewSubscription>({
+            type: "NewSubscription",
+            userId,
+            endpoint,
+            p256dh,
+            auth,
+          })
+        : err(invalidSubscription()),
+  );
 };
 
 /**

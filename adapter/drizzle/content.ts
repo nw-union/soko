@@ -1,3 +1,4 @@
+import { stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { asc, desc, eq, inArray, sql } from "void/db";
 // auth.ts から読み込まれるので、Vite のエイリアス（@schema）ではなく相対パスで読む（Void の CLI はエイリアスを解決できない）
 import {
@@ -58,54 +59,63 @@ const toStoredVideo = (row: typeof videos.$inferSelect): StoredVideo => ({
 // ----------------------------------------------------------------------------
 export const newContentRepository = (db: Database): ContentRepositoryPort => ({
   listPlaylists: () =>
-    query("listPlaylists", () =>
-      db
-        .select()
-        .from(playlists)
-        .orderBy(asc(playlists.position), asc(playlists.id)),
-    ).map((rows) =>
-      rows.map((list) => ({
-        type: "Playlist" as const,
-        id: list.id,
-        playlistId: list.playlistId,
-        name: list.name,
-        description: list.description,
-      })),
+    stepAsync(
+      query("listPlaylists", () =>
+        db
+          .select()
+          .from(playlists)
+          .orderBy(asc(playlists.position), asc(playlists.id)),
+      ),
+      (rows) =>
+        rows.map((list) => ({
+          type: "Playlist" as const,
+          id: list.id,
+          playlistId: list.playlistId,
+          name: list.name,
+          description: list.description,
+        })),
     ),
 
   listPlaylistVideos: () =>
-    query("listPlaylistVideos", () =>
-      db
-        .select({ playlistId: playlistVideos.playlistId, video: videos })
-        .from(playlistVideos)
-        .innerJoin(videos, eq(videos.id, playlistVideos.videoId))
-        .orderBy(desc(videos.publishedAt), asc(videos.id)),
-    ).map((rows) =>
-      rows.map((row) => ({
-        playlistId: row.playlistId,
-        video: toStoredVideo(row.video),
-      })),
+    stepAsync(
+      query("listPlaylistVideos", () =>
+        db
+          .select({ playlistId: playlistVideos.playlistId, video: videos })
+          .from(playlistVideos)
+          .innerJoin(videos, eq(videos.id, playlistVideos.videoId))
+          .orderBy(desc(videos.publishedAt), asc(videos.id)),
+      ),
+      (rows) =>
+        rows.map((row) => ({
+          playlistId: row.playlistId,
+          video: toStoredVideo(row.video),
+        })),
     ),
 
   listPlaylistVideoDates: () =>
-    query("listPlaylistVideoDates", () =>
-      db.all<{ youtube_id: string; published_at: string | null }>(sql`
+    stepAsync(
+      query("listPlaylistVideoDates", () =>
+        db.all<{ youtube_id: string; published_at: string | null }>(sql`
         SELECT youtube_id, published_at FROM videos
         WHERE id IN (SELECT video_id FROM playlist_videos)`),
-    ).map((rows) =>
-      rows.map((row) => ({
-        youtubeId: row.youtube_id,
-        publishedAt: row.published_at,
-      })),
+      ),
+      (rows) =>
+        rows.map((row) => ({
+          youtubeId: row.youtube_id,
+          publishedAt: row.published_at,
+        })),
     ),
 
   listWatchedIds: (user) =>
-    query("listWatchedIds", () =>
-      db
-        .select({ youtubeId: videoWatches.youtubeId })
-        .from(videoWatches)
-        .where(eq(videoWatches.userId, user)),
-    ).map((rows) => rows.map((row) => row.youtubeId)),
+    stepAsync(
+      query("listWatchedIds", () =>
+        db
+          .select({ youtubeId: videoWatches.youtubeId })
+          .from(videoWatches)
+          .where(eq(videoWatches.userId, user)),
+      ),
+      (rows) => rows.map((row) => row.youtubeId),
+    ),
 
   listWatches: (users) =>
     query("listWatches", () =>
@@ -120,71 +130,88 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
 
   // user テーブルは better-auth の管理で, createdAt はミリ秒の整数
   listMembers: (users) =>
-    query("listMembers", () =>
-      db.all<{ id: string; createdAt: number }>(
-        sql`SELECT id, createdAt FROM user WHERE id IN (${sql.join(
-          users.map((id) => sql`${id}`),
-          sql`, `,
-        )})`,
+    stepAsync(
+      query("listMembers", () =>
+        db.all<{ id: string; createdAt: number }>(
+          sql`SELECT id, createdAt FROM user WHERE id IN (${sql.join(
+            users.map((id) => sql`${id}`),
+            sql`, `,
+          )})`,
+        ),
       ),
-    ).map((rows) =>
-      rows.map((row) => ({
-        id: row.id as (typeof users)[number],
-        joinedAt: new Date(row.createdAt),
-      })),
+      (rows) =>
+        rows.map((row) => ({
+          id: row.id as (typeof users)[number],
+          joinedAt: new Date(row.createdAt),
+        })),
     ),
 
   insertWatch: (user, youtubeId) =>
-    query("insertWatch", () =>
-      db.run(sql`
+    stepAsync(
+      query("insertWatch", () =>
+        db.run(sql`
         INSERT INTO video_watches (user_id, youtube_id)
         SELECT ${user}, youtube_id FROM videos WHERE youtube_id = ${youtubeId}
         ON CONFLICT DO NOTHING`),
-    ).map(() => undefined),
+      ),
+      () => undefined,
+    ),
 
   deleteWatch: (user, youtubeId) =>
-    query("deleteWatch", () =>
-      db.run(
-        sql`DELETE FROM video_watches WHERE user_id = ${user} AND youtube_id = ${youtubeId}`,
+    stepAsync(
+      query("deleteWatch", () =>
+        db.run(
+          sql`DELETE FROM video_watches WHERE user_id = ${user} AND youtube_id = ${youtubeId}`,
+        ),
       ),
-    ).map(() => undefined),
+      () => undefined,
+    ),
 
   // ---- プレイリストの管理 ----
 
   insertPlaylist: (id) =>
-    query("insertPlaylist", () =>
-      db
-        .insert(playlists)
-        .values({ playlistId: id })
-        .onConflictDoNothing()
-        .returning(),
-    ).map((rows) => {
-      const list = rows[0];
-      return list
-        ? {
-            type: "Playlist" as const,
-            id: list.id,
-            playlistId: list.playlistId,
-            name: list.name,
-            description: list.description,
-          }
-        : null;
-    }),
+    stepAsync(
+      query("insertPlaylist", () =>
+        db
+          .insert(playlists)
+          .values({ playlistId: id })
+          .onConflictDoNothing()
+          .returning(),
+      ),
+      (rows) => {
+        const list = rows[0];
+        return list
+          ? {
+              type: "Playlist" as const,
+              id: list.id,
+              playlistId: list.playlistId,
+              name: list.name,
+              description: list.description,
+            }
+          : null;
+      },
+    ),
 
   deletePlaylist: (id) =>
-    query("deletePlaylist", () =>
-      db.delete(playlists).where(eq(playlists.id, id)),
-    ).map(() => undefined),
+    stepAsync(
+      query("deletePlaylist", () =>
+        db.delete(playlists).where(eq(playlists.id, id)),
+      ),
+      () => undefined,
+    ),
 
   // ---- YouTube からの取り込み ----
 
   updatePlaylistInfo: (id, info) =>
-    query("updatePlaylistInfo", () =>
-      db
-        .update(playlists)
-        .set({ name: info.title, description: info.description })
-        .where(sql`${playlists.id} = ${id}`),
-    ).map(() => undefined),
+    stepAsync(
+      query("updatePlaylistInfo", () =>
+        db
+          .update(playlists)
+          .set({ name: info.title, description: info.description })
+          .where(sql`${playlists.id} = ${id}`),
+      ),
+      () => undefined,
+    ),
 
   listVideoIds: () =>
     query("listVideoIds", () =>

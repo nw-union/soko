@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { unwrap, unwrapErr } from "../../../lib/rslt-test.ts";
 import {
   ensurePasskeyDeletable,
   FRESH_AGE_SECONDS,
@@ -61,7 +63,7 @@ describe("ensurePasskeyDeletable", () => {
   const stale = new Date(now.getTime() - FRESH_AGE_SECONDS * 1000);
 
   it("ログインし直したばかりで, パスキーが 2 つ以上あれば削除できる", () => {
-    expect(ensurePasskeyDeletable(fresh, 2, now).isOk()).toBeTrue();
+    expect(isErr(ensurePasskeyDeletable(fresh, 2, now))).toBeFalse();
   });
 
   it("ログインから 10 分以上たっていれば, SESSION_NOT_FRESH の ForbiddenError となる", () => {
@@ -69,7 +71,7 @@ describe("ensurePasskeyDeletable", () => {
     const actual = ensurePasskeyDeletable(stale, 2, now);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toEqual({
+    expect(unwrapErr(actual)).toEqual({
       type: "ForbiddenError",
       message: "Session is not fresh",
       code: "SESSION_NOT_FRESH",
@@ -81,7 +83,7 @@ describe("ensurePasskeyDeletable", () => {
     const actual = ensurePasskeyDeletable(fresh, 1, now);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       type: "ValidationError",
       issues: {
         passkey: ["最後のパスキーは削除できません（ログインできなくなります）"],
@@ -99,20 +101,20 @@ describe("validateProfileInput", () => {
     const actual = validateProfileInput({ name: "  たろう  " });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "ValidatedProfile",
       name: "たろう",
     } as never);
   });
 
   it("送られてこなかった項目は含めない", () => {
-    expect(validateProfileInput({})._unsafeUnwrap()).toEqual({
+    expect(unwrap(validateProfileInput({}))).toEqual({
       type: "ValidatedProfile",
     });
   });
 
   it("color の null は, イメージカラーを外す値として通す", () => {
-    expect(validateProfileInput({ color: null })._unsafeUnwrap()).toEqual({
+    expect(unwrap(validateProfileInput({ color: null }))).toEqual({
       type: "ValidatedProfile",
       color: null,
     });
@@ -120,7 +122,7 @@ describe("validateProfileInput", () => {
 
   it("color は送られてきた値のまま (大文字も) 保存する", () => {
     expect<unknown>(
-      validateProfileInput({ color: "#AbCdEf" })._unsafeUnwrap().color,
+      unwrap(validateProfileInput({ color: "#AbCdEf" })).color,
     ).toBe("#AbCdEf");
   });
 
@@ -129,19 +131,19 @@ describe("validateProfileInput", () => {
     ["31 文字", "a".repeat(31)],
     ["文字列でない", 1],
   ])("名前が%sの場合, ValidationError となる", (_, name) => {
-    expect(validateProfileInput({ name })._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateProfileInput({ name })).issues).toEqual({
       name: ["名前は 1〜30 文字で入力してください"],
     });
   });
 
   it("名前の文字数はコードポイントで数える (絵文字 30 個は通す)", () => {
-    expect(validateProfileInput({ name: "🍣".repeat(30) }).isOk()).toBeTrue();
-    expect(validateProfileInput({ name: "🍣".repeat(31) }).isErr()).toBeTrue();
+    expect(isErr(validateProfileInput({ name: "🍣".repeat(30) }))).toBeFalse();
+    expect(isErr(validateProfileInput({ name: "🍣".repeat(31) }))).toBeTrue();
   });
 
   it("名前は前後の空白を除いて 30 文字までなら通す", () => {
     expect(
-      validateProfileInput({ name: ` ${"a".repeat(30)} ` }).isOk(),
+      !isErr(validateProfileInput({ name: ` ${"a".repeat(30)} ` })),
     ).toBeTrue();
   });
 
@@ -149,16 +151,18 @@ describe("validateProfileInput", () => {
     ["#rgb", "#abc"],
     ["CSS に埋め込める別の値", "red;background:url(x)"],
   ])("color が %s の場合, ValidationError となる", (_, color) => {
-    expect(validateProfileInput({ color })._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateProfileInput({ color })).issues).toEqual({
       color: ["カラーコードは #rrggbb の形式で入力してください"],
     });
   });
 
   it("画像を設定しようとした場合, ValidationError となる", () => {
     expect(
-      validateProfileInput({
-        image: "https://example.com/a.png",
-      })._unsafeUnwrapErr().issues,
+      unwrapErr(
+        validateProfileInput({
+          image: "https://example.com/a.png",
+        }),
+      ).issues,
     ).toEqual({ image: ["画像は設定できません"] });
   });
 
@@ -167,7 +171,7 @@ describe("validateProfileInput", () => {
     const actual = validateProfileInput({ name: "", color: "x", image: "x" });
 
     // Assert:
-    expect(Object.keys(actual._unsafeUnwrapErr().issues)).toEqual([
+    expect(Object.keys(unwrapErr(actual).issues)).toEqual([
       "name",
       "color",
       "image",
@@ -178,9 +182,9 @@ describe("validateProfileInput", () => {
 describe("validateSignupEmail", () => {
   it("ブラウザが作る <UUID>@nwu.invalid は通す", () => {
     expect(
-      validateSignupEmail(
-        "4dde6d9e-55c0-4c17-ade9-06deb4dd224e@nwu.invalid",
-      ).isOk(),
+      !isErr(
+        validateSignupEmail("4dde6d9e-55c0-4c17-ade9-06deb4dd224e@nwu.invalid"),
+      ),
     ).toBeTrue();
   });
 
@@ -189,7 +193,7 @@ describe("validateSignupEmail", () => {
     ["大文字の UUID", "4DDE6D9E-55C0-4C17-ADE9-06DEB4DD224E@nwu.invalid"],
     ["文字列でない", undefined],
   ])("%sの場合, ValidationError となる", (_, email) => {
-    expect(validateSignupEmail(email)._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateSignupEmail(email)).issues).toEqual({
       email: ["登録できません"],
     });
   });
@@ -201,7 +205,7 @@ describe("validateImageFile", () => {
     ["JPEG", JPEG, "jpg", "image/jpeg"],
     ["WebP", WEBP, "webp", "image/webp"],
   ])("%s の場合, 形式を判定する", (_, bytes, ext, contentType) => {
-    expect(validateImageFile(bytes)._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(validateImageFile(bytes))).toMatchObject({
       ext,
       contentType,
     });
@@ -221,7 +225,7 @@ describe("validateImageFile", () => {
       "JPEG、PNG、WebP の画像を選んでください",
     ],
   ])("%s場合, ValidationError となる", (_, bytes, message) => {
-    expect(validateImageFile(bytes)._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateImageFile(bytes)).issues).toEqual({
       file: [message],
     });
   });
@@ -232,7 +236,7 @@ describe("validateImageFile", () => {
     bytes.set(PNG);
 
     // Act / Assert:
-    expect(validateImageFile(bytes).isOk()).toBeTrue();
+    expect(isErr(validateImageFile(bytes))).toBeFalse();
   });
 });
 
