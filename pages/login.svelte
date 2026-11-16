@@ -5,11 +5,11 @@ export const layout = false;
 
 <script lang="ts">
   import { useRouter } from "@void/svelte";
-  import Stage from "../src/lib/Stage.svelte";
-  import { authClient, isPasskeyCancelled } from "../src/lib/auth-client";
+  import Stage from "../src/lib/components/Stage.svelte";
+  import { authClient, isPasskeyCancelled } from "../src/lib/client/auth-client";
   import { GUEST_NAME } from "../domain/Member/profile/rule.ts";
-  import { clearBadge } from "../src/lib/push";
-  import { registerServiceWorker } from "../src/lib/pwa";
+  import { clearBadge } from "../src/lib/client/push";
+  import { registerServiceWorker } from "../src/lib/client/pwa";
   import { onMount, tick } from "svelte";
   import type { Props } from "./login.server";
 

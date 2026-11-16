@@ -5,7 +5,10 @@ import type {
   PlaylistInfo,
   YoutubeVideoItem,
 } from "../../domain/Content/type.ts";
-import { type ExternalError, newExternalError } from "../../error.ts";
+import {
+  type ExternalError,
+  newExternalError,
+} from "../../domain/shared/error.ts";
 
 const API = "https://www.googleapis.com/youtube/v3";
 // 1 回の問い合わせで渡せる ID の数

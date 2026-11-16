@@ -1,4 +1,4 @@
-import type { UserId } from "../vo.ts";
+import type { UserId } from "../shared/vo.ts";
 import type { PushAuth, PushEndpoint, PushP256dh } from "./vo.ts";
 
 /**

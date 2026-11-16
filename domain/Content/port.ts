@@ -1,6 +1,6 @@
 import type { ResultAsync } from "neverthrow";
-import type { AppError } from "../../error.ts";
-import type { UserId, YoutubeId } from "../vo.ts";
+import type { AppError } from "../shared/error.ts";
+import type { UserId, YoutubeId } from "../shared/vo.ts";
 import type {
   FetchedVideo,
   Link,

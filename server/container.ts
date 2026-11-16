@@ -1,4 +1,4 @@
-// Composition Root。ドメインの WorkFlows（コマンド）と Queries（Read Model）に、実際の adapter を組み込む。
+// Composition Root。ドメインの …Usecase（ContentUsecase・MemberUsecase・NotificationUsecase）に、実際の adapter を組み込む。
 // 作るのは軽いクロージャだけなので、ハンドラの中で毎回 container() を呼んでよい。
 // auth.ts からも読み込まれるので（Void の CLI は拡張子なしの相対 import を解決できない）、相対 import には .ts を付けること
 import { db } from "void/db";
@@ -12,13 +12,10 @@ import { newAvatarStorage } from "../adapter/r2/avatar.ts";
 import { cryptoRandom, systemClock } from "../adapter/system.ts";
 import { webPushSender } from "../adapter/webpush/sender.ts";
 import { newYoutubeApi } from "../adapter/youtube/api.ts";
-import { newContentQueries } from "../domain/Content/query.ts";
-import { newContentWorkFlows } from "../domain/Content/workflow.ts";
-import { newMemberQueries } from "../domain/Member/query.ts";
-import { newMemberWorkFlows } from "../domain/Member/workflow.ts";
-import { newNotificationQueries } from "../domain/Notification/query.ts";
+import { newContentUsecase } from "../domain/Content/usecase.ts";
+import { newMemberUsecase } from "../domain/Member/usecase.ts";
 import type { VapidKeys } from "../domain/Notification/type.ts";
-import { newNotificationWorkFlows } from "../domain/Notification/workflow.ts";
+import { newNotificationUsecase } from "../domain/Notification/usecase.ts";
 
 // VAPID の鍵（新着動画のプッシュ通知）。どれかが未設定なら null（通知を送らず、プロフィールにも通知の設定を出さない）
 const vapidKeys = (): VapidKeys | null =>
@@ -34,42 +31,36 @@ export const container = () => {
   const contentRepository = newContentRepository(db);
   const inviteRepository = newInviteRepository(db);
   const profileRepository = newProfileRepository(db);
+  const avatarStorage = newAvatarStorage(storage);
   const vapid = vapidKeys();
-  // コンテンツ集約の Read Model: ホーム・バッジの本数・プレイリストの一覧
-  const contentQueries = newContentQueries(contentRepository, cryptoRandom);
+  // コンテンツ集約: 動画の自動取得・プレイリストの登録・視聴記録と、ホーム・バッジの本数・プレイリストの一覧。
+  // YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
+  const contentUsecase = newContentUsecase(
+    contentRepository,
+    env.YOUTUBE_API_KEY ? newYoutubeApi(env.YOUTUBE_API_KEY) : null,
+    cryptoRandom,
+  );
   return {
-    // コンテンツ集約: 動画の自動取得・プレイリストの登録・視聴記録。
-    // YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
-    contentWorkFlows: newContentWorkFlows(
-      contentRepository,
-      env.YOUTUBE_API_KEY ? newYoutubeApi(env.YOUTUBE_API_KEY) : null,
-    ),
-    contentQueries,
+    contentUsecase,
     // メンバー集約: 招待（Invite）と、プロフィール・ログイン（Profile）
-    memberWorkFlows: newMemberWorkFlows(
+    memberUsecase: newMemberUsecase(
       inviteRepository,
       profileRepository,
-      newAvatarStorage(storage),
+      avatarStorage,
       systemClock,
       cryptoRandom,
     ),
-    memberQueries: newMemberQueries(
-      inviteRepository,
-      profileRepository,
-      systemClock,
-    ),
-    // 通知集約
-    notificationWorkFlows: newNotificationWorkFlows(
+    // 通知集約: Web Push の購読と、新着動画の通知
+    notificationUsecase: newNotificationUsecase(
       newPushRepository(db),
       webPushSender,
       // バッジの本数はコンテンツ集約の Read Model を使う
       {
         countUnwatchedNew: (userIds) =>
-          contentQueries.countUnwatchedNew({ userIds }).map((v) => v.counts),
+          contentUsecase.countUnwatchedNew({ userIds }).map((v) => v.counts),
       },
       systemClock,
       vapid,
     ),
-    notificationQueries: newNotificationQueries(vapid),
   };
 };

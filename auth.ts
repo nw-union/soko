@@ -7,9 +7,12 @@ import {
 import { defineAuth } from "void/auth";
 import { DEFAULT_INVITE_LIMIT } from "./domain/Member/invite/logic.ts";
 import { FRESH_AGE_SECONDS } from "./domain/Member/profile/logic.ts";
-import type { AppError } from "./error.ts";
+import type { AppError } from "./domain/shared/error.ts";
 import { container } from "./server/container.ts";
-import { INVITE_COOKIE, readInviteCookie } from "./server/invite-cookie.ts";
+import {
+  INVITE_COOKIE,
+  readInviteCookie,
+} from "./server/http/invite-cookie.ts";
 
 // プロフィール（名前・イメージカラー・アイコン）と招待のルールは domain/ にある。ここは better-auth とつなぐだけ
 
@@ -63,7 +66,7 @@ export default defineAuth(({ defaults }) => {
       deleteUser: {
         enabled: true,
         afterDelete: async (user) => {
-          const cleaned = await container().memberWorkFlows.cleanupDeletedUser({
+          const cleaned = await container().memberUsecase.cleanupDeletedUser({
             userId: user.id,
             image: user.image,
           });
@@ -88,7 +91,7 @@ export default defineAuth(({ defaults }) => {
           // 画像（image）はここでは設定できない（routes/api/avatar.ts だけが設定する）
           before: async (data) => {
             const validated =
-              await container().memberWorkFlows.validateProfileUpdate(data);
+              await container().memberUsecase.validateProfileUpdate(data);
             if (validated.isErr()) throw toAPIError(validated.error);
             return { data: { ...data, ...validated.value } };
           },
@@ -98,18 +101,18 @@ export default defineAuth(({ defaults }) => {
           before: async (user, ctx) => {
             // 登録時のメールアドレスは、ブラウザ（pages/login.svelte）が作る使い捨ての <UUID>@nwu.invalid だけ
             const validated =
-              await container().memberWorkFlows.validateSignUp(user);
+              await container().memberUsecase.validateSignUp(user);
             if (validated.isErr()) throw toAPIError(validated.error);
             const data = { ...user, ...validated.value };
             // 同じトークンで同時に登録されても、成功するのは 1 回だけ。理由は教えずに同じエラーにする
-            const claimed = await container().memberWorkFlows.claimInvite({
+            const claimed = await container().memberUsecase.claimInvite({
               token: readInviteCookie(ctx?.request),
             });
             if (claimed.isErr()) throw toAPIError(claimed.error);
             return { data };
           },
           after: async (user, ctx) => {
-            const linked = await container().memberWorkFlows.linkInvitedUser({
+            const linked = await container().memberUsecase.linkInvitedUser({
               token: readInviteCookie(ctx?.request),
               userId: user.id,
             });
@@ -131,7 +134,7 @@ export default defineAuth(({ defaults }) => {
           model: "passkey",
           where: [{ field: "userId", value: session.user.id }],
         });
-        const checked = await container().memberWorkFlows.checkPasskeyDeletion({
+        const checked = await container().memberUsecase.checkPasskeyDeletion({
           sessionCreatedAt: new Date(session.session.createdAt),
           passkeyCount,
         });

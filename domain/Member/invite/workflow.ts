@@ -1,7 +1,7 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { MemberWorkFlows } from "../../../schema/service.ts";
-import type { ClockPort, RandomPort } from "../../port.ts";
-import { newUserId } from "../../vo.ts";
+import type { ClockPort, RandomPort } from "../../shared/port.ts";
+import { newUserId } from "../../shared/vo.ts";
+import type { MemberUsecase } from "../api.ts";
 import {
   createNewInvite,
   DEFAULT_INVITE_LIMIT,
@@ -21,14 +21,14 @@ import {
 } from "./vo.ts";
 
 /**
- * 招待の WorkFlows (コマンド). 登録の手前のチェック (startInvite) もここに置く
+ * 招待のユースケースのうち, コマンド. 登録の手前のチェック (startInvite) もここに置く
  */
 export const newInviteWorkFlows = (
   r: InviteRepositoryPort,
   clock: ClockPort,
   random: RandomPort,
 ): Pick<
-  MemberWorkFlows,
+  MemberUsecase,
   | "issueInvite"
   | "revokeInvite"
   | "startInvite"

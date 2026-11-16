@@ -1,11 +1,8 @@
 import { okAsync, ResultAsync } from "neverthrow";
-import type { AppError } from "../../error.ts";
-import type {
-  NewNotifiedEvt,
-  NotificationWorkFlows,
-} from "../../schema/service.ts";
-import type { ClockPort } from "../port.ts";
-import { newUserId } from "../vo.ts";
+import type { AppError } from "../shared/error.ts";
+import type { ClockPort } from "../shared/port.ts";
+import { newUserId } from "../shared/vo.ts";
+import type { NewNotifiedEvt, NotificationUsecase } from "./api.ts";
 import {
   buildPayload,
   classifySendResult,
@@ -28,7 +25,7 @@ import type {
 } from "./type.ts";
 
 /**
- * 通知集約の WorkFlows (コマンド). Web Push の購読と, 新着動画の通知
+ * 通知集約のユースケースのうち, コマンド (状態を変えるもの). Web Push の購読と, 新着動画の通知
  *
  * @param vapid - VAPID の鍵. どれかが未設定なら null (通知の機能を使わない)
  */
@@ -38,7 +35,7 @@ export const newNotificationWorkFlows = (
   badge: BadgeCounterPort,
   clock: ClockPort,
   vapid: VapidKeys | null,
-): NotificationWorkFlows => {
+): Pick<NotificationUsecase, "subscribe" | "unsubscribe" | "notifyNew"> => {
   /**
    * 全購読者に送る. 1 件ずつの失敗では止めない
    */

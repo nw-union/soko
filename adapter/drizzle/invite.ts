@@ -28,6 +28,7 @@ export const newInviteRepository = (db: Database): InviteRepositoryPort => ({
         ORDER BY i.id DESC`),
     ).map((rows) =>
       rows.map((row) => ({
+        type: "IssuedInvite" as const,
         id: row.id,
         createdAt: row.created_at,
         expiresAt: row.expires_at,

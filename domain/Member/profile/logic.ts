@@ -1,12 +1,12 @@
 import { err, ok, Result } from "neverthrow";
+import { isHttpUrl } from "../../rule/url.ts";
 import {
   type ForbiddenError,
   mergeValidationError,
   newForbiddenError,
   newValidationErrorWithMessage,
   type ValidationError,
-} from "../../../error.ts";
-import { isHttpUrl } from "../../url.ts";
+} from "../../shared/error.ts";
 import {
   AVATAR_MAX_BYTES,
   isAvatarPath,

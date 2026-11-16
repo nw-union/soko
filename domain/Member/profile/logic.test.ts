@@ -134,6 +134,11 @@ describe("validateProfileInput", () => {
     });
   });
 
+  it("名前の文字数はコードポイントで数える (絵文字 30 個は通す)", () => {
+    expect(validateProfileInput({ name: "🍣".repeat(30) }).isOk()).toBeTrue();
+    expect(validateProfileInput({ name: "🍣".repeat(31) }).isErr()).toBeTrue();
+  });
+
   it("名前は前後の空白を除いて 30 文字までなら通す", () => {
     expect(
       validateProfileInput({ name: ` ${"a".repeat(30)} ` }).isOk(),

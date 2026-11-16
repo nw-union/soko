@@ -1,13 +1,13 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../server/container.ts";
-import { errorResponse } from "../../server/http.ts";
+import { errorResponse } from "../../server/http/error.ts";
 
 // 自分が発行した招待の一覧と、あと何回発行できるか
 export const GET = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberQueries.listInvites({ userId: user.id })
+    .memberUsecase.listInvites({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -18,7 +18,7 @@ export const GET = defineHandler(async (c) => {
 export const POST = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberWorkFlows.issueInvite({ userId: user.id })
+    .memberUsecase.issueInvite({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -29,7 +29,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberWorkFlows.revokeInvite({ userId: user.id, id: c.req.query("id") })
+    .memberUsecase.revokeInvite({ userId: user.id, id: c.req.query("id") })
     .match(
       () => null,
       (e) => errorResponse(c, e),

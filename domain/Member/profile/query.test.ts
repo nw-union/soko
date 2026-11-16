@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { okAsync } from "neverthrow";
-import type { ProfileRepositoryPort } from "./port.ts";
+import { errAsync, okAsync } from "neverthrow";
+import { newStorageError } from "../../shared/error.ts";
+import type { AvatarStoragePort, ProfileRepositoryPort } from "./port.ts";
 import { newProfileQueries } from "./query.ts";
 
 // ----------------------------------------------------------------------------
@@ -11,14 +12,35 @@ const notUsed = (): never => {
   throw new Error("このテストでは使わない");
 };
 
-const newFakes = (passkeys = 0) => {
+// 保存されている画像のキー
+const KEY = `${"a".repeat(32)}.png`;
+const body = new ReadableStream();
+
+const newFakes = (passkeys = 0, failGet = false) => {
   const repo: ProfileRepositoryPort = {
     countPasskeys: (user) => okAsync(user === "user1" ? passkeys : 0),
     readImage: notUsed,
     updateImage: notUsed,
     deleteUserData: notUsed,
   };
-  return newProfileQueries(repo);
+  const storage: AvatarStoragePort = {
+    putAvatar: notUsed,
+    deleteAvatar: notUsed,
+    getAvatar: (key) =>
+      failGet
+        ? errAsync(newStorageError("boom"))
+        : okAsync(
+            key === KEY
+              ? {
+                  type: "AvatarFile",
+                  body,
+                  contentType: "image/png",
+                  etag: '"e1"',
+                }
+              : null,
+          ),
+  };
+  return newProfileQueries(repo, storage);
 };
 
 // ----------------------------------------------------------------------------
@@ -54,5 +76,48 @@ describe("hasPasskey", () => {
 
     // Assert:
     expect(actual._unsafeUnwrap()).toEqual({ hasPasskey: expected });
+  });
+});
+
+// ----------------------------------------------------------------------------
+// getAvatarFile
+// ----------------------------------------------------------------------------
+describe("getAvatarFile", () => {
+  it("保存されている画像を返す", async () => {
+    // Act:
+    const actual = await newFakes().getAvatarFile({ key: KEY });
+
+    // Assert:
+    expect(actual._unsafeUnwrap()).toEqual({
+      body,
+      contentType: "image/png",
+      etag: '"e1"',
+    });
+  });
+
+  it("画像がない場合, NotFoundError となる", async () => {
+    // Act:
+    const actual = await newFakes().getAvatarFile({
+      key: `${"b".repeat(32)}.png`,
+    });
+
+    // Assert:
+    expect(actual._unsafeUnwrapErr().type).toBe("NotFoundError");
+  });
+
+  it("キーの形が違う場合, ストレージを読まずに NotFoundError となる", async () => {
+    // Act:
+    const actual = await newFakes(0, true).getAvatarFile({ key: "../secret" });
+
+    // Assert:
+    expect(actual._unsafeUnwrapErr().type).toBe("NotFoundError");
+  });
+
+  it("ストレージのエラーは, そのまま返す", async () => {
+    // Act:
+    const actual = await newFakes(0, true).getAvatarFile({ key: KEY });
+
+    // Assert:
+    expect(actual._unsafeUnwrapErr().type).toBe("StorageError");
   });
 });

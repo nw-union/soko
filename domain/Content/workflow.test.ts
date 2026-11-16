@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { errAsync, okAsync } from "neverthrow";
-import { newDatabaseError } from "../../error.ts";
+import { newDatabaseError } from "../shared/error.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type {
   FetchedVideo,
@@ -474,7 +474,7 @@ describe("プレイリストの管理", () => {
       null,
     );
     const actual = await wf.createPlaylist({ playlistId: "PLabcdefghij" });
-    expect(actual._unsafeUnwrap().id).toBe(7);
+    expect(actual._unsafeUnwrap().playlist.id).toBe(7);
     expect(saved).toEqual(["PLabcdefghij"]);
   });
 
@@ -505,14 +505,23 @@ describe("プレイリストの管理", () => {
       },
       null,
     );
-    const actual = await wf.deletePlaylist({ id: 7 });
+    const actual = await wf.deletePlaylist({ id: "7" });
     expect(actual.isOk()).toBe(true);
     expect(deleted).toEqual([7]);
   });
 
   it("deletePlaylist: id が不正なら ValidationError", async () => {
     const wf = newContentWorkFlows(unusedRepo, null);
-    const actual = await wf.deletePlaylist({ id: -1 });
+    const actual = await wf.deletePlaylist({ id: "-1" });
     expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
   });
+
+  it.each(["", "abc", "1.5"])(
+    "deletePlaylist: id が %p なら ValidationError",
+    async (id) => {
+      const wf = newContentWorkFlows(unusedRepo, null);
+      const actual = await wf.deletePlaylist({ id });
+      expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    },
+  );
 });

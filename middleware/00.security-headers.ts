@@ -8,7 +8,7 @@ export default defineMiddleware(
     contentSecurityPolicy: import.meta.env.PROD
       ? {
           defaultSrc: ["'self'"],
-          // YouTube の IFrame Player API（src/lib/youtube-player.ts）は www.youtube.com からスクリプトを読む
+          // YouTube の IFrame Player API（src/lib/client/youtube-player.ts）は www.youtube.com からスクリプトを読む
           scriptSrc: ["'self'", "https://www.youtube.com"],
           // Svelte が style 属性（--ring など）を使う
           styleSrc: ["'self'", "'unsafe-inline'"],

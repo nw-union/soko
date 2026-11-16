@@ -1,22 +1,22 @@
 import { errAsync, okAsync, Result, ResultAsync } from "neverthrow";
-import { type AppError, newConflictError } from "../../error.ts";
+import { type AppError, newConflictError } from "../shared/error.ts";
+import { newUserId } from "../shared/vo.ts";
 import type {
   AllSyncedEvt,
-  ContentWorkFlows,
+  ContentUsecase,
+  CreatePlaylistEvt,
   NewSyncedEvt,
-  PlaylistSettingDto,
-} from "../../schema/service.ts";
-import { newUserId } from "../vo.ts";
+} from "./api.ts";
+import { convToPlaylistSettingDto } from "./logic/dto.ts";
+import { validateWatchedVideo } from "./logic/feed.ts";
 import {
   canRemoveOrphans,
-  convToPlaylistSettingDto,
   planFullLinks,
   planNewLinks,
   playlistsToRename,
-  toFetchedVideos,
   unknownVideoIds,
-  validateWatchedVideo,
-} from "./logic.ts";
+} from "./logic/sync.ts";
+import { toFetchedVideos } from "./logic/youtube.ts";
 import type { ContentRepositoryPort, YoutubePort } from "./port.ts";
 import type { Playlist } from "./type.ts";
 import { newPlaylistId, newPlaylistRowId } from "./vo.ts";
@@ -33,15 +33,25 @@ const sequence = <T, U>(
     okAsync([]),
   );
 
+type ContentCommands = Pick<
+  ContentUsecase,
+  | "syncAll"
+  | "syncNew"
+  | "createPlaylist"
+  | "deletePlaylist"
+  | "watch"
+  | "unwatch"
+>;
+
 /**
- * コンテンツ集約の WorkFlows (コマンド). YouTube からの取り込み・プレイリストの登録・視聴記録
+ * コンテンツ集約のユースケースのうち, コマンド (状態を変えるもの). YouTube からの取り込み・プレイリストの登録・視聴記録
  *
  * @param yt - YouTube Data API. API キーが未設定なら null (同期しない)
  */
 export const newContentWorkFlows = (
   r: ContentRepositoryPort,
   yt: YoutubePort | null,
-): ContentWorkFlows => {
+): ContentCommands => {
   /**
    * プレイリストごとの動画 ID (DB の ID → YouTube 上の順の動画 ID)
    */
@@ -183,16 +193,16 @@ export const newContentWorkFlows = (
      * プレイリストを足す
      */
     createPlaylist: ({ playlistId }) =>
-      // Step 1. バリデーション: unknown -> PlaylistId
+      // Step 1. バリデーション: string -> PlaylistId
       okAsync(playlistId)
         .andThen((src) => newPlaylistId(src, "playlistId"))
         // Step 2. DB 保存 (同じ ID が既にあれば null)
         .andThen((id) => r.insertPlaylist(id))
         // Step 3. 既にあれば Conflict
         .andThen(
-          (list): ResultAsync<PlaylistSettingDto, AppError> =>
+          (list): ResultAsync<CreatePlaylistEvt, AppError> =>
             list
-              ? okAsync(convToPlaylistSettingDto(list))
+              ? okAsync({ playlist: convToPlaylistSettingDto(list) })
               : errAsync(
                   newConflictError("そのプレイリストは既に登録されています"),
                 ),
@@ -202,9 +212,9 @@ export const newContentWorkFlows = (
      * プレイリストを消す
      */
     deletePlaylist: ({ id }) =>
-      // Step 1. バリデーション: unknown -> PlaylistRowId
+      // Step 1. バリデーション: string (URL のパスのまま) -> PlaylistRowId
       okAsync(id)
-        .andThen((src) => newPlaylistRowId(src, "id"))
+        .andThen((src) => newPlaylistRowId(Number(src), "id"))
         // Step 2. DB 削除
         .andThen((rowId) => r.deletePlaylist(rowId)),
 

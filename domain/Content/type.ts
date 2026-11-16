@@ -1,4 +1,4 @@
-import type { UserId } from "../vo.ts";
+import type { UserId } from "../shared/vo.ts";
 
 // ----------------------------------------------------------------------------
 // 動画・プレイリスト (DB)

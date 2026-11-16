@@ -1,10 +1,10 @@
 import { err, ok, Result, ResultAsync } from "neverthrow";
+import { base64urlToBytes } from "../../lib/base64url.ts";
 import {
   newValidationErrorWithMessage,
   type ValidationError,
-} from "../../error.ts";
-import { base64urlToBytes } from "../base64url.ts";
-import type { UserId } from "../vo.ts";
+} from "../shared/error.ts";
+import type { UserId } from "../shared/vo.ts";
 import type {
   ClaimedVideo,
   NewSubscription,

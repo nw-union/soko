@@ -1,13 +1,13 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../../server/container.ts";
-import { errorResponse } from "../../../server/http.ts";
+import { errorResponse } from "../../../server/http/error.ts";
 
 // デバッグ画面 (pages/debug.svelte) 用: 同期の対象のプレイリストの一覧
 export const GET = defineHandler(async (c) => {
   requireAuth(c);
   return container()
-    .contentQueries.listPlaylists()
+    .contentUsecase.listPlaylists()
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -21,9 +21,12 @@ export const POST = defineHandler(async (c) => {
     playlistId?: unknown;
   } | null;
   return container()
-    .contentWorkFlows.createPlaylist({ playlistId: body?.playlistId })
+    .contentUsecase.createPlaylist({
+      // 文字列でなければ空にする (形式の検証はドメインで行う)
+      playlistId: typeof body?.playlistId === "string" ? body.playlistId : "",
+    })
     .match(
-      (dto) => dto,
+      (evt) => evt,
       (e) => errorResponse(c, e),
     );
 });

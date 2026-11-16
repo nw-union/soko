@@ -1,7 +1,7 @@
 import { defineHandler, defineHead, type InferProps } from "void";
 import { getUser } from "void/auth";
 import { container } from "../server/container.ts";
-import { throwError } from "../server/http.ts";
+import { throwError } from "../server/http/error.ts";
 
 export type Props = InferProps<typeof loader>;
 
@@ -9,7 +9,7 @@ export type Props = InferProps<typeof loader>;
 export const loader = defineHandler(async (c) => {
   if (!getUser()) return c.redirect("/login");
   return container()
-    .contentQueries.listPlaylists()
+    .contentUsecase.listPlaylists()
     .match((evt) => evt, throwError);
 });
 

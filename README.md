@@ -32,14 +32,14 @@ NWU の創作を「置く」場所
 
 <br />
 
-## 🔄 WorkFlows / Queries
+## 🔄 Usecase
 
-Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は、`schema/service.ts` の WorkFlows と Queries だけを呼ぶ。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、それぞれ 2 つに分ける。
+Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は、`domain/<Context>/api.ts` に定義した `…Usecase` だけを呼ぶ。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、それぞれ 1 つの `…Usecase` を持ち、`container()` の `contentUsecase`・`memberUsecase`・`notificationUsecase` から呼ぶ。`…Usecase` の操作は 2 種類に分かれる。
 
-- **WorkFlows**（コマンド）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/` 以下の `workflow.ts`。`container()` の `contentWorkFlows`・`memberWorkFlows`・`notificationWorkFlows` から呼ぶ。全 20 本
-- **Queries**（Read Model）: 読むだけ。戻り値は `…View` / `…Dto`。実装は `domain/<Context>/` 以下の `query.ts`。`container()` の `contentQueries`・`memberQueries`・`notificationQueries` から呼ぶ。全 8 本
+- **コマンド**（表の WF）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/` 以下の `workflow.ts`。全 20 本
+- **Query**（表の Qry）: 読むだけ（Read Model）。戻り値は `…View` / `…Dto`。実装は `domain/<Context>/` 以下の `query.ts`。全 9 本
 
-better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `startInvite` は、書き込みの前提を確かめるコマンドの一部なので WorkFlows に置く。
+better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `startInvite` は、書き込みの前提を確かめるコマンドの一部なのでコマンドに置く。
 
 ### Member / Invite（招待）
 
@@ -64,6 +64,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 | Qry | `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
 | Qry | `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
+| Qry | `getAvatarFile` | アイコン画像のファイル（配信用）。キーの形が違うか画像がなければ NotFoundError |
 
 ### Content（動画の同期・ホーム・視聴記録）
 
@@ -86,7 +87,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | :-- | :-- | :-- |
 | WF | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | WF | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
-| WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
+| WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/process/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 | Qry | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 
 <br/>

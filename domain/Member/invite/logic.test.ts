@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
-import { mustUserId } from "../../vo.test.ts";
+import { mustUserId } from "../../shared/vo.test.ts";
 import {
+  convToInviteDto,
   createNewInvite,
   DEFAULT_INVITE_LIMIT,
   ensureIssued,
@@ -200,5 +201,26 @@ describe("validateInviteId", () => {
 describe("formatToken", () => {
   it("4 文字ごとにハイフンで区切る", () => {
     expect(formatToken(mustInviteToken(TOKEN))).toBe("ABCD-EFGH-JKMN-PQRS");
+  });
+});
+
+describe("convToInviteDto", () => {
+  it("画面に出す項目だけを返す", () => {
+    expect(
+      convToInviteDto({
+        type: "IssuedInvite",
+        id: 1,
+        createdAt: "2026-10-30 00:00:00",
+        expiresAt: null,
+        usedAt: "2026-10-31 00:00:00",
+        usedByName: "ゲスト",
+      }),
+    ).toEqual({
+      id: 1,
+      createdAt: "2026-10-30 00:00:00",
+      expiresAt: null,
+      usedAt: "2026-10-31 00:00:00",
+      usedByName: "ゲスト",
+    });
   });
 });

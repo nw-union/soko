@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { okAsync } from "neverthrow";
-import type { InviteDto } from "../../../schema/service.ts";
-import type { ClockPort } from "../../port.ts";
+import type { ClockPort } from "../../shared/port.ts";
 import type { InviteRepositoryPort } from "./port.ts";
 import { newInviteQueries } from "./query.ts";
+import type { IssuedInvite } from "./type.ts";
 
 // ----------------------------------------------------------------------------
 // Test Data / Fake
@@ -11,7 +11,8 @@ import { newInviteQueries } from "./query.ts";
 const NOW = new Date("2026-11-01T00:00:00Z");
 const clock: ClockPort = { now: () => NOW };
 
-const invite: InviteDto = {
+const invite: IssuedInvite = {
+  type: "IssuedInvite",
   id: 1,
   createdAt: "2026-10-30 00:00:00",
   expiresAt: "2026-11-06 00:00:00",
@@ -51,7 +52,15 @@ describe("listInvites", () => {
     expect(actual._unsafeUnwrap()).toEqual({
       limit: 5,
       remaining: 3,
-      invites: [invite],
+      invites: [
+        {
+          id: 1,
+          createdAt: "2026-10-30 00:00:00",
+          expiresAt: "2026-11-06 00:00:00",
+          usedAt: null,
+          usedByName: null,
+        },
+      ],
     });
   });
 

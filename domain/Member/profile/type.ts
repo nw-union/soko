@@ -11,6 +11,17 @@ export interface ImageFile {
 }
 
 /**
+ * 保存されているアイコン画像 (配信するもの)
+ */
+export interface AvatarFile {
+  readonly type: "AvatarFile";
+  readonly body: ReadableStream;
+  // 保存したときの Content-Type. わからなければ null
+  readonly contentType: string | null;
+  readonly etag: string;
+}
+
+/**
  * 検証済みのプロフィールの入力 (登録・更新で本人が送ってくるもの)
  *
  * 送られてこなかった項目は undefined のまま (変更しない). color の null はイメージカラーを外す

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { okAsync } from "neverthrow";
-import type { RandomPort } from "../port.ts";
+import type { RandomPort } from "../shared/port.ts";
 import type { ContentRepositoryPort } from "./port.ts";
 import { newContentQueries } from "./query.ts";
 import type { Playlist, PlaylistVideo } from "./type.ts";
