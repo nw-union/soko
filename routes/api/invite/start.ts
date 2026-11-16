@@ -12,7 +12,7 @@ import {
 export const POST = defineHandler(async (c) => {
   const body = await c.req.json().catch(() => ({}));
   return container()
-    .memberWorkFlows.startInvite({ token: body?.token })
+    .memberUsecase.startInvite({ token: body?.token })
     .match(
       ({ token }) => {
         setCookie(c, INVITE_COOKIE, token, {

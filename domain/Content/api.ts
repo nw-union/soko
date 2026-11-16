@@ -1,5 +1,5 @@
-// コンテンツ集約の入口の I/F（アプリケーションサービス）: WorkFlows（コマンド）と Queries（Read Model）、Cmd / Evt / Query / View / DTO。
-// Web 層（pages/ routes/ crons/ auth.ts）は、ここに定義した型と server/container.ts の WorkFlows・Queries だけを使う。
+// コンテンツ集約の入口の I/F（ユースケース）: ContentUsecase と、Cmd / Evt / Query / View / DTO。
+// Web 層（pages/ routes/ crons/ auth.ts）は、ここに定義した型と server/container.ts の contentUsecase だけを使う。
 // 入力（Cmd / Query）は画面や API から来た値のまま受け取り、検証はドメインで行う。
 // 出口の I/F（副作用）は port.ts に置く
 import type { ResultAsync } from "neverthrow";

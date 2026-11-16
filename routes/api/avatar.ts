@@ -9,7 +9,7 @@ export const POST = defineHandler(async (c) => {
   const form = await c.req.formData().catch(() => null);
   const file = form?.get("file");
   return container()
-    .memberWorkFlows.changeAvatar({
+    .memberUsecase.changeAvatar({
       userId: user.id,
       file:
         file instanceof File ? new Uint8Array(await file.arrayBuffer()) : null,
@@ -24,7 +24,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberWorkFlows.removeAvatar({ userId: user.id })
+    .memberUsecase.removeAvatar({ userId: user.id })
     .match(
       () => null,
       (e) => errorResponse(c, e),

@@ -1,17 +1,17 @@
 import { okAsync, ResultAsync } from "neverthrow";
 import type { ClockPort } from "../../shared/port.ts";
 import { newUserId } from "../../shared/vo.ts";
-import type { MemberQueries } from "../api.ts";
+import type { MemberUsecase } from "../api.ts";
 import { convToInviteDto, limitOf, remainingOf } from "./logic.ts";
 import type { InviteRepositoryPort } from "./port.ts";
 
 /**
- * 招待の Queries (Read Model)
+ * 招待のユースケースのうち, Query (Read Model)
  */
 export const newInviteQueries = (
   r: InviteRepositoryPort,
   clock: ClockPort,
-): Pick<MemberQueries, "listInvites"> => ({
+): Pick<MemberUsecase, "listInvites"> => ({
   /**
    * 自分が発行した招待の一覧と, あと何回発行できるか
    */

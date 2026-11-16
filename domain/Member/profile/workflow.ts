@@ -2,7 +2,7 @@ import { okAsync, type ResultAsync } from "neverthrow";
 import type { AppError } from "../../shared/error.ts";
 import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import { newUserId } from "../../shared/vo.ts";
-import type { MemberWorkFlows } from "../api.ts";
+import type { MemberUsecase } from "../api.ts";
 import {
   ensurePasskeyDeletable,
   validateImageFile,
@@ -14,7 +14,7 @@ import type { ValidatedProfile } from "./type.ts";
 import { createAvatarKey, parseAvatarPath, toAvatarPath } from "./vo.ts";
 
 /**
- * プロフィール・ログインの WorkFlows (コマンド). better-auth の手前のチェック (validate〜・check〜) もここに置く
+ * プロフィール・ログインのユースケースのうち, コマンド. better-auth の手前のチェック (validate〜・check〜) もここに置く
  */
 export const newProfileWorkFlows = (
   r: ProfileRepositoryPort,
@@ -22,7 +22,7 @@ export const newProfileWorkFlows = (
   clock: ClockPort,
   random: RandomPort,
 ): Pick<
-  MemberWorkFlows,
+  MemberUsecase,
   | "validateProfileUpdate"
   | "validateSignUp"
   | "changeAvatar"

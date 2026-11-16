@@ -1,4 +1,4 @@
-// アイコン画像の配信の応答. 中身は Query (memberQueries.getAvatarFile) で読み, ここでは HTTP の応答にするだけ
+// アイコン画像の配信の応答. 中身は Query (memberUsecase.getAvatarFile) で読み, ここでは HTTP の応答にするだけ
 import type { AvatarFileView } from "../../domain/Member/api.ts";
 
 /**

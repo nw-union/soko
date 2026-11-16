@@ -7,7 +7,7 @@ import { errorResponse } from "../../server/http/error.ts";
 export const GET = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberQueries.listInvites({ userId: user.id })
+    .memberUsecase.listInvites({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -18,7 +18,7 @@ export const GET = defineHandler(async (c) => {
 export const POST = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberWorkFlows.issueInvite({ userId: user.id })
+    .memberUsecase.issueInvite({ userId: user.id })
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -29,7 +29,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .memberWorkFlows.revokeInvite({ userId: user.id, id: c.req.query("id") })
+    .memberUsecase.revokeInvite({ userId: user.id, id: c.req.query("id") })
     .match(
       () => null,
       (e) => errorResponse(c, e),

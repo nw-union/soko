@@ -1,4 +1,4 @@
-// Composition Root。ドメインの WorkFlows（コマンド）と Queries（Read Model）に、実際の adapter を組み込む。
+// Composition Root。ドメインの …Usecase（ContentUsecase・MemberUsecase・NotificationUsecase）に、実際の adapter を組み込む。
 // 作るのは軽いクロージャだけなので、ハンドラの中で毎回 container() を呼んでよい。
 // auth.ts からも読み込まれるので（Void の CLI は拡張子なしの相対 import を解決できない）、相対 import には .ts を付けること
 import { db } from "void/db";
@@ -13,11 +13,9 @@ import { cryptoRandom, systemClock } from "../adapter/system.ts";
 import { webPushSender } from "../adapter/webpush/sender.ts";
 import { newYoutubeApi } from "../adapter/youtube/api.ts";
 import { newContentUsecase } from "../domain/Content/usecase.ts";
-import { newMemberQueries } from "../domain/Member/query.ts";
-import { newMemberWorkFlows } from "../domain/Member/workflow.ts";
-import { newNotificationQueries } from "../domain/Notification/query.ts";
+import { newMemberUsecase } from "../domain/Member/usecase.ts";
 import type { VapidKeys } from "../domain/Notification/type.ts";
-import { newNotificationWorkFlows } from "../domain/Notification/workflow.ts";
+import { newNotificationUsecase } from "../domain/Notification/usecase.ts";
 
 // VAPID の鍵（新着動画のプッシュ通知）。どれかが未設定なら null（通知を送らず、プロフィールにも通知の設定を出さない）
 const vapidKeys = (): VapidKeys | null =>
@@ -45,21 +43,15 @@ export const container = () => {
   return {
     contentUsecase,
     // メンバー集約: 招待（Invite）と、プロフィール・ログイン（Profile）
-    memberWorkFlows: newMemberWorkFlows(
+    memberUsecase: newMemberUsecase(
       inviteRepository,
       profileRepository,
       avatarStorage,
       systemClock,
       cryptoRandom,
     ),
-    memberQueries: newMemberQueries(
-      inviteRepository,
-      profileRepository,
-      avatarStorage,
-      systemClock,
-    ),
-    // 通知集約
-    notificationWorkFlows: newNotificationWorkFlows(
+    // 通知集約: Web Push の購読と、新着動画の通知
+    notificationUsecase: newNotificationUsecase(
       newPushRepository(db),
       webPushSender,
       // バッジの本数はコンテンツ集約の Read Model を使う
@@ -70,6 +62,5 @@ export const container = () => {
       systemClock,
       vapid,
     ),
-    notificationQueries: newNotificationQueries(vapid),
   };
 };

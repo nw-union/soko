@@ -11,7 +11,7 @@ export const GET = defineHandler(async (c) => {
   requireAuth(c);
   // WF 実行: 購読に使う VAPID の公開鍵取得する
   return container()
-    .notificationQueries.getPublicKey()
+    .notificationUsecase.getPublicKey()
     .match(
       (evt) => evt,
       (e) => errorResponse(c, e),
@@ -24,7 +24,7 @@ export const POST = defineHandler(async (c) => {
   const user = requireAuth(c);
   const body = await c.req.json().catch(() => null);
   return container()
-    .notificationWorkFlows.subscribe({ userId: user.id, body })
+    .notificationUsecase.subscribe({ userId: user.id, body })
     .match(
       () => null,
       (e) => errorResponse(c, e),
@@ -35,7 +35,7 @@ export const POST = defineHandler(async (c) => {
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
   return container()
-    .notificationWorkFlows.unsubscribe({
+    .notificationUsecase.unsubscribe({
       userId: user.id,
       endpoint: c.req.query("endpoint"),
     })

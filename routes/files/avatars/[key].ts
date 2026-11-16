@@ -6,6 +6,6 @@ import { errorResponse } from "../../../server/http/error.ts";
 // アイコン画像の配信
 export const GET = defineHandler((c) =>
   container()
-    .memberQueries.getAvatarFile({ key: c.req.param("key") })
+    .memberUsecase.getAvatarFile({ key: c.req.param("key") })
     .match(avatarResponse, (e) => errorResponse(c, e)),
 );

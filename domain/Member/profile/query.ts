@@ -1,7 +1,7 @@
 import { errAsync, okAsync } from "neverthrow";
 import { newNotFoundError } from "../../shared/error.ts";
 import { newUserId } from "../../shared/vo.ts";
-import type { MemberQueries } from "../api.ts";
+import type { MemberUsecase } from "../api.ts";
 import { resolveColor, resolveImage } from "./logic.ts";
 import type { AvatarStoragePort, ProfileRepositoryPort } from "./port.ts";
 import { newAvatarKey } from "./vo.ts";
@@ -9,12 +9,12 @@ import { newAvatarKey } from "./vo.ts";
 const NOT_FOUND = "アイコン画像が見つかりません";
 
 /**
- * プロフィール・ログインの Queries (Read Model)
+ * プロフィール・ログインのユースケースのうち, Query (Read Model)
  */
 export const newProfileQueries = (
   r: ProfileRepositoryPort,
   s: AvatarStoragePort,
-): Pick<MemberQueries, "getDisplayUser" | "hasPasskey" | "getAvatarFile"> => ({
+): Pick<MemberUsecase, "getDisplayUser" | "hasPasskey" | "getAvatarFile"> => ({
   /**
    * 画面に出すユーザー
    */
