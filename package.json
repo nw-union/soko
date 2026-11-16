@@ -17,8 +17,7 @@
     "@nw-union/nw-utils": "^0.0.11",
     "better-auth": "1.7.11",
     "hono": "^4.13.13",
-    "svelte": "^5.57.2",
-    "valibot": "^1.5.0"
+    "svelte": "^5.57.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",

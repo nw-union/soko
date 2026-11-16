@@ -84,7 +84,7 @@ export interface ExternalError {
 // Constructor
 // ----------------------------------------------------------------------------
 /**
- * スキーマの検証 (valibot の safeParse など) の結果の issues から作る
+ * スキーマの検証 (lib/vo のパーサーなど) の結果の issues から作る
  */
 export const newValidationError = (
   name: string,

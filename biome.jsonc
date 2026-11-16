@@ -143,7 +143,7 @@
     },
     {
       // ブラウザからも import するルール（domain/rule/ と各コンテキストの rule.ts）。
-      // valibot（VO のスキーマ）や VO・エラーを import すると、クライアントのバンドルに入るので禁止する
+      // VO のパーサー（lib/vo）や VO・エラーを import すると、クライアントのバンドルに入るので禁止する
       "includes": ["domain/rule/**", "domain/**/rule.ts"],
       "linter": {
         "rules": {
@@ -184,12 +184,11 @@
                   },
                   {
                     "group": [
-                      "valibot",
-                      "valibot/**",
+                      "@nw-union/nw-utils/lib/vo",
                       "**/vo.ts",
                       "**/shared/error.ts"
                     ],
-                    "message": "ブラウザからも使うファイルでは valibot・VO・エラーを import しない。クライアントのバンドルに入る"
+                    "message": "ブラウザからも使うファイルでは lib/vo・VO・エラーを import しない。クライアントのバンドルに入る"
                   }
                 ]
               }
