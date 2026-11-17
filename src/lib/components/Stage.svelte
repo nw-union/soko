@@ -11,28 +11,35 @@ import placeholder from "../../assets/nwu-soko-lqip.png?inline";
 let { children }: { children?: Snippet } = $props();
 let canvas: HTMLCanvasElement;
 
-// 小さな canvas にランダムなノイズを描き、CSS で画面全体に引き伸ばして
-// フィルムグレインとして重ねる（毎フレーム全画面を描くより軽い）。
-// 粒の大きさは画面サイズによらず一定（約 1.5px）になるよう、canvas の解像度を画面幅に合わせる。
-// スマホ（幅 390px 前後）で 256px 四方だった時の粒感を基準にしている
+// 小さな canvas にランダムなノイズを描き、CSS で引き伸ばしてフィルムグレインとして重ねる。
+// 粒の大きさは画面サイズによらず一定（CELL = 1.5px。CSS の --cell と合わせる）。
+// スマホ（幅 390px 前後）で 256px 四方だった時の粒感を基準にしている。
+//
+// ノイズは毎フレーム描き直さず、画面より MARGIN セルぶん大きく 1 回だけ描き、
+// CSS のアニメーション（@keyframes grain）で、セル単位でずらして揺らす。
+// ずらしたノイズは画素ごとに別の乱数が来るので、描き直したのと見分けがつかない。
+// transform のアニメーションはコンポジタで動くので、待機中にメインスレッドを使わない
+// （requestAnimationFrame で描き直していたときは、待機中も 1 秒あたり約 130ms 動いていた）。
+// 裏に回ったタブではブラウザが止め、「視差効果を減らす」では CSS で止める（静止したノイズ 1 枚になる）
+const CELL = 1.5;
+const MARGIN = 64; // @keyframes grain のずらす量（最大 63 セル）より大きくする
+
 onMount(() => {
-	const cell = 1.5;
-	const context = canvas.getContext("2d");
-	if (!context) return;
-	// 下の関数宣言の中では null チェックの絞り込みが効かないので、型を確定させた変数に入れ直す
-	const ctx: CanvasRenderingContext2D = context;
-	let image: ImageData;
-	let data: Uint32Array;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return;
 
+	// 画面が広がって足りなくなったときだけ描き直す
+	// （スマホでアドレスバーが出入りして高さが少し変わるたびに描き直さない）
 	function resize() {
-		canvas.width = Math.max(1, Math.round(innerWidth / cell));
-		canvas.height = Math.max(1, Math.round(innerHeight / cell));
-		image = ctx.createImageData(canvas.width, canvas.height);
-		data = new Uint32Array(image.data.buffer);
-		draw();
-	}
-
-	function draw() {
+		const w = Math.ceil(innerWidth / CELL) + MARGIN;
+		const h = Math.ceil(innerHeight / CELL) + MARGIN;
+		if (!ctx || (w <= canvas.width && h <= canvas.height)) return;
+		canvas.width = Math.max(w, canvas.width);
+		canvas.height = Math.max(h, canvas.height);
+		canvas.style.width = `${canvas.width * CELL}px`;
+		canvas.style.height = `${canvas.height * CELL}px`;
+		const image = ctx.createImageData(canvas.width, canvas.height);
+		const data = new Uint32Array(image.data.buffer);
 		for (let i = 0; i < data.length; i++) {
 			const v = (Math.random() * 255) | 0;
 			// ABGR（リトルエンディアン）: 不透明度は固定、明るさだけランダム
@@ -41,27 +48,12 @@ onMount(() => {
 		ctx.putImageData(image, 0, 0);
 	}
 
+	// 初期値（300x150）より小さい画面でも描くよう、最初は 0 にしてから合わせる
+	canvas.width = 0;
+	canvas.height = 0;
 	resize();
 	addEventListener("resize", resize);
-	// 動きを抑えたい設定のユーザーには静止したノイズだけ見せる
-	if (matchMedia("(prefers-reduced-motion: reduce)").matches)
-		return () => removeEventListener("resize", resize);
-
-	let raf = 0;
-	let last = 0;
-	function loop(now: number) {
-		// 約 10fps。フィルムっぽいカクついた揺らぎにする
-		if (now - last > 100) {
-			draw();
-			last = now;
-		}
-		raf = requestAnimationFrame(loop);
-	}
-	raf = requestAnimationFrame(loop);
-	return () => {
-		cancelAnimationFrame(raf);
-		removeEventListener("resize", resize);
-	};
+	return () => removeEventListener("resize", resize);
 });
 </script>
 
@@ -136,7 +128,6 @@ onMount(() => {
   picture,
   .placeholder,
   .art,
-  .grain,
   .scanlines,
   .vignette,
   .content {
@@ -176,7 +167,15 @@ onMount(() => {
   }
 
   .grain {
+    --cell: 1.5px; /* script の CELL と合わせる */
+    position: absolute;
+    top: 0;
+    left: 0;
+    /* 幅と高さは script で canvas の画素数 × --cell にする */
     image-rendering: pixelated;
+    /* 約 12fps でノイズをずらして、フィルムっぽいカクついた揺らぎにする（16 コマ ÷ 12fps） */
+    animation: grain 1.333s steps(1, end) infinite;
+    will-change: transform;
     mix-blend-mode: overlay;
     opacity: 0.18;
     pointer-events: none;
@@ -197,6 +196,27 @@ onMount(() => {
     pointer-events: none;
   }
 
+  /* ノイズをセル単位でずらす（最大 63 セル。script の MARGIN より小さくする）。
+     となりのコマと大きく離して、続けて見ても動いて見えないようにする */
+  @keyframes grain {
+    0% { transform: translate(calc(0 * var(--cell)), calc(0 * var(--cell))); }
+    6.25% { transform: translate(calc(-37 * var(--cell)), calc(-12 * var(--cell))); }
+    12.5% { transform: translate(calc(-8 * var(--cell)), calc(-51 * var(--cell))); }
+    18.75% { transform: translate(calc(-55 * var(--cell)), calc(-29 * var(--cell))); }
+    25% { transform: translate(calc(-21 * var(--cell)), calc(-4 * var(--cell))); }
+    31.25% { transform: translate(calc(-46 * var(--cell)), calc(-58 * var(--cell))); }
+    37.5% { transform: translate(calc(-3 * var(--cell)), calc(-33 * var(--cell))); }
+    43.75% { transform: translate(calc(-60 * var(--cell)), calc(-17 * var(--cell))); }
+    50% { transform: translate(calc(-29 * var(--cell)), calc(-45 * var(--cell))); }
+    56.25% { transform: translate(calc(-13 * var(--cell)), calc(-23 * var(--cell))); }
+    62.5% { transform: translate(calc(-50 * var(--cell)), calc(-7 * var(--cell))); }
+    68.75% { transform: translate(calc(-34 * var(--cell)), calc(-62 * var(--cell))); }
+    75% { transform: translate(calc(-6 * var(--cell)), calc(-15 * var(--cell))); }
+    81.25% { transform: translate(calc(-42 * var(--cell)), calc(-38 * var(--cell))); }
+    87.5% { transform: translate(calc(-24 * var(--cell)), calc(-55 * var(--cell))); }
+    93.75% { transform: translate(calc(-58 * var(--cell)), calc(-48 * var(--cell))); }
+  }
+
   /* たまに明るさがわずかにチラつく */
   @keyframes flicker {
     0%, 92%, 96%, 100% { opacity: 1; }
@@ -205,6 +225,7 @@ onMount(() => {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .art { animation: none; }
+    .art,
+    .grain { animation: none; }
   }
 </style>
