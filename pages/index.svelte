@@ -5,7 +5,7 @@ import { SvelteMap } from "svelte/reactivity";
 import type { Props } from "./index.server";
 import { syncBadge } from "../src/lib/client/push";
 import { splitLinks } from "../src/lib/client/link";
-import { previewUrl, shortUrl, studioUrl } from "../domain/rule/youtube.ts";
+import { previewUrl, shortUrl, studioUrl } from "../lib/youtube.ts";
 import { thumbnailFallback, thumbnailTintVar } from "../src/lib/client/thumbnail";
 import Avatar from "../src/lib/components/Avatar.svelte";
 import PlaylistSheet from "../src/lib/components/PlaylistSheet.svelte";

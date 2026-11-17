@@ -1,18 +1,17 @@
 import type { ClockPort, RandomPort } from "../shared/port.ts";
 import type { MemberUsecase } from "./api.ts";
-import type { InviteRepositoryPort } from "./invite/port.ts";
-import { newInviteQueries } from "./invite/query.ts";
-import { newInviteWorkFlows } from "./invite/workflow.ts";
 import type {
   AvatarStoragePort,
+  InviteRepositoryPort,
   ProfileRepositoryPort,
-} from "./profile/port.ts";
-import { newProfileQueries } from "./profile/query.ts";
-import { newProfileWorkFlows } from "./profile/workflow.ts";
+} from "./port.ts";
+import { newAccountWorkflow } from "./workflow/account.ts";
+import { newAvatarWorkflow } from "./workflow/avatar.ts";
+import { newInviteWorkflow } from "./workflow/invite.ts";
+import { newProfileWorkflow } from "./workflow/profile.ts";
 
 /**
- * メンバー集約のユースケース. 招待 (invite/) と, プロフィール・ログイン (profile/) の
- * コマンド (workflow.ts) と Query (query.ts) をまとめる
+ * メンバー集約のユースケース. workflow/ のワークフローに依存を渡してまとめる
  */
 export const newMemberUsecase = (
   invite: InviteRepositoryPort,
@@ -21,8 +20,8 @@ export const newMemberUsecase = (
   clock: ClockPort,
   random: RandomPort,
 ): MemberUsecase => ({
-  ...newInviteWorkFlows(invite, clock, random),
-  ...newInviteQueries(invite, clock),
-  ...newProfileWorkFlows(profile, avatar, clock, random),
-  ...newProfileQueries(profile, avatar),
+  ...newInviteWorkflow(invite, clock, random),
+  ...newProfileWorkflow(),
+  ...newAvatarWorkflow(profile, avatar, clock, random),
+  ...newAccountWorkflow(profile, avatar, clock),
 });

@@ -7,7 +7,7 @@ export const layout = false;
   import { useRouter, useShared } from "@void/svelte";
   import Stage from "../src/lib/components/Stage.svelte";
   import { authClient, isPasskeyCancelled } from "../src/lib/client/auth-client";
-  import { GUEST_NAME, NAME_MAX } from "../domain/Member/profile/rule.ts";
+  import { GUEST_NAME, NAME_MAX } from "../domain/Member/rule.ts";
 
   const router = useRouter();
   const user = useShared().auth.user;

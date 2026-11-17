@@ -6,7 +6,7 @@ import type { ResultAsync } from "neverthrow";
 import type { AppError } from "../shared/error.ts";
 
 // ----------------------------------------------------------------------------
-// Commands: 招待 (domain/Member/invite)
+// Commands: 招待 (workflow/invite.ts)
 // ----------------------------------------------------------------------------
 /**
  * IssueInvite 招待を発行する
@@ -75,7 +75,7 @@ type LinkInvitedUser = (cmd: LinkInvitedUserCmd) => ResultAsync<void, AppError>;
 export type LinkInvitedUserCmd = { token: unknown; userId: string };
 
 // ----------------------------------------------------------------------------
-// Commands: プロフィール・ログイン (domain/Member/profile)
+// Commands: プロフィール・アイコン画像・アカウント (workflow/profile.ts・avatar.ts・account.ts)
 // ----------------------------------------------------------------------------
 /**
  * ValidateProfileUpdate プロフィールの更新を確かめる

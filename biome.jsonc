@@ -38,7 +38,7 @@
   },
   "overrides": [
     {
-      // Web 層は domain/<Context>/api.ts の WorkFlows・Queries（server/container.ts）を呼ぶだけにする。DB は adapter/ だけが触る
+      // Web 層は domain/<Context>/api.ts の型と、server/container.ts の …Usecase を使うだけにする。DB は adapter/ だけが触る
       "includes": [
         "pages/**",
         "routes/**",
@@ -61,7 +61,7 @@
                       "**/adapter/**",
                       "**/db/schema*"
                     ],
-                    "message": "Web 層から DB を直接触らない。domain/ に WorkFlow を足し、server/container.ts から呼ぶ"
+                    "message": "Web 層から DB を直接触らない。…Usecase にコマンドか Query を足し、server/container.ts から呼ぶ"
                   }
                 ]
               }
@@ -142,9 +142,9 @@
       }
     },
     {
-      // ブラウザからも import するルール（domain/rule/ と各コンテキストの rule.ts）。
+      // ブラウザからも import するアプリの決まりごと（domain/Member/rule.ts）。
       // valibot（VO のスキーマ）や VO・エラーを import すると、クライアントのバンドルに入るので禁止する
-      "includes": ["domain/rule/**", "domain/**/rule.ts"],
+      "includes": ["domain/**/rule.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -199,7 +199,7 @@
       }
     },
     {
-      // どの層からも使う汎用の関数（base64url など）。アプリのどの層にも、フレームワークにも依存しない
+      // どの層からも（ブラウザからも）使う汎用の関数（base64url・youtube・url）。アプリのどの層にも、フレームワークにも依存しない
       "includes": ["lib/**"],
       "linter": {
         "rules": {

@@ -6,7 +6,7 @@
 import { err, ok, type Result } from "neverthrow";
 import { match } from "ts-pattern";
 import * as v from "valibot";
-import { isYoutubeId } from "../rule/youtube.ts";
+import { isYoutubeId } from "../../lib/youtube.ts";
 import { newValidationError, type ValidationError } from "./error.ts";
 
 /**
