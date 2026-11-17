@@ -47,6 +47,7 @@ const unusedRepo: ContentRepositoryPort = {
   listMembers: notUsed,
   insertWatch: notUsed,
   deleteWatch: notUsed,
+  deleteWatches: notUsed,
   insertPlaylist: notUsed,
   deletePlaylist: notUsed,
   updatePlaylistInfo: notUsed,

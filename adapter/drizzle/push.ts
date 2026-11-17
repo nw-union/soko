@@ -40,6 +40,14 @@ export const newPushRepository = (db: Database): PushRepositoryPort => ({
       () => undefined,
     ),
 
+  deleteUserSubscriptions: (user) =>
+    stepAsync(
+      query("deleteUserSubscriptions", () =>
+        db.run(sql`DELETE FROM push_subscriptions WHERE user_id = ${user}`),
+      ),
+      () => undefined,
+    ),
+
   listSubscriptions: () =>
     query("listSubscriptions", () => db.select().from(pushSubscriptions)),
 

@@ -15,7 +15,11 @@ import {
 import type { ClockPort } from "../../shared/port.ts";
 import { newUserId } from "../../shared/vo.ts";
 import type { MemberUsecase } from "../api.ts";
-import type { AvatarStoragePort, ProfileRepositoryPort } from "../port.ts";
+import type {
+  AvatarStoragePort,
+  InviteRepositoryPort,
+  ProfileRepositoryPort,
+} from "../port.ts";
 import { removeOldAvatar } from "./avatar.ts";
 
 /**
@@ -28,9 +32,10 @@ export const FRESH_AGE_SECONDS = 10 * 60;
 // ----------------------------------------------------------------------------
 // 依存
 // ----------------------------------------------------------------------------
-type AccountRepository = Pick<
-  ProfileRepositoryPort,
-  "countPasskeys" | "deleteUserData"
+type AccountRepository = Pick<ProfileRepositoryPort, "countPasskeys">;
+type AccountInviteRepository = Pick<
+  InviteRepositoryPort,
+  "deleteUnusedInvites"
 >;
 
 // ----------------------------------------------------------------------------
@@ -67,6 +72,7 @@ export const ensurePasskeyDeletable = (
  */
 export const newAccountWorkflow = (
   r: AccountRepository,
+  invites: AccountInviteRepository,
   s: Pick<AvatarStoragePort, "deleteAvatar">,
   clock: ClockPort,
 ): Pick<
@@ -88,8 +94,8 @@ export const newAccountWorkflow = (
       newUserId(userId),
       // Step 2. アイコン画像を消す (失敗しても続ける)
       throughAsync(() => removeOldAvatar(s)(image)),
-      // Step 3. DB 削除
-      r.deleteUserData,
+      // Step 3. 発行した未使用の招待を消す
+      invites.deleteUnusedInvites,
     ),
 
   /**

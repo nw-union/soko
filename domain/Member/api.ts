@@ -139,9 +139,19 @@ type RemoveAvatar = (cmd: RemoveAvatarCmd) => ResultAsync<void, AppError>;
 export type RemoveAvatarCmd = { userId: string };
 
 /**
+ * MemberDeleted メンバーが退会した
+ *
+ * better-auth がユーザーを消した後 (auth.ts の deleteUser.afterDelete) に起きるイベント.
+ * ポリシー (server/process/policy.ts の onMemberDeleted) が, 各集約に自分のデータを消させる.
+ * パスキー・セッションは better-auth が user に連動して消す
+ */
+export type MemberDeletedEvt = { userId: string; image: unknown };
+
+/**
  * CleanupDeletedUser 退会したユーザーの後始末をする
  *
- * アイコン画像・未使用の招待・通知の購読・視聴記録を消す
+ * メンバー集約のデータだけを消す: アイコン画像と, 発行した未使用の招待 (使用済みの招待の記録は残す).
+ * 通知の購読と視聴記録は, それぞれの集約が消す. 何度呼んでも同じ
  */
 type CleanupDeletedUser = (
   cmd: CleanupDeletedUserCmd,

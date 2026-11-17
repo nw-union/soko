@@ -15,6 +15,7 @@ import {
   INVITE_COOKIE,
   readInviteCookie,
 } from "./server/http/invite-cookie.ts";
+import { runMemberDeleted } from "./server/process/leave.ts";
 
 // プロフィール（名前・イメージカラー・アイコン）と招待のルールは domain/ にある。ここは better-auth とつなぐだけ
 
@@ -89,15 +90,13 @@ export default defineAuth(({ defaults }) => {
     user: {
       // プロフィール画面からアカウントを削除できる（HIG: 作れるなら削除もできるように）。
       // 削除の直前に、画面側でパスキーを使って本人確認し直す（セッションを新しくする）。
-      // パスキー・セッションは user に連動して消える。発行した未使用の招待と、通知の購読、視聴記録もここで消す（使用済みの招待の記録は残す）
+      // パスキー・セッションは user に連動して消える。消した後に「メンバーが退会した」イベントを起こし、
+      // ポリシー（server/process/policy.ts の onMemberDeleted）が各集約に自分のデータ（アイコン画像・未使用の招待・通知の購読・視聴記録）を消させる
       deleteUser: {
         enabled: true,
         afterDelete: async (user) => {
           await valueOrThrowAPIError(
-            container().memberUsecase.cleanupDeletedUser({
-              userId: user.id,
-              image: user.image,
-            }),
+            runMemberDeleted({ userId: user.id, image: user.image }),
           );
         },
       },

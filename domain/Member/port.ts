@@ -42,6 +42,9 @@ export interface InviteRepositoryPort {
     inviter: UserId,
   ): ResultAsync<void, AppError>;
 
+  // inviter が発行した未使用の招待をすべて消す (退会したとき). 使用済みの招待の記録は残す. なくても成功
+  deleteUnusedInvites(inviter: UserId): ResultAsync<void, AppError>;
+
   // 使える招待か
   isUsableInvite(hash: TokenHash, now: Date): ResultAsync<boolean, AppError>;
 
@@ -71,10 +74,6 @@ export interface ProfileRepositoryPort {
     image: string | null,
     now: Date,
   ): ResultAsync<void, AppError>;
-
-  // 退会したユーザーのデータを消す: 発行した未使用の招待, 通知の購読, 視聴記録.
-  // 使用済みの招待の記録は残す. パスキー・セッションは better-auth が user に連動して消す
-  deleteUserData(user: UserId): ResultAsync<void, AppError>;
 }
 
 /**

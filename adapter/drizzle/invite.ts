@@ -80,6 +80,16 @@ export const newInviteRepository = (db: Database): InviteRepositoryPort => ({
       () => undefined,
     ),
 
+  deleteUnusedInvites: (inviter) =>
+    stepAsync(
+      query("deleteUnusedInvites", () =>
+        db.run(sql`
+        DELETE FROM invites
+        WHERE inviter_user_id = ${inviter} AND used_at IS NULL`),
+      ),
+      () => undefined,
+    ),
+
   isUsableInvite: (hash, now) =>
     stepAsync(
       query("isUsableInvite", () =>

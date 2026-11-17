@@ -12,6 +12,7 @@ describe("newContentUsecase", () => {
         "deletePlaylist",
         "watch",
         "unwatch",
+        "forgetWatches",
         "listPlaylists",
         "getHomeFeed",
         "getVideoDetail",

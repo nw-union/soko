@@ -39,7 +39,6 @@ const newFakes = (
     ["user1", init.image ?? null],
   ]);
   const updates: { user: string; image: string | null; now: Date }[] = [];
-  const deletedUsers: string[] = [];
   const put: string[] = [];
   const removed: string[] = [];
 
@@ -49,10 +48,6 @@ const newFakes = (
     updateImage: (user, image, now) => {
       images.set(user, image);
       updates.push({ user, image, now });
-      return okAsync(undefined);
-    },
-    deleteUserData: (user) => {
-      deletedUsers.push(user);
       return okAsync(undefined);
     },
   };
@@ -73,7 +68,6 @@ const newFakes = (
     repo,
     storage,
     updates,
-    deletedUsers,
     put,
     removed,
   };
@@ -94,7 +88,6 @@ const newQueryFakes = (passkeys = 0, failGet = false) => {
     countPasskeys: (user) => okAsync(user === "user1" ? passkeys : 0),
     readImage: notUsed,
     updateImage: notUsed,
-    deleteUserData: notUsed,
   };
   const storage: AvatarStoragePort = {
     putAvatar: notUsed,

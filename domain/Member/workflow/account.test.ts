@@ -8,7 +8,11 @@ import {
 } from "../../../lib/rslt-test.ts";
 import { newDatabaseError, newStorageError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
-import type { AvatarStoragePort, ProfileRepositoryPort } from "../port.ts";
+import type {
+  AvatarStoragePort,
+  InviteRepositoryPort,
+  ProfileRepositoryPort,
+} from "../port.ts";
 import {
   ensurePasskeyDeletable,
   FRESH_AGE_SECONDS,
@@ -31,7 +35,7 @@ const newFakes = (
     ["user1", init.image ?? null],
   ]);
   const updates: { user: string; image: string | null; now: Date }[] = [];
-  const deletedUsers: string[] = [];
+  const revokedInviters: string[] = [];
   const put: string[] = [];
   const removed: string[] = [];
 
@@ -43,8 +47,10 @@ const newFakes = (
       updates.push({ user, image, now });
       return okAsync(undefined);
     },
-    deleteUserData: (user) => {
-      deletedUsers.push(user);
+  };
+  const invites: Pick<InviteRepositoryPort, "deleteUnusedInvites"> = {
+    deleteUnusedInvites: (inviter) => {
+      revokedInviters.push(inviter);
       return okAsync(undefined);
     },
   };
@@ -61,11 +67,12 @@ const newFakes = (
     getAvatar: () => okAsync(null),
   };
   return {
-    wf: newAccountWorkflow(repo, storage, clock),
+    wf: newAccountWorkflow(repo, invites, storage, clock),
     repo,
+    invites,
     storage,
     updates,
-    deletedUsers,
+    revokedInviters,
     put,
     removed,
   };
@@ -86,7 +93,6 @@ const newQueryFakes = (passkeys = 0, failGet = false) => {
     countPasskeys: (user) => okAsync(user === "user1" ? passkeys : 0),
     readImage: notUsed,
     updateImage: notUsed,
-    deleteUserData: notUsed,
   };
   const storage: AvatarStoragePort = {
     putAvatar: notUsed,
@@ -105,16 +111,21 @@ const newQueryFakes = (passkeys = 0, failGet = false) => {
               : null,
           ),
   };
-  return newAccountWorkflow(repo, storage, clock);
+  return newAccountWorkflow(
+    repo,
+    { deleteUnusedInvites: notUsed },
+    storage,
+    clock,
+  );
 };
 
 // ----------------------------------------------------------------------------
 // cleanupDeletedUser
 // ----------------------------------------------------------------------------
 describe("cleanupDeletedUser", () => {
-  it("アイコン画像と, ユーザーのデータを消す", async () => {
+  it("アイコン画像と, 発行した未使用の招待を消す", async () => {
     // Arrange:
-    const { wf, removed, deletedUsers } = newFakes();
+    const { wf, removed, revokedInviters } = newFakes();
 
     // Act:
     const actual = await wf.cleanupDeletedUser({
@@ -125,12 +136,12 @@ describe("cleanupDeletedUser", () => {
     // Assert:
     expect(isErr(actual)).toBeFalse();
     expect(removed).toEqual([OLD_KEY]);
-    expect(deletedUsers).toEqual(["user1"]);
+    expect(revokedInviters).toEqual(["user1"]);
   });
 
-  it("アイコン画像を消せなくても, ユーザーのデータは消す", async () => {
+  it("アイコン画像を消せなくても, 未使用の招待は消す", async () => {
     // Arrange:
-    const { wf, deletedUsers } = newFakes({ failDelete: true });
+    const { wf, revokedInviters } = newFakes({ failDelete: true });
 
     // Act:
     await wf.cleanupDeletedUser({
@@ -139,14 +150,15 @@ describe("cleanupDeletedUser", () => {
     });
 
     // Assert:
-    expect(deletedUsers).toEqual(["user1"]);
+    expect(revokedInviters).toEqual(["user1"]);
   });
 
   it("DB エラーの場合, DatabaseError を返す", async () => {
     // Arrange:
     const { repo, storage } = newFakes();
     const wf = newAccountWorkflow(
-      { ...repo, deleteUserData: () => errAsync(newDatabaseError("boom")) },
+      repo,
+      { deleteUnusedInvites: () => errAsync(newDatabaseError("boom")) },
       storage,
       clock,
     );

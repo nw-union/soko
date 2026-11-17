@@ -25,6 +25,9 @@ export interface PushRepositoryPort {
     endpoint: string,
   ): ResultAsync<void, AppError>;
 
+  // ユーザーの購読をすべて消す (退会したとき). なくても成功
+  deleteUserSubscriptions(user: UserId): ResultAsync<void, AppError>;
+
   // 全員の購読 (送り先)
   listSubscriptions(): ResultAsync<StoredSubscription[], AppError>;
 

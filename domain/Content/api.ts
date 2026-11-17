@@ -102,6 +102,16 @@ type Unwatch = (cmd: UnwatchCmd) => ResultAsync<void, AppError>;
 
 export type UnwatchCmd = { userId: string; youtubeId: unknown };
 
+/**
+ * ForgetWatches 視聴記録を消す
+ *
+ * ユーザーの視聴記録をすべて消す. メンバーが退会したときに, ポリシー (server/process/policy.ts) が呼ぶ.
+ * 何度呼んでも同じ (なくても成功)
+ */
+type ForgetWatches = (cmd: ForgetWatchesCmd) => ResultAsync<void, AppError>;
+
+export type ForgetWatchesCmd = { userId: string };
+
 // ----------------------------------------------------------------------------
 // Queries
 // ----------------------------------------------------------------------------
@@ -181,6 +191,7 @@ export interface ContentUsecase {
   deletePlaylist: DeletePlaylist;
   watch: Watch;
   unwatch: Unwatch;
+  forgetWatches: ForgetWatches;
 
   // Queries
   listPlaylists: ListPlaylists;

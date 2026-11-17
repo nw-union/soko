@@ -72,6 +72,7 @@ const newFakes = (
       deleted.push([user, endpoint]);
       return okAsync(undefined);
     },
+    deleteUserSubscriptions: () => okAsync(undefined),
     listSubscriptions: () => okAsync(init.subs ?? []),
     deleteSubscriptions: (ids) => {
       removedIds.push(ids);

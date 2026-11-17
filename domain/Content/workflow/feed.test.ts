@@ -35,6 +35,7 @@ const unusedRepo: ContentRepositoryPort = {
   listMembers: notUsed,
   insertWatch: notUsed,
   deleteWatch: notUsed,
+  deleteWatches: notUsed,
   insertPlaylist: notUsed,
   deletePlaylist: notUsed,
   updatePlaylistInfo: notUsed,
@@ -53,6 +54,7 @@ const ID = "dQw4w9WgXcQ";
 const newWatchFakes = () => {
   const inserted: [string, string][] = [];
   const deleted: [string, string][] = [];
+  const forgotten: string[] = [];
   const repo: ContentRepositoryPort = {
     ...unusedRepo,
     insertWatch: (user, id) => {
@@ -63,11 +65,16 @@ const newWatchFakes = () => {
       deleted.push([user, id]);
       return okAsync(undefined);
     },
+    deleteWatches: (user) => {
+      forgotten.push(user);
+      return okAsync(undefined);
+    },
   };
   return {
     wf: newFeedWorkflow(repo, random),
     inserted,
     deleted,
+    forgotten,
   };
 };
 
@@ -191,6 +198,32 @@ describe("watch / unwatch", () => {
 
     // Assert:
     expect(deleted).toEqual([["user1", ID]]);
+  });
+});
+
+describe("forgetWatches", () => {
+  it("ユーザーの視聴記録をすべて消す", async () => {
+    // Arrange:
+    const { wf, forgotten } = newWatchFakes();
+
+    // Act:
+    const actual = await wf.forgetWatches({ userId: "user1" });
+
+    // Assert:
+    expect(isErr(actual)).toBeFalse();
+    expect(forgotten).toEqual(["user1"]);
+  });
+
+  it("ユーザー ID が不正な場合, ValidationError となり, 消さない", async () => {
+    // Arrange:
+    const { wf, forgotten } = newWatchFakes();
+
+    // Act:
+    const actual = await wf.forgetWatches({ userId: "" });
+
+    // Assert:
+    expect(unwrapErr(actual).type).toBe("ValidationError");
+    expect(forgotten).toHaveLength(0);
   });
 });
 

@@ -84,6 +84,7 @@ const newFakes = (init: Partial<State> = {}) => {
       deleted.push({ id, inviter });
       return okAsync(undefined);
     },
+    deleteUnusedInvites: notUsed,
     isUsableInvite: (h) => okAsync(state.usable.has(h)),
     claimInvite: (h, now) => {
       if (!state.usable.delete(h)) return okAsync(false);
@@ -116,6 +117,7 @@ const newListFakes = (usage: { limit: number | null; used: number }) => {
     readUsage: () => okAsync({ type: "InviteUsage", ...usage }),
     insertInviteIfUnderLimit: notUsed,
     deleteUnusedInvite: notUsed,
+    deleteUnusedInvites: notUsed,
     isUsableInvite: notUsed,
     claimInvite: notUsed,
     setInvitedUser: notUsed,

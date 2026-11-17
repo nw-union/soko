@@ -32,6 +32,16 @@ type Unsubscribe = (cmd: UnsubscribeCmd) => ResultAsync<void, AppError>;
 export type UnsubscribeCmd = { userId: string; endpoint: unknown };
 
 /**
+ * UnsubscribeAll すべての購読をやめる
+ *
+ * ユーザーの購読 (すべての端末) を消す. メンバーが退会したときに, ポリシー (server/process/policy.ts) が呼ぶ.
+ * 何度呼んでも同じ (なくても成功)
+ */
+type UnsubscribeAll = (cmd: UnsubscribeAllCmd) => ResultAsync<void, AppError>;
+
+export type UnsubscribeAllCmd = { userId: string };
+
+/**
  * NotifyNew 新着を通知する
  *
  * まだ通知していない動画を通知済みにして, そのうち最近のものを全購読者に 1 通で知らせる.
@@ -76,6 +86,7 @@ export interface NotificationUsecase {
   // Commands
   subscribe: Subscribe;
   unsubscribe: Unsubscribe;
+  unsubscribeAll: UnsubscribeAll;
   notifyNew: NotifyNew;
 
   // Queries
