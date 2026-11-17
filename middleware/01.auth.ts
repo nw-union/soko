@@ -1,4 +1,5 @@
 import { match } from "@nw-union/nw-utils/lib/match";
+import { endTime, startTime } from "hono/timing";
 import { defineMiddleware } from "void";
 import { getUser } from "void/auth";
 import { container } from "../server/container.ts";
@@ -48,9 +49,11 @@ export default defineMiddleware(async (c, next) => {
   if (!isPublic && c.req.method === "GET") {
     if (!user) return c.redirect("/login");
     // パスキーがログインの唯一の手段。まだ作っていない（登録の途中の）人は、作るまで /welcome から出さない
+    startTime(c, "passkey");
     const { hasPasskey } = await valueOrThrow(
       container().memberUsecase.hasPasskey({ userId: user.id }),
     );
+    endTime(c, "passkey");
     if (!hasPasskey) return c.redirect("/welcome");
   }
   await next();
