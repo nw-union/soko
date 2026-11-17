@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newDatabaseError, newStorageError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
 import type { AvatarStoragePort, ProfileRepositoryPort } from "../port.ts";
@@ -117,7 +123,7 @@ describe("cleanupDeletedUser", () => {
     });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(removed).toEqual([OLD_KEY]);
     expect(deletedUsers).toEqual(["user1"]);
   });
@@ -152,7 +158,7 @@ describe("cleanupDeletedUser", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+    expect(unwrapErr(actual).type).toBe("DatabaseError");
   });
 });
 
@@ -168,7 +174,7 @@ describe("checkPasskeyDeletion", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       type: "ForbiddenError",
       code: "SESSION_NOT_FRESH",
     });
@@ -190,7 +196,7 @@ describe("hasPasskey", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ hasPasskey: expected });
+    expect(unwrap(actual)).toEqual({ hasPasskey: expected });
   });
 });
 
@@ -203,7 +209,7 @@ describe("ensurePasskeyDeletable", () => {
   const stale = new Date(now.getTime() - FRESH_AGE_SECONDS * 1000);
 
   it("ログインし直したばかりで, パスキーが 2 つ以上あれば削除できる", () => {
-    expect(ensurePasskeyDeletable(fresh, 2, now).isOk()).toBeTrue();
+    expect(isErr(ensurePasskeyDeletable(fresh, 2, now))).toBeFalse();
   });
 
   it("ログインから 10 分以上たっていれば, SESSION_NOT_FRESH の ForbiddenError となる", () => {
@@ -211,7 +217,7 @@ describe("ensurePasskeyDeletable", () => {
     const actual = ensurePasskeyDeletable(stale, 2, now);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toEqual({
+    expect(unwrapErr(actual)).toEqual({
       type: "ForbiddenError",
       message: "Session is not fresh",
       code: "SESSION_NOT_FRESH",
@@ -223,7 +229,7 @@ describe("ensurePasskeyDeletable", () => {
     const actual = ensurePasskeyDeletable(fresh, 1, now);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       type: "ValidationError",
       issues: {
         passkey: ["最後のパスキーは削除できません（ログインできなくなります）"],

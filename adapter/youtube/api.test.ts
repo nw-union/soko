@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { unwrap, unwrapErr } from "../../lib/rslt-test.ts";
 import { newYoutubeApi } from "./api.ts";
 
 // 呼ばれた URL を記録し, path ごとに決めた応答を返す fetch
@@ -38,7 +39,7 @@ describe("fetchPlaylistVideoIds", () => {
     );
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual(["a", "b", "c"]);
+    expect(unwrap(actual)).toEqual(["a", "b", "c"]);
     expect(calls.map((u) => u.pathname)).toEqual([
       "/youtube/v3/playlistItems",
       "/youtube/v3/playlistItems",
@@ -58,7 +59,7 @@ describe("fetchPlaylistVideoIds", () => {
     );
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ExternalError");
+    expect(unwrapErr(actual).type).toBe("ExternalError");
   });
 });
 
@@ -80,7 +81,7 @@ describe("fetchPlaylistInfos", () => {
     ]);
 
     // Assert:
-    expect([...actual._unsafeUnwrap()]).toEqual([
+    expect([...unwrap(actual)]).toEqual([
       ["PL1", { title: "名前", description: "説明" }],
     ]);
   });
@@ -117,7 +118,7 @@ describe("fetchVideoItems", () => {
     expect(calls[0].searchParams.get("part")).toBe(
       "snippet,contentDetails,status,player",
     );
-    const items = actual._unsafeUnwrap();
+    const items = unwrap(actual);
     expect(items).toHaveLength(51);
     // 非公開・埋め込み不可でも, ここでは除かない (ドメインが決める)
     expect(items[0]).toEqual({
@@ -141,7 +142,7 @@ describe("fetchVideoItems", () => {
     const actual = await newYoutubeApi("KEY", fetcher).fetchVideoItems([]);
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual([]);
+    expect(unwrap(actual)).toEqual([]);
     expect(calls).toHaveLength(0);
   });
 });

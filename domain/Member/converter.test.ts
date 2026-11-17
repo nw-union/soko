@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { unwrap } from "../../lib/rslt-test.ts";
 import {
   convToInviteDto,
   formatToken,
@@ -7,7 +8,7 @@ import {
 } from "./converter.ts";
 import { newInviteToken } from "./vo.ts";
 
-export const mustInviteToken = (s: string) => newInviteToken(s)._unsafeUnwrap();
+export const mustInviteToken = (s: string) => unwrap(newInviteToken(s));
 
 const TOKEN = "ABCDEFGHJKMNPQRS";
 

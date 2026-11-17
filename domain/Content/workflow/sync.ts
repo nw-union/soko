@@ -1,5 +1,11 @@
 // ワークフロー: YouTube からの取り込み (SyncAll 全件同期する・SyncNew 差分同期する)
-import { okAsync, ResultAsync } from "neverthrow";
+import {
+  ok,
+  type ResultAsync,
+  sequenceAsync,
+  stepAsync,
+  throughAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import type { AppError } from "../../shared/error.ts";
 import type { AllSyncedEvt, ContentUsecase, NewSyncedEvt } from "../api.ts";
 import type { ContentRepositoryPort, YoutubePort } from "../port.ts";
@@ -218,13 +224,14 @@ export const planNewLinks = (
 /**
  * 1 つずつ順に実行する (YouTube への問い合わせを同時に投げない). 1 つでも失敗したら止める
  */
-const sequence = <T, U>(
+const inSeries = <T, U>(
   items: readonly T[],
   f: (item: T) => ResultAsync<U, AppError>,
 ): ResultAsync<U[], AppError> =>
   items.reduce<ResultAsync<U[], AppError>>(
-    (acc, item) => acc.andThen((out) => f(item).map((u) => [...out, u])),
-    okAsync([]),
+    (acc, item) =>
+      stepAsync(acc, (out) => stepAsync(f(item), (u) => [...out, u])),
+    Promise.resolve(ok([])),
   );
 
 /**
@@ -240,11 +247,15 @@ export const newSyncWorkflow = (
    * プレイリストごとの動画 ID (DB の ID → YouTube 上の順の動画 ID)
    */
   const fetchIdsByList = (youtube: YoutubePort, lists: Playlist[]) =>
-    sequence(lists, (list) =>
-      youtube
-        .fetchPlaylistVideoIds(list.playlistId)
-        .map((ids) => [list.id, ids] as const),
-    ).map((pairs) => new Map(pairs));
+    stepAsync(
+      inSeries(lists, (list) =>
+        stepAsync(
+          youtube.fetchPlaylistVideoIds(list.playlistId),
+          (ids) => [list.id, ids] as const,
+        ),
+      ),
+      (pairs) => new Map(pairs),
+    );
 
   /**
    * API キーとプレイリストがあるときだけ進める
@@ -256,14 +267,12 @@ export const newSyncWorkflow = (
     AppError
   > => {
     const youtube = yt;
-    if (!youtube) return okAsync({ type: "NoApiKey" as const });
-    return r
-      .listPlaylists()
-      .andThen((lists) =>
-        lists.length === 0
-          ? okAsync({ type: "NoPlaylists" as const })
-          : f(youtube, lists),
-      );
+    if (!youtube) return Promise.resolve(ok({ type: "NoApiKey" as const }));
+    return stepAsync(r.listPlaylists(), (lists) =>
+      lists.length === 0
+        ? ok({ type: "NoPlaylists" as const })
+        : f(youtube, lists),
+    );
   };
 
   return {
@@ -272,33 +281,38 @@ export const newSyncWorkflow = (
      */
     syncAll: () =>
       withPlaylists((youtube, lists) =>
-        // Step 1. YouTube から取得 (動画 ID・プレイリスト情報・動画の詳細). ここまでは DB を変えない
-        fetchIdsByList(youtube, lists)
-          .andThen((idsByList) =>
-            youtube
-              .fetchPlaylistInfos(lists.map((list) => list.playlistId))
-              .andThen((infos) =>
-                youtube
-                  .fetchVideoItems([...new Set([...idsByList.values()].flat())])
-                  .map((items) => ({
-                    idsByList,
-                    infos,
-                    fetched: toFetchedVideos(items),
-                  })),
-              ),
-          )
+        stepAsync(
+          // Step 1. YouTube から取得 (動画 ID・プレイリスト情報・動画の詳細). ここまでは DB を変えない
+          fetchIdsByList(youtube, lists),
+          (idsByList) =>
+            stepAsync(
+              youtube.fetchPlaylistInfos(lists.map((list) => list.playlistId)),
+              (infos) => ({ idsByList, infos }),
+            ),
+          ({ idsByList, infos }) =>
+            stepAsync(
+              youtube.fetchVideoItems([
+                ...new Set([...idsByList.values()].flat()),
+              ]),
+              (items) => ({
+                idsByList,
+                infos,
+                fetched: toFetchedVideos(items),
+              }),
+            ),
           // Step 2. プレイリストの名前と説明を YouTube に合わせる
-          .andThrough(({ infos }) =>
-            sequence(playlistsToRename(lists, infos), ({ id, info }) =>
+          throughAsync(({ infos }) =>
+            inSeries(playlistsToRename(lists, infos), ({ id, info }) =>
               r.updatePlaylistInfo(id, info),
             ),
-          )
+          ),
           // Step 3. 動画を保存する (変更も直す)
-          .andThrough(({ fetched }) => r.upsertVideos(fetched))
+          throughAsync(({ fetched }) => r.upsertVideos(fetched)),
           // Step 4. 紐付けを作り直す
-          .andThen(({ idsByList, infos, fetched }) =>
-            ResultAsync.combine([r.listVideoIds(), r.listLinks()])
-              .map(([stored, current]) =>
+          ({ idsByList, infos, fetched }) =>
+            stepAsync(
+              sequenceAsync([r.listVideoIds(), r.listLinks()]),
+              ([stored, current]) =>
                 planFullLinks(
                   lists,
                   idsByList,
@@ -306,17 +320,14 @@ export const newSyncWorkflow = (
                   new Set(fetched.map((video) => video.youtubeId)),
                   current,
                 ),
-              )
-              .andThrough(({ stale }) => sequence(stale, r.deleteLinks))
-              .andThrough(({ links }) => r.upsertLinks(links))
-              .map(({ links }) => ({ infos, fetched, links: links.length })),
-          )
+              throughAsync(({ stale }) => inSeries(stale, r.deleteLinks)),
+              throughAsync(({ links }) => r.upsertLinks(links)),
+              ({ links }) => ({ infos, fetched, links: links.length }),
+            ),
           // Step 5. どのプレイリストにも入っていない動画を消す (取得できた動画が 0 件なら消さない)
-          .andThen(({ infos, fetched, links }) =>
-            (canRemoveOrphans(fetched)
-              ? r.deleteOrphanVideos()
-              : okAsync(0)
-            ).map(
+          ({ infos, fetched, links }) =>
+            stepAsync(
+              canRemoveOrphans(fetched) ? r.deleteOrphanVideos() : ok(0),
               (removed): AllSyncedEvt => ({
                 type: "Synced",
                 videos: fetched.length,
@@ -327,7 +338,7 @@ export const newSyncWorkflow = (
                 renamed: playlistsToRename(lists, infos).length,
               }),
             ),
-          ),
+        ),
       ),
 
     /**
@@ -335,42 +346,40 @@ export const newSyncWorkflow = (
      */
     syncNew: () =>
       withPlaylists((youtube, lists) =>
-        // Step 1. プレイリストごとの動画 ID と, 保存されている動画
-        ResultAsync.combine([fetchIdsByList(youtube, lists), r.listVideoIds()])
+        stepAsync(
+          // Step 1. プレイリストごとの動画 ID と, 保存されている動画
+          sequenceAsync([fetchIdsByList(youtube, lists), r.listVideoIds()]),
           // Step 2. DB にない動画だけ詳細を引いて, 足す
-          .andThen(([idsByList, stored]) => {
+          ([idsByList, stored]) => {
             const unknown = unknownVideoIds(idsByList, stored);
-            return (
+            return stepAsync(
               unknown.length === 0
-                ? okAsync([])
-                : youtube
-                    .fetchVideoItems(unknown)
-                    .andThen((items) =>
-                      r.insertNewVideos(toFetchedVideos(items)),
-                    )
-            ).map((inserted) => ({ idsByList, stored, inserted }));
-          })
+                ? ok([])
+                : stepAsync(youtube.fetchVideoItems(unknown), (items) =>
+                    r.insertNewVideos(toFetchedVideos(items)),
+                  ),
+              (inserted) => ({ idsByList, stored, inserted }),
+            );
+          },
           // Step 3. 足りない紐付けを足す
-          .andThen(({ idsByList, stored, inserted }) =>
-            r
-              .listLinks()
-              .map((current) =>
+          ({ idsByList, stored, inserted }) =>
+            stepAsync(
+              r.listLinks(),
+              (current) =>
                 planNewLinks(
                   lists,
                   idsByList,
                   [...stored, ...inserted],
                   current,
                 ),
-              )
-              .andThrough((links) => r.insertLinks(links))
-              .map(
-                (links): NewSyncedEvt => ({
-                  type: "Synced",
-                  added: inserted.length,
-                  links: links.length,
-                }),
-              ),
-          ),
+              throughAsync((links) => r.insertLinks(links)),
+              (links): NewSyncedEvt => ({
+                type: "Synced",
+                added: inserted.length,
+                links: links.length,
+              }),
+            ),
+        ),
       ),
   };
 };

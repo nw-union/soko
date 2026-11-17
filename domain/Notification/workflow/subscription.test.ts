@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
 import { bytesToBase64url } from "../../../lib/base64url.ts";
+import { okAsync, unwrap, unwrapErr } from "../../../lib/rslt-test.ts";
 import { mustUserId } from "../../shared/vo.test.ts";
 import type { PushRepositoryPort } from "../port.ts";
 import type { NewSubscription, VapidKeys } from "../type.ts";
@@ -105,7 +106,7 @@ describe("subscribe", () => {
     });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(upserted).toHaveLength(1);
     expect(trimmed).toEqual([["user1", 10]]);
   });
@@ -118,7 +119,7 @@ describe("subscribe", () => {
     const actual = await wf.subscribe({ userId: "user1", body: {} });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(upserted).toHaveLength(0);
   });
 });
@@ -146,7 +147,7 @@ describe("getPublicKey", () => {
     }).getPublicKey();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ publicKey: "PUBLIC" });
+    expect(unwrap(actual)).toEqual({ publicKey: "PUBLIC" });
   });
 
   it("鍵がなければ null を返す", async () => {
@@ -157,7 +158,7 @@ describe("getPublicKey", () => {
     ).getPublicKey();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ publicKey: null });
+    expect(unwrap(actual)).toEqual({ publicKey: null });
   });
 });
 
@@ -173,7 +174,7 @@ describe("validateSubscription", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       type: "NewSubscription",
       endpoint: ENDPOINT,
       p256dh,
@@ -224,7 +225,7 @@ describe("validateSubscription", () => {
     );
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       subscription: ["購読の内容が正しくありません"],
     });
   });
@@ -232,8 +233,8 @@ describe("validateSubscription", () => {
 
 describe("validateEndpointToDelete", () => {
   it("空の場合, ValidationError となる", () => {
-    expect(
-      validateEndpointToDelete(undefined)._unsafeUnwrapErr().issues,
-    ).toEqual({ endpoint: ["endpoint がありません"] });
+    expect(unwrapErr(validateEndpointToDelete(undefined)).issues).toEqual({
+      endpoint: ["endpoint がありません"],
+    });
   });
 });

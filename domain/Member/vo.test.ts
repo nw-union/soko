@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { unwrap } from "../../lib/rslt-test.ts";
 import {
   createAvatarKey,
   createInviteToken,
@@ -10,7 +12,7 @@ import {
   toAvatarPath,
 } from "./vo.ts";
 
-export const mustInviteToken = (s: string) => newInviteToken(s)._unsafeUnwrap();
+export const mustInviteToken = (s: string) => unwrap(newInviteToken(s));
 
 const TOKEN = "ABCDEFGHJKMNPQRS";
 
@@ -41,7 +43,7 @@ describe("createInviteToken", () => {
     const actual = createInviteToken(bytes);
 
     // Assert:
-    expect(newInviteToken(actual).isOk()).toBeTrue();
+    expect(isErr(newInviteToken(actual))).toBeFalse();
   });
 });
 

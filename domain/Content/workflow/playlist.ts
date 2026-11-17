@@ -1,6 +1,6 @@
 // ワークフロー: プレイリストの管理 (CreatePlaylist プレイリスト追加する・DeletePlaylist プレイリストを消す・プレイリストの一覧)
-import { errAsync, okAsync, type ResultAsync } from "neverthrow";
-import { type AppError, newConflictError } from "../../shared/error.ts";
+import { err, ok, stepAsync } from "@nw-union/nw-utils/lib/rslt";
+import { newConflictError } from "../../shared/error.ts";
 import type { ContentUsecase, CreatePlaylistEvt } from "../api.ts";
 import { convToPlaylistSettingDto } from "../converter.ts";
 import type { ContentRepositoryPort } from "../port.ts";
@@ -30,36 +30,38 @@ export const newPlaylistWorkflow = (
    * プレイリストを足す
    */
   createPlaylist: ({ playlistId }) =>
-    // Step 1. バリデーション: string -> PlaylistId
-    okAsync(playlistId)
-      .andThen((src) => newPlaylistId(src, "playlistId"))
+    stepAsync(
+      ok(playlistId),
+      // Step 1. バリデーション: string -> PlaylistId
+      (src) => newPlaylistId(src, "playlistId"),
       // Step 2. DB 保存 (同じ ID が既にあれば null)
-      .andThen((id) => r.insertPlaylist(id))
+      (id) => r.insertPlaylist(id),
       // Step 3. 既にあれば Conflict
-      .andThen(
-        (list): ResultAsync<CreatePlaylistEvt, AppError> =>
-          list
-            ? okAsync({ playlist: convToPlaylistSettingDto(list) })
-            : errAsync(
-                newConflictError("そのプレイリストは既に登録されています"),
-              ),
-      ),
+      (list) =>
+        list
+          ? ok<CreatePlaylistEvt>({
+              playlist: convToPlaylistSettingDto(list),
+            })
+          : err(newConflictError("そのプレイリストは既に登録されています")),
+    ),
 
   /**
    * プレイリストを消す
    */
   deletePlaylist: ({ id }) =>
-    // Step 1. バリデーション: string (URL のパスのまま) -> PlaylistRowId
-    okAsync(id)
-      .andThen((src) => newPlaylistRowId(Number(src), "id"))
+    stepAsync(
+      ok(id),
+      // Step 1. バリデーション: string (URL のパスのまま) -> PlaylistRowId
+      (src) => newPlaylistRowId(Number(src), "id"),
       // Step 2. DB 削除
-      .andThen((rowId) => r.deletePlaylist(rowId)),
+      (rowId) => r.deletePlaylist(rowId),
+    ),
 
   /**
    * プレイリストの一覧
    */
   listPlaylists: () =>
-    r
-      .listPlaylists()
-      .map((lists) => ({ playlists: lists.map(convToPlaylistSettingDto) })),
+    stepAsync(r.listPlaylists(), (lists) => ({
+      playlists: lists.map(convToPlaylistSettingDto),
+    })),
 });

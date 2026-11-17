@@ -1,5 +1,11 @@
 // ワークフロー: 新着の通知 (NotifyNew 新着を通知する)
-import { okAsync, ResultAsync } from "neverthrow";
+import {
+  ok,
+  type ResultAsync,
+  rslt,
+  sequenceAsync,
+  stepAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import type { AppError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
 import type { NewNotifiedEvt, NotificationUsecase } from "../api.ts";
@@ -101,41 +107,42 @@ export const newNotifyWorkflow = (
     keys: VapidKeys,
     recent: ClaimedVideo[],
   ) =>
-    // Step 1. 送り先と, バッジの本数の取得 (数えられなくても通知は送る)
-    r
-      .listSubscriptions()
-      .andThen((subs) =>
-        badge
-          .countUnwatchedNew(subs.map((sub) => sub.userId))
-          .map((counts) => ({
+    stepAsync(
+      // Step 1. 送り先と, バッジの本数の取得 (数えられなくても通知は送る)
+      r.listSubscriptions(),
+      async (subs) =>
+        rslt.pipe(
+          await badge.countUnwatchedNew(subs.map((sub) => sub.userId)),
+          rslt.map((counts) => ({
             subs,
             counts,
             badgeError: null as string | null,
-          }))
-          .orElse((e) =>
-            okAsync({
+          })),
+          rslt.orElse((e) =>
+            ok({
               subs,
               counts: new Map<string, number>(),
               badgeError: `${e.type}: ${e.message}`,
             }),
           ),
-      )
+        ),
       // Step 2. 送信: 購読ごとに, バッジの本数を入れて送る
-      .andThen(({ subs, counts, badgeError }) =>
-        ResultAsync.combine(
-          subs.map((sub) =>
-            sendOne(sub, { ...payload, badge: counts.get(sub.userId) }, keys),
+      ({ subs, counts, badgeError }) =>
+        stepAsync(
+          sequenceAsync(
+            subs.map((sub) =>
+              sendOne(sub, { ...payload, badge: counts.get(sub.userId) }, keys),
+            ),
           ),
-        ).map((results) => ({ subs, results, badgeError })),
-      )
+          (results) => ({ subs, results, badgeError }),
+        ),
       // Step 3. 購読をやめた端末の購読を消す
-      .andThen(({ subs, results, badgeError }) => {
+      ({ subs, results, badgeError }) => {
         const gone = results.flatMap((res) =>
           res.type === "Gone" ? [res.subscriptionId] : [],
         );
-        return (
-          gone.length > 0 ? r.deleteSubscriptions(gone) : okAsync(undefined)
-        ).map(
+        return stepAsync(
+          gone.length > 0 ? r.deleteSubscriptions(gone) : ok(),
           (): NewNotifiedEvt => ({
             type: "Notified",
             videos: recent.length,
@@ -148,22 +155,22 @@ export const newNotifyWorkflow = (
             badgeError,
           }),
         );
-      });
+      },
+    );
 
   /**
    * 1 件送り, 結果にする. 送れなかったときも失敗の結果にする (他の購読への送信は続ける)
    */
-  const sendOne = (
+  const sendOne = async (
     sub: StoredSubscription,
     payload: PushPayload,
     keys: VapidKeys,
-  ) =>
-    sender
-      .send(sub, payload, keys)
-      .map((status) => classifySendResult(sub, status))
-      .orElse((reason) =>
-        okAsync<SendResult, never>({ type: "Failed", reason }),
-      );
+  ): ResultAsync<SendResult, never> =>
+    rslt.pipe(
+      await sender.send(sub, payload, keys),
+      rslt.map((status) => classifySendResult(sub, status)),
+      rslt.orElse((reason) => ok<SendResult>({ type: "Failed", reason })),
+    );
 
   return {
     /**
@@ -171,19 +178,17 @@ export const newNotifyWorkflow = (
      */
     notifyNew: () => {
       const now = clock.now();
-      return (
+      return stepAsync(
         // Step 1. まだ通知していない動画を, 通知済みにする
-        r
-          .claimUnnotifiedVideos(now)
-          // Step 2. 通知する動画を選ぶ (最近のものだけ)
-          .map((claimed) => selectRecent(claimed, now))
-          // Step 3. 送る (鍵がなければ送らない)
-          .andThen((recent): ResultAsync<NewNotifiedEvt, AppError> => {
-            if (recent.length === 0) return okAsync({ type: "NoRecentVideos" });
-            if (!vapid)
-              return okAsync({ type: "NoVapidKeys", videos: recent.length });
-            return sendAll(buildPayload(recent), vapid, recent);
-          })
+        r.claimUnnotifiedVideos(now),
+        // Step 2. 通知する動画を選ぶ (最近のものだけ)
+        (claimed) => selectRecent(claimed, now),
+        // Step 3. 送る (鍵がなければ送らない)
+        (recent): NewNotifiedEvt | ResultAsync<NewNotifiedEvt, AppError> => {
+          if (recent.length === 0) return { type: "NoRecentVideos" };
+          if (!vapid) return { type: "NoVapidKeys", videos: recent.length };
+          return sendAll(buildPayload(recent), vapid, recent);
+        },
       );
     },
   };

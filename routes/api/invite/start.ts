@@ -1,7 +1,7 @@
 import { setCookie } from "hono/cookie";
 import { defineHandler } from "void";
 import { container } from "../../../server/container.ts";
-import { errorResponse } from "../../../server/http/error.ts";
+import { respond } from "../../../server/http/error.ts";
 import {
   INVITE_COOKIE,
   INVITE_COOKIE_MAX_AGE,
@@ -11,20 +11,19 @@ import {
 // この後の sign-up でユーザーが作られるときに、auth.ts がこの Cookie の招待を使用済みにする
 export const POST = defineHandler(async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  return container()
-    .memberUsecase.startInvite({ token: body?.token })
-    .match(
-      ({ token }) => {
-        setCookie(c, INVITE_COOKIE, token, {
-          httpOnly: true,
-          secure: c.req.url.startsWith("https:"),
-          sameSite: "Lax",
-          path: "/",
-          maxAge: INVITE_COOKIE_MAX_AGE,
-        });
-        // null を返すと Set-Cookie が落ちるので、本文のある応答にする
-        return c.json({ ok: true });
-      },
-      (e) => errorResponse(c, e),
-    );
+  return respond(
+    c,
+    container().memberUsecase.startInvite({ token: body?.token }),
+    ({ token }) => {
+      setCookie(c, INVITE_COOKIE, token, {
+        httpOnly: true,
+        secure: c.req.url.startsWith("https:"),
+        sameSite: "Lax",
+        path: "/",
+        maxAge: INVITE_COOKIE_MAX_AGE,
+      });
+      // null を返すと Set-Cookie が落ちるので、本文のある応答にする
+      return c.json({ ok: true });
+    },
+  );
 });

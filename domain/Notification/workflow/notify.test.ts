@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { errAsync, okAsync, unwrap } from "../../../lib/rslt-test.ts";
 import { newDatabaseError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
 import type {
@@ -149,7 +149,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoRecentVideos" });
+    expect(unwrap(actual)).toEqual({ type: "NoRecentVideos" });
     expect(claimedAt).toEqual([NOW]);
     expect(sent).toHaveLength(0);
   });
@@ -166,7 +166,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoVapidKeys", videos: 1 });
+    expect(unwrap(actual)).toEqual({ type: "NoVapidKeys", videos: 1 });
     expect(sent).toHaveLength(0);
   });
 
@@ -181,7 +181,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Notified",
       videos: 1,
       sent: 2,
@@ -224,7 +224,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       sent: 1,
       total: 4,
       removed: 1,
@@ -246,7 +246,7 @@ describe("notifyNew", () => {
     const actual = await wf.notifyNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       sent: 1,
       badgeError: "DatabaseError: boom",
     });

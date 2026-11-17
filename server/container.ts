@@ -1,6 +1,7 @@
 // Composition Root。ドメインの …Usecase（ContentUsecase・MemberUsecase・NotificationUsecase）に、実際の adapter を組み込む。
 // 作るのは軽いクロージャだけなので、ハンドラの中で毎回 container() を呼んでよい。
 // auth.ts からも読み込まれるので（Void の CLI は拡張子なしの相対 import を解決できない）、相対 import には .ts を付けること
+import { stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { db } from "void/db";
 import { env } from "void/env";
 import { storage } from "void/storage";
@@ -57,7 +58,10 @@ export const container = () => {
       // バッジの本数はコンテンツ集約の Read Model を使う
       {
         countUnwatchedNew: (userIds) =>
-          contentUsecase.countUnwatchedNew({ userIds }).map((v) => v.counts),
+          stepAsync(
+            contentUsecase.countUnwatchedNew({ userIds }),
+            (v) => v.counts,
+          ),
       },
       systemClock,
       vapid,

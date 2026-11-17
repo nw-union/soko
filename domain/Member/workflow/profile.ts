@@ -1,5 +1,12 @@
 // ワークフロー: プロフィール (ValidateProfileUpdate プロフィールの更新を確かめる・ValidateSignUp 登録を確かめる・画面に出すユーザー)
-import { err, ok, okAsync, Result } from "neverthrow";
+import {
+  collect,
+  err,
+  ok,
+  type Result,
+  rslt,
+  stepAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import {
   mergeValidationError,
   newValidationErrorWithMessage,
@@ -33,18 +40,20 @@ export const validateProfileInput = (input: {
   color?: unknown;
   image?: unknown;
 }): Result<ValidatedProfile, ValidationError> =>
-  Result.combineWithAllErrors([
-    validateName(input.name),
-    validateColor(input.color),
-    validateNoImage(input.image),
-  ]).match(
-    ([name, color]) =>
-      ok({
+  rslt.pipe(
+    collect([
+      validateName(input.name),
+      validateColor(input.color),
+      validateNoImage(input.image),
+    ]),
+    rslt.map(
+      ([name, color]): ValidatedProfile => ({
         type: "ValidatedProfile",
         ...(name !== undefined && { name }),
         ...(color !== undefined && { color }),
       }),
-    (es) => err(mergeValidationError(es)),
+    ),
+    rslt.mapErr(mergeValidationError),
   );
 
 const validateName = (
@@ -52,10 +61,13 @@ const validateName = (
 ): Result<UserName | undefined, ValidationError> =>
   name === undefined
     ? ok(undefined)
-    : newUserName(name, "name").mapErr(() =>
-        newValidationErrorWithMessage(
-          "name",
-          `名前は 1〜${NAME_MAX} 文字で入力してください`,
+    : rslt.pipe(
+        newUserName(name, "name"),
+        rslt.mapErr(() =>
+          newValidationErrorWithMessage(
+            "name",
+            `名前は 1〜${NAME_MAX} 文字で入力してください`,
+          ),
         ),
       );
 
@@ -64,10 +76,13 @@ const validateColor = (
 ): Result<HexColor | null | undefined, ValidationError> =>
   color === undefined || color === null
     ? ok(color)
-    : newHexColor(color, "color").mapErr(() =>
-        newValidationErrorWithMessage(
-          "color",
-          "カラーコードは #rrggbb の形式で入力してください",
+    : rslt.pipe(
+        newHexColor(color, "color"),
+        rslt.mapErr(() =>
+          newValidationErrorWithMessage(
+            "color",
+            "カラーコードは #rrggbb の形式で入力してください",
+          ),
         ),
       );
 
@@ -100,29 +115,31 @@ export const newProfileWorkflow = (): Pick<
    * プロフィールの更新で送られてきた値を確かめる
    */
   validateProfileUpdate: (cmd) =>
-    okAsync(cmd)
+    stepAsync(
       // Step 1. バリデーション: Cmd -> ValidatedProfile
-      .andThen(validateProfileInput)
+      validateProfileInput(cmd),
       // Step 2. イベント発行
-      .map(convToProfileEvt),
+      convToProfileEvt,
+    ),
 
   /**
    * 登録で送られてきた値を確かめる
    */
   validateSignUp: ({ email, ...profile }) =>
-    okAsync(email)
+    stepAsync(
       // Step 1. メールアドレスの確認 (使い捨てのものだけ)
-      .andThen(validateSignupEmail)
+      validateSignupEmail(email),
       // Step 2. バリデーション: Cmd -> ValidatedProfile
-      .andThen(() => validateProfileInput(profile))
+      () => validateProfileInput(profile),
       // Step 3. イベント発行
-      .map(convToProfileEvt),
+      convToProfileEvt,
+    ),
 
   /**
    * 画面に出すユーザー
    */
-  getDisplayUser: ({ user }) =>
-    okAsync({
+  getDisplayUser: async ({ user }) =>
+    ok({
       name: user.name,
       color: resolveColor(user.color, user.id),
       image: resolveImage(user.image),

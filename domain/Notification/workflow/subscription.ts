@@ -1,5 +1,14 @@
 // ワークフロー: 購読 (Subscribe 購読する・Unsubscribe 購読をやめる・購読に使う公開鍵)
-import { err, ok, okAsync, Result, ResultAsync } from "neverthrow";
+import {
+  err,
+  ok,
+  type Result,
+  type ResultAsync,
+  rslt,
+  sequence,
+  stepAsync,
+  throughAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import { base64urlToBytes } from "../../../lib/base64url.ts";
 import {
   newValidationErrorWithMessage,
@@ -69,27 +78,26 @@ export const validateSubscription = (
     endpoint?: unknown;
     keys?: { p256dh?: unknown; auth?: unknown };
   } | null;
-  return Result.combine([
-    newPushEndpoint(b?.endpoint),
-    newPushP256dh(b?.keys?.p256dh),
-    newPushAuth(b?.keys?.auth),
-  ])
-    .mapErr(invalidSubscription)
-    .asyncAndThen(([endpoint, p256dh, auth]) =>
-      ResultAsync.fromSafePromise(
-        isValidSubscriptionKeys(p256dh, auth),
-      ).andThen((valid) =>
-        valid
-          ? ok<NewSubscription, ValidationError>({
-              type: "NewSubscription",
-              userId,
-              endpoint,
-              p256dh,
-              auth,
-            })
-          : err(invalidSubscription()),
-      ),
-    );
+  return stepAsync(
+    rslt.pipe(
+      sequence([
+        newPushEndpoint(b?.endpoint),
+        newPushP256dh(b?.keys?.p256dh),
+        newPushAuth(b?.keys?.auth),
+      ]),
+      rslt.mapErr(invalidSubscription),
+    ),
+    async ([endpoint, p256dh, auth]) =>
+      (await isValidSubscriptionKeys(p256dh, auth))
+        ? ok<NewSubscription>({
+            type: "NewSubscription",
+            userId,
+            endpoint,
+            p256dh,
+            auth,
+          })
+        : err(invalidSubscription()),
+  );
 };
 
 /**
@@ -118,32 +126,29 @@ export const newSubscriptionWorkflow = (
    * 購読を保存する
    */
   subscribe: ({ userId, body }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: [string, unknown] -> NewSubscription
-      .andThen((id) => newUserId(id))
-      .andThen((user) => validateSubscription(user, body))
+      newUserId(userId),
+      (user) => validateSubscription(user, body),
       // Step 2. DB 保存
-      .andThrough(r.upsertSubscription)
+      throughAsync(r.upsertSubscription),
       // Step 3. 古い購読を消す (1 人 MAX_SUBSCRIPTIONS_PER_USER 件まで)
-      .andThen((sub) =>
-        r.trimSubscriptions(sub.userId, MAX_SUBSCRIPTIONS_PER_USER),
-      ),
+      (sub) => r.trimSubscriptions(sub.userId, MAX_SUBSCRIPTIONS_PER_USER),
+    ),
 
   /**
    * 購読を消す
    */
   unsubscribe: ({ userId, endpoint }) =>
-    // Step 1. バリデーション: [string, unknown] -> [UserId, string]
-    okAsync(undefined)
-      .andThen(() => newUserId(userId))
-      .andThen((user) =>
-        validateEndpointToDelete(endpoint).map((e) => [user, e] as const),
-      )
+    stepAsync(
+      // Step 1. バリデーション: [string, unknown] -> [UserId, string]
+      sequence([newUserId(userId), validateEndpointToDelete(endpoint)]),
       // Step 2. DB 削除
-      .andThen(([user, e]) => r.deleteSubscription(user, e)),
+      ([user, e]) => r.deleteSubscription(user, e),
+    ),
 
   /**
    * 購読に使う VAPID の公開鍵
    */
-  getPublicKey: () => okAsync({ publicKey: vapid?.publicKey ?? null }),
+  getPublicKey: async () => ok({ publicKey: vapid?.publicKey ?? null }),
 });

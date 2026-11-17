@@ -1,5 +1,11 @@
 // ワークフロー: アカウント (CheckPasskeyDeletion パスキーを削除してよいか確かめる・CleanupDeletedUser 退会したユーザーの後始末をする・パスキーを作ったか)
-import { err, ok, okAsync, type Result } from "neverthrow";
+import {
+  err,
+  ok,
+  type Result,
+  stepAsync,
+  throughAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import {
   type ForbiddenError,
   newForbiddenError,
@@ -70,32 +76,32 @@ export const newAccountWorkflow = (
   /**
    * パスキーを削除してよいか確かめる
    */
-  checkPasskeyDeletion: ({ sessionCreatedAt, passkeyCount }) =>
-    okAsync(undefined).andThen(() =>
-      ensurePasskeyDeletable(sessionCreatedAt, passkeyCount, clock.now()),
-    ),
+  checkPasskeyDeletion: async ({ sessionCreatedAt, passkeyCount }) =>
+    ensurePasskeyDeletable(sessionCreatedAt, passkeyCount, clock.now()),
 
   /**
    * 退会したユーザーの後始末
    */
   cleanupDeletedUser: ({ userId, image }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
+      newUserId(userId),
       // Step 2. アイコン画像を消す (失敗しても続ける)
-      .andThrough(() => removeOldAvatar(s)(image))
+      throughAsync(() => removeOldAvatar(s)(image)),
       // Step 3. DB 削除
-      .andThen(r.deleteUserData),
+      r.deleteUserData,
+    ),
 
   /**
    * パスキーを作ったか
    */
   hasPasskey: ({ userId }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
+      newUserId(userId),
       // Step 2. 数える
-      .andThen(r.countPasskeys)
+      r.countPasskeys,
       // Step 3. View に組み立てる
-      .map((count) => ({ hasPasskey: count > 0 })),
+      (count) => ({ hasPasskey: count > 0 }),
+    ),
 });

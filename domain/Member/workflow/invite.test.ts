@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newDatabaseError } from "../../shared/error.ts";
 import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import { mustUserId } from "../../shared/vo.test.ts";
@@ -117,7 +123,7 @@ const newListFakes = (usage: { limit: number | null; used: number }) => {
   return newInviteWorkflow(repo, clock, random);
 };
 
-export const mustInviteToken = (s: string) => newInviteToken(s)._unsafeUnwrap();
+export const mustInviteToken = (s: string) => unwrap(newInviteToken(s));
 
 const usage = (limit: number | null, used: number): InviteUsage => ({
   type: "InviteUsage",
@@ -137,7 +143,7 @@ describe("issueInvite", () => {
     const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       token: "ABCD-EFGH-JKMN-PQRS",
       days: 7,
     });
@@ -157,7 +163,7 @@ describe("issueInvite", () => {
     const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ConflictError");
+    expect(unwrapErr(actual).type).toBe("ConflictError");
     expect(inserted).toHaveLength(0);
   });
 
@@ -177,7 +183,7 @@ describe("issueInvite", () => {
     const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+    expect(unwrapErr(actual).type).toBe("DatabaseError");
   });
 });
 
@@ -193,7 +199,7 @@ describe("revokeInvite", () => {
     const actual = await wf.revokeInvite({ userId: "user1", id: "12" });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(deleted).toEqual([{ id: 12, inviter: "user1" }]);
   });
 
@@ -205,7 +211,7 @@ describe("revokeInvite", () => {
     const actual = await wf.revokeInvite({ userId: "user1", id: "abc" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(deleted).toHaveLength(0);
   });
 });
@@ -221,7 +227,7 @@ describe("startInvite", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ token: TOKEN });
+    expect(unwrap(actual)).toEqual({ token: TOKEN });
   });
 
   it.each([
@@ -232,7 +238,7 @@ describe("startInvite", () => {
     const actual = await newFakes().wf.startInvite({ token });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       type: "ValidationError",
       issues: { token: ["招待コードが正しくないか、期限切れです"] },
     });
@@ -251,7 +257,7 @@ describe("claimInvite", () => {
     const actual = await wf.claimInvite({ token: TOKEN });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(claimedAt).toEqual([NOW]);
   });
 
@@ -264,7 +270,7 @@ describe("claimInvite", () => {
     const actual = await wf.claimInvite({ token: TOKEN });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 
   it("Cookie がない場合, ValidationError となる", async () => {
@@ -272,7 +278,7 @@ describe("claimInvite", () => {
     const actual = await newFakes().wf.claimInvite({ token: null });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 });
 
@@ -285,7 +291,7 @@ describe("linkInvitedUser", () => {
     const actual = await wf.linkInvitedUser({ token: TOKEN, userId: "user2" });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(linked).toEqual([{ hash: TOKEN_HASH, user: "user2" }]);
   });
 });
@@ -301,7 +307,7 @@ describe("listInvites", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       limit: 5,
       remaining: 3,
       invites: [
@@ -323,7 +329,7 @@ describe("listInvites", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 });
 
@@ -372,14 +378,14 @@ describe("ensureIssued", () => {
     const actual = ensureIssued(false);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toEqual({
+    expect(unwrapErr(actual)).toEqual({
       type: "ConflictError",
       message: "招待の発行上限に達しています",
     });
   });
 
   it("保存できた場合, 成功となる", () => {
-    expect(ensureIssued(true).isOk()).toBeTrue();
+    expect(isErr(ensureIssued(true))).toBeFalse();
   });
 });
 
@@ -389,7 +395,7 @@ describe("ensureUsable", () => {
     const actual = ensureUsable(false);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       token: ["招待コードが正しくないか、期限切れです"],
     });
   });
@@ -410,7 +416,7 @@ describe("validateToken", () => {
     const actual = validateToken("abcd-efgh-jkmn-pqrs");
 
     // Assert:
-    expect<string>(actual._unsafeUnwrap()).toBe(TOKEN);
+    expect<string>(unwrap(actual)).toBe(TOKEN);
   });
 
   it.each([
@@ -424,7 +430,7 @@ describe("validateToken", () => {
     const actual = validateToken(input);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       token: ["招待コードが正しくないか、期限切れです"],
     });
   });
@@ -432,7 +438,7 @@ describe("validateToken", () => {
 
 describe("validateInviteId", () => {
   it("整数の文字列の場合, InviteId になる", () => {
-    expect<number>(validateInviteId("12")._unsafeUnwrap()).toBe(12);
+    expect<number>(unwrap(validateInviteId("12"))).toBe(12);
   });
 
   it.each([
@@ -444,7 +450,7 @@ describe("validateInviteId", () => {
     const actual = validateInviteId(input);
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(actual).issues).toEqual({
       id: ["id が正しくありません"],
     });
   });

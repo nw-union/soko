@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import { okAsync, unwrap, unwrapErr } from "../../../lib/rslt-test.ts";
 import type { RandomPort } from "../../shared/port.ts";
 import { mustUserId } from "../../shared/vo.test.ts";
 import type { VideoItemDto } from "../api.ts";
@@ -165,7 +166,7 @@ describe("watch / unwatch", () => {
     const actual = await wf.watch({ userId: "user1", youtubeId: ID });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(inserted).toEqual([["user1", ID]]);
   });
 
@@ -177,7 +178,7 @@ describe("watch / unwatch", () => {
     const actual = await wf.watch({ userId: "user1", youtubeId: 1 });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(inserted).toHaveLength(0);
   });
 
@@ -202,7 +203,7 @@ describe("getHomeFeed", () => {
     });
 
     // Assert:
-    const feed = actual._unsafeUnwrap();
+    const feed = unwrap(actual);
     expect(feed.newVideos.map((v) => v.youtubeId)).toEqual([ID]);
     expect(feed.playlists).toHaveLength(1);
     expect(feed.playlists[0]).toMatchObject({
@@ -224,7 +225,7 @@ describe("getBadgeCount", () => {
     const actual = await newFeedFakes().qs.getBadgeCount({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ count: 1 });
+    expect(unwrap(actual)).toEqual({ count: 1 });
   });
 });
 
@@ -237,7 +238,7 @@ describe("countUnwatchedNew", () => {
     const actual = await qs.countUnwatchedNew({ userIds: ["a", "b", "a"] });
 
     // Assert:
-    expect([...actual._unsafeUnwrap().counts]).toEqual([
+    expect([...unwrap(actual).counts]).toEqual([
       ["a", 1],
       ["b", 1],
     ]);
@@ -252,7 +253,7 @@ describe("countUnwatchedNew", () => {
     const actual = await qs.countUnwatchedNew({ userIds: [] });
 
     // Assert:
-    expect(actual._unsafeUnwrap().counts.size).toBe(0);
+    expect(unwrap(actual).counts.size).toBe(0);
     expect(calls).toHaveLength(0);
   });
 });
@@ -461,7 +462,7 @@ describe("validateWatchedVideo", () => {
     ["短い", "abc"],
     ["空", undefined],
   ])("%s場合, ValidationError となる", (_, id) => {
-    expect(validateWatchedVideo(id)._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateWatchedVideo(id)).issues).toEqual({
       youtubeId: ["動画の指定が正しくありません"],
     });
   });
@@ -469,13 +470,11 @@ describe("validateWatchedVideo", () => {
 
 describe("validateJoinedAt", () => {
   it("Date も ISO 8601 もミリ秒にする", () => {
-    expect(validateJoinedAt(new Date(JOINED))._unsafeUnwrap()).toBe(JOINED);
-    expect(validateJoinedAt("2026-10-01T00:00:00Z")._unsafeUnwrap()).toBe(
-      JOINED,
-    );
+    expect(unwrap(validateJoinedAt(new Date(JOINED)))).toBe(JOINED);
+    expect(unwrap(validateJoinedAt("2026-10-01T00:00:00Z"))).toBe(JOINED);
   });
 
   it("読めない場合, ValidationError となる", () => {
-    expect(validateJoinedAt("x").isErr()).toBeTrue();
+    expect(isErr(validateJoinedAt("x"))).toBeTrue();
   });
 });

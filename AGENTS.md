@@ -16,7 +16,7 @@
 | `domain/shared/` | コンテキストをまたいで使うドメインの概念。`error.ts`（`AppError`。判別共用体で、エラーは例外ではなく `Result` で返す）・`vo.ts`・`port.ts`（`ClockPort`・`RandomPort`） |
 | `adapter/` | Port の実装（`drizzle/`・`r2/`・`webpush/`・`youtube/`・`system.ts`）。SQL はここにだけ書く |
 | `server/` | Web 層とドメインをつなぐもの。直下に `container.ts`（Composition Root）。`process/`（コンテキストをつなぐ流れ: `policy.ts`（ポリシー）・`sync.ts`・`notify.ts`）・`http/`（HTTP の都合: `error.ts`（AppError → HTTP）・`invite-cookie.ts`・`avatar-file.ts`）・`log/`（ロガー） |
-| `lib/` | どの層からも（ブラウザからも）使う、アプリに依存しない汎用の関数（`base64url.ts`・`youtube.ts`・`url.ts`）。フレームワークやアプリの層を import しない（Biome で禁止している） |
+| `lib/` | どの層からも（ブラウザからも）使う、アプリに依存しない汎用の関数（`base64url.ts`・`youtube.ts`・`url.ts`。テストで Result を扱う `rslt-test.ts`）。フレームワークやアプリの層を import しない（Biome で禁止している） |
 | `src/lib/` | ブラウザと UI のコードだけ。`components/`（Svelte のコンポーネント）・`client/`（ブラウザで動く処理: `push.ts`・`pwa.ts`・`youtube-player.ts`・`thumbnail.ts` など）・`styles/`（共通の CSS） |
 
 ### コンテキストの中身
@@ -25,7 +25,7 @@
 domain/<Context>/
   api.ts         入口の I/F。…Usecase と、操作ごとの Cmd / Evt / Query / View、DTO
   type.ts        ドメインの型
-  vo.ts          Value Object（valibot で検証して作る値）
+  vo.ts          Value Object（lib/vo のパーサーで検証して作る値）
   port.ts        副作用の I/F（adapter/ が実装する）
   converter.ts   Converter: ドメインの型 → DTO の変換（convTo…Dto など）。必要なコンテキストだけ
   workflow/      ワークフロー。近い操作をまとめて 1 ファイル（例: Content の sync.ts・playlist.ts・feed.ts）
@@ -41,7 +41,7 @@ usecase → workflow/* → api・converter・type・vo・port → shared → lib
                        type → vo
 ```
 
-- `workflow/<名前>.ts` は、上から順に「依存（`Pick<…Port, "…">` で、そのワークフローが使うメソッドだけ）→ Step（純粋な関数。バリデーションや計算）→ 実装（`new…Workflow`。Step と Port を `okAsync(...).andThen(...)` でつなぐ）」と並べる。1 つのワークフローを 1 ファイルで上から読めるようにする
+- `workflow/<名前>.ts` は、上から順に「依存（`Pick<…Port, "…">` で、そのワークフローが使うメソッドだけ）→ Step（純粋な関数。バリデーションや計算）→ 実装（`new…Workflow`。Step と Port を `stepAsync(...)` でつなぐ）」と並べる。1 つのワークフローを 1 ファイルで上から読めるようにする
 - 入力の検証（Cmd / Query → ドメインの型）は、そのワークフローの最初の Step にする（DTO → ドメインの型の変換は converter.ts に置かない）。複数のワークフローで使う検証は `vo.ts` に置く
 - コマンド（状態を変えるもの）と Query（読むだけ）は分けずに、同じワークフローのファイルに置く
 - Step や定数をほかのワークフローから使うときは、そのワークフローのファイルから import する（例: `workflow/account.ts` が `workflow/avatar.ts` の `removeOldAvatar` を使う）
@@ -67,16 +67,18 @@ usecase → workflow/* → api・converter・type・vo・port → shared → lib
   - 相対 import に必ず `.ts` を付ける（拡張子なしは解決できない。Biome で強制している）
   - `@schema` などの Vite のエイリアスを使わない。`db/schema.ts` は相対パスで読む（Biome で禁止している）
   - 型だけの import は `import type` にし、enum など型を消すだけで動かない構文を使わない（`verbatimModuleSyntax`・`erasableSyntaxOnly`）
-- 入力の検証（VO のスキーマ）は valibot で書き、`domain/shared/vo.ts` の `newVo`・`newVoOrNone` で VO を作る関数にする（`@nw-union/nw-utils/lib/valibot` の `newType` は nw-utils のエラーを返すので使わない）。文字数の上限は、ユーザーが入力するものはコードポイントで数える（`v.maxLength` は UTF-16 の長さで数える）
-- ブラウザからも使う関数は、アプリに依存しないものなら `lib/` に置く。アプリの決まりごと（名前の上限など）でブラウザからも使うものは、いまは `domain/Member/rule.ts` に置いている（valibot・VO・`shared/error.ts` を import しない。Biome で禁止している）。VO を import すると、スキーマや `neverthrow` などがクライアントのバンドルに入る
+- 入力の検証（VO のスキーマ）は `@nw-union/nw-utils/lib/vo` のパーサー（`v.chain(v.string, ...)`）で書き、`domain/shared/vo.ts` の `newVo("型名", schema)`・`newVoOrNone` で VO を作る関数にする。VO の型は `InferVo<typeof newXxx>` で取り出す。lib/vo にないもの（`check`・`trim`・`safeInteger`・`toNumber`）と、内部で作った値を VO にする `mustVo` は `domain/shared/vo.ts` にある（lib/vo の `newVo` と `lib/valibot` の `newType` は nw-utils のエラーを返すので使わない）。文字数の上限は、ユーザーが入力するものはコードポイントで数える（`v.maxLength` は UTF-16 の長さで数える）
+- ブラウザからも使う関数は、アプリに依存しないものなら `lib/` に置く。アプリの決まりごと（名前の上限など）でブラウザからも使うものは、いまは `domain/Member/rule.ts` に置いている（lib/vo・VO・`shared/error.ts` を import しない。Biome で禁止している）。VO を import すると、スキーマや Result（`@nw-union/nw-utils/lib/rslt`）などがクライアントのバンドルに入る
 - 確認と書き込みを 1 文で行う必要がある操作（招待の発行と消費、通知済みにする、など）は、Port の 1 メソッドにして、その契約をコメントに書く
 - drizzle の `db.batch` は `db.run(sql)` を受け付けない。複数の文は 1 つずつ実行する
 - 日時は `ClockPort`、乱数は `RandomPort` から受け取る（ドメインで `new Date()`・`Math.random()` を直接使わない）
 - ログは `server/log/log.ts` の `log()`（`@nw-union/nw-utils` の `Logger`）から出す。`console.*` を直接使わない。出力先と最小レベルは環境変数 `LOG_ADAPTER`（json / console）と `LOG_LEVEL`。DB・ストレージ・外部サービスのエラーは `logAppError`（`server/log/logger.ts`）で残し、画面には出さない
-- `@nw-union/nw-utils` のエラークラス（`AppError`・`ValidationError` など）はドメインのエラーには使わない。`domain/shared/error.ts` の判別共用体（`type`）で `ts-pattern` の `.exhaustive()` を使うため。nw-utils のエラーを使うのは、ロガーに渡すときの `SystemError` だけ
+- Result は `@nw-union/nw-utils/lib/rslt` を使う（neverthrow は使わない）。`ResultAsync` は `Promise<Result>` なので、つなぐときは `stepAsync`（値を変えない処理は `throughAsync`）、まとめるときは `sequence`・`sequenceAsync`・`collect`、Web 層で取り出すときは `server/http/error.ts` の `respond`・`valueOrThrow` を使う
+- パターンマッチは `@nw-union/nw-utils/lib/match` の `match` を使う（ts-pattern は使わない）。Result の成功・失敗で分けるときも `isErr` の if ではなく `match(r).ok(...).err(...).exhaustive()` で書く
+- `@nw-union/nw-utils` のエラークラス（`AppError`・`ValidationError` など）はドメインのエラーには使わない。`domain/shared/error.ts` の判別共用体（`type`）で `match` の `.exhaustive()` を使うため。nw-utils のエラーを使うのは、ロガーに渡すときの `SystemError` だけ
 
 ### テスト
 
-- ワークフロー（`workflow/<名前>.ts`）・`converter.ts`・`vo.ts` には、実装と同じ場所に `*.test.ts` を書く（`bun test`）。ワークフローのテストには、Step（純粋な関数）のテストと、fake の Port を使った操作のテストの両方を置く。`usecase.ts` には、`…Usecase` の操作がそろっていることを確かめるテストを書く
+- ワークフロー（`workflow/<名前>.ts`）・`converter.ts`・`vo.ts` には、実装と同じ場所に `*.test.ts` を書く（`bun test`）。ワークフローのテストには、Step（純粋な関数）のテストと、fake の Port を使った操作のテストの両方を置く。`usecase.ts` には、`…Usecase` の操作がそろっていることを確かめるテストを書く。Result の取り出しと fake の戻り値には `lib/rslt-test.ts` の `unwrap`・`unwrapErr`・`okAsync`・`errAsync` を使う
 - fake の Port では SQL・エイリアス・CLI からの読み込みの問題は見つからない。adapter や `auth.ts` から辿られるファイルを変えたら、`bun run build` と `bunx void db generate` も通ることを確かめる
 - `bun run check` で、フォーマット・lint・型チェック・テストをまとめて確かめる

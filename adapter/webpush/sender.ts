@@ -1,7 +1,7 @@
 // Web Push の送信。npm の web-push は Node の crypto に依存して Workers で動かないので、
 // WebCrypto だけで書く。暗号化は RFC 8291（aes128gcm）、送信者の認証は RFC 8292（VAPID）。
 // encrypt 以降は src/lib/web-push.ts から変えずに移したもの
-import { ResultAsync } from "neverthrow";
+import { rslt, stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import type { PushSenderPort } from "../../domain/Notification/port.ts";
 import type { VapidKeys } from "../../domain/Notification/type.ts";
 import { base64urlToBytes, bytesToBase64url } from "../../lib/base64url.ts";
@@ -159,7 +159,8 @@ export const sendPush = async (
 
 export const webPushSender: PushSenderPort = {
   send: (sub, payload, vapid) =>
-    ResultAsync.fromPromise(sendPush(sub, payload, vapid), (e) =>
-      String(e),
-    ).map((res) => res.status),
+    stepAsync(
+      rslt.tryAsync(() => sendPush(sub, payload, vapid), String),
+      (res) => res.status,
+    ),
 };

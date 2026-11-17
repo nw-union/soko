@@ -1,32 +1,30 @@
 import { defineHandler } from "void";
 import { requireAuth } from "void/auth";
 import { container } from "../../server/container.ts";
-import { errorResponse } from "../../server/http/error.ts";
+import { respond } from "../../server/http/error.ts";
 
 // アイコン画像をアップロードする（multipart の "file"）。ブラウザ（ProfileSheet.svelte）が切り抜き・縮小したものが届く
 export const POST = defineHandler(async (c) => {
   const user = requireAuth(c);
   const form = await c.req.formData().catch(() => null);
   const file = form?.get("file");
-  return container()
-    .memberUsecase.changeAvatar({
+  return respond(
+    c,
+    container().memberUsecase.changeAvatar({
       userId: user.id,
       file:
         file instanceof File ? new Uint8Array(await file.arrayBuffer()) : null,
-    })
-    .match(
-      (evt) => evt,
-      (e) => errorResponse(c, e),
-    );
+    }),
+    (evt) => evt,
+  );
 });
 
 // アイコン画像を外して、頭文字の表示に戻す
 export const DELETE = defineHandler(async (c) => {
   const user = requireAuth(c);
-  return container()
-    .memberUsecase.removeAvatar({ userId: user.id })
-    .match(
-      () => null,
-      (e) => errorResponse(c, e),
-    );
+  return respond(
+    c,
+    container().memberUsecase.removeAvatar({ userId: user.id }),
+    () => null,
+  );
 });

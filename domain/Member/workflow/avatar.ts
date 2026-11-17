@@ -1,12 +1,14 @@
 // ワークフロー: アイコン画像 (ChangeAvatar アイコン画像を差し替える・RemoveAvatar アイコン画像を外す・アイコン画像のファイル)
 import {
   err,
-  errAsync,
   ok,
-  okAsync,
   type Result,
   type ResultAsync,
-} from "neverthrow";
+  rslt,
+  sequence,
+  stepAsync,
+  throughAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import {
   type AppError,
   newNotFoundError,
@@ -97,11 +99,10 @@ const detectFormat = (
  */
 export const removeOldAvatar =
   (s: Pick<AvatarStoragePort, "deleteAvatar">) =>
-  (image: unknown): ResultAsync<void, AppError> => {
+  async (image: unknown): ResultAsync<void, AppError> => {
     const key = parseAvatarPath(image);
-    return key
-      ? s.deleteAvatar(key).orElse(() => okAsync(undefined))
-      : okAsync(undefined);
+    if (key) await s.deleteAvatar(key);
+    return ok();
   };
 
 /**
@@ -117,63 +118,66 @@ export const newAvatarWorkflow = (
    * アイコン画像を差し替える
    */
   changeAvatar: ({ userId, file }) =>
-    // Step 1. バリデーション: [string, Uint8Array | null] -> [UserId, ImageFile]
-    okAsync(undefined)
-      .andThen(() => newUserId(userId))
-      .andThen((user) => validateImageFile(file).map((f) => [user, f] as const))
+    stepAsync(
+      // Step 1. バリデーション: [string, Uint8Array | null] -> [UserId, ImageFile]
+      sequence([newUserId(userId), validateImageFile(file)]),
       // Step 2. ストレージに保存: [UserId, ImageFile] -> [UserId, AvatarKey]
-      .andThen(([user, f]) => {
+      ([user, f]) => {
         const key = createAvatarKey(random.bytes(16), f.ext);
-        return s.putAvatar(key, f).map(() => [user, key] as const);
-      })
+        return stepAsync(s.putAvatar(key, f), () => [user, key] as const);
+      },
       // Step 3. DB 保存 (古い画像を覚えておく): [UserId, AvatarKey] -> [string, string | null]
-      .andThen(([user, key]) =>
-        r
-          .readImage(user)
-          .andThen((old) =>
-            r
-              .updateImage(user, toAvatarPath(key), clock.now())
-              .map(() => [toAvatarPath(key), old] as const),
+      ([user, key]) =>
+        stepAsync(
+          r.readImage(user),
+          throughAsync(() =>
+            r.updateImage(user, toAvatarPath(key), clock.now()),
           ),
-      )
+          (old) => [toAvatarPath(key), old] as const,
+        ),
       // Step 4. 古い画像を消す (失敗しても差し替えは成功させる)
-      .andThrough(([, old]) => removeOldAvatar(s)(old))
+      throughAsync(([, old]) => removeOldAvatar(s)(old)),
       // Step 5. イベント発行
-      .map(([image]) => ({ image })),
+      ([image]) => ({ image }),
+    ),
 
   /**
    * アイコン画像を外す
    */
   removeAvatar: ({ userId }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
+      newUserId(userId),
       // Step 2. DB 保存 (古い画像を覚えておく): UserId -> string | null
-      .andThen((user) =>
-        r
-          .readImage(user)
-          .andThrough(() => r.updateImage(user, null, clock.now())),
-      )
+      (user) =>
+        stepAsync(
+          r.readImage(user),
+          throughAsync(() => r.updateImage(user, null, clock.now())),
+        ),
       // Step 3. 古い画像を消す (失敗しても外すのは成功させる)
-      .andThen(removeOldAvatar(s)),
+      removeOldAvatar(s),
+    ),
 
   /**
    * アイコン画像のファイル. キーの形が違っても, 画像がなくても, 同じ NotFoundError
    */
   getAvatarFile: ({ key }) =>
-    okAsync(key)
+    stepAsync(
       // Step 1. バリデーション: unknown -> AvatarKey
-      .andThen((k) => newAvatarKey(k).mapErr(() => newNotFoundError(NOT_FOUND)))
+      rslt.pipe(
+        newAvatarKey(key),
+        rslt.mapErr(() => newNotFoundError(NOT_FOUND)),
+      ),
       // Step 2. 取得
-      .andThen(s.getAvatar)
+      s.getAvatar,
       // Step 3. View に組み立てる
-      .andThen((file) =>
+      (file) =>
         file
-          ? okAsync({
+          ? ok({
               body: file.body,
               contentType: file.contentType,
               etag: file.etag,
             })
-          : errAsync(newNotFoundError(NOT_FOUND)),
-      ),
+          : err(newNotFoundError(NOT_FOUND)),
+    ),
 });

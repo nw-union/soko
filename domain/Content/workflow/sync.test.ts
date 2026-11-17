@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newDatabaseError } from "../../shared/error.ts";
 import type { ContentRepositoryPort, YoutubePort } from "../port.ts";
 import type {
@@ -217,7 +223,7 @@ describe("API キー・プレイリストがない場合", () => {
     const actual = await newSyncWorkflow(repo, null).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoApiKey" });
+    expect(unwrap(actual)).toEqual({ type: "NoApiKey" });
   });
 
   it("プレイリストが登録されていなければ, 何もしない", async () => {
@@ -228,7 +234,7 @@ describe("API キー・プレイリストがない場合", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ type: "NoPlaylists" });
+    expect(unwrap(actual)).toEqual({ type: "NoPlaylists" });
   });
 });
 
@@ -260,7 +266,7 @@ describe("syncAll", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       videos: 2,
       playlists: 1,
@@ -287,7 +293,7 @@ describe("syncAll", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({ renamed: 1 });
+    expect(unwrap(actual)).toMatchObject({ renamed: 1 });
     expect(db.renamed).toEqual([
       [1, { title: "新しい名前", description: "説明" }],
     ]);
@@ -304,7 +310,7 @@ describe("syncAll", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(actual)).toMatchObject({
       removed: 0,
       removalSkipped: true,
     });
@@ -322,7 +328,7 @@ describe("syncAll", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncAll();
 
     // Assert:
-    expect(actual.isErr()).toBeTrue();
+    expect(isErr(actual)).toBeTrue();
     expect(db.upserted).toHaveLength(0);
     expect(db.links).toHaveLength(0);
   });
@@ -344,7 +350,7 @@ describe("syncNew", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       added: 1,
       links: 1,
@@ -384,7 +390,7 @@ describe("syncNew", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       added: 0,
       links: 1,
@@ -404,7 +410,7 @@ describe("syncNew", () => {
     const actual = await newSyncWorkflow(repo, youtube).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       type: "Synced",
       added: 0,
       links: 0,
@@ -423,7 +429,7 @@ describe("syncNew", () => {
     ).syncNew();
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+    expect(unwrapErr(actual).type).toBe("DatabaseError");
   });
 });
 

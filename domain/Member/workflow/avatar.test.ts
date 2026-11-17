@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newStorageError } from "../../shared/error.ts";
 import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import type { AvatarStoragePort, ProfileRepositoryPort } from "../port.ts";
@@ -130,7 +136,7 @@ describe("changeAvatar", () => {
     const actual = await wf.changeAvatar({ userId: "user1", file: PNG });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       image: `/files/avatars/${NEW_KEY}`,
     });
     expect(put).toEqual([NEW_KEY]);
@@ -162,7 +168,7 @@ describe("changeAvatar", () => {
     const actual = await wf.changeAvatar({ userId: "user1", file: PNG });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
   });
 
   it("画像でない場合, ValidationError となり, 何も保存しない", async () => {
@@ -176,7 +182,7 @@ describe("changeAvatar", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(put).toHaveLength(0);
     expect(updates).toHaveLength(0);
   });
@@ -199,7 +205,7 @@ describe("changeAvatar", () => {
     const actual = await failing.changeAvatar({ userId: "user1", file: PNG });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("StorageError");
+    expect(unwrapErr(actual).type).toBe("StorageError");
     expect(updates).toHaveLength(0);
   });
 });
@@ -218,7 +224,7 @@ describe("removeAvatar", () => {
     const actual = await wf.removeAvatar({ userId: "user1" });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(updates).toEqual([{ user: "user1", image: null, now: NOW }]);
     expect(removed).toEqual([OLD_KEY]);
   });
@@ -233,7 +239,7 @@ describe("getAvatarFile", () => {
     const actual = await newQueryFakes().getAvatarFile({ key: KEY });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       body,
       contentType: "image/png",
       etag: '"e1"',
@@ -247,7 +253,7 @@ describe("getAvatarFile", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("NotFoundError");
+    expect(unwrapErr(actual).type).toBe("NotFoundError");
   });
 
   it("キーの形が違う場合, ストレージを読まずに NotFoundError となる", async () => {
@@ -257,7 +263,7 @@ describe("getAvatarFile", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("NotFoundError");
+    expect(unwrapErr(actual).type).toBe("NotFoundError");
   });
 
   it("ストレージのエラーは, そのまま返す", async () => {
@@ -265,7 +271,7 @@ describe("getAvatarFile", () => {
     const actual = await newQueryFakes(0, true).getAvatarFile({ key: KEY });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("StorageError");
+    expect(unwrapErr(actual).type).toBe("StorageError");
   });
 });
 
@@ -275,7 +281,7 @@ describe("validateImageFile", () => {
     ["JPEG", JPEG, "jpg", "image/jpeg"],
     ["WebP", WEBP, "webp", "image/webp"],
   ])("%s の場合, 形式を判定する", (_, bytes, ext, contentType) => {
-    expect(validateImageFile(bytes)._unsafeUnwrap()).toMatchObject({
+    expect(unwrap(validateImageFile(bytes))).toMatchObject({
       ext,
       contentType,
     });
@@ -295,7 +301,7 @@ describe("validateImageFile", () => {
       "JPEG、PNG、WebP の画像を選んでください",
     ],
   ])("%s場合, ValidationError となる", (_, bytes, message) => {
-    expect(validateImageFile(bytes)._unsafeUnwrapErr().issues).toEqual({
+    expect(unwrapErr(validateImageFile(bytes)).issues).toEqual({
       file: [message],
     });
   });
@@ -306,6 +312,6 @@ describe("validateImageFile", () => {
     bytes.set(PNG);
 
     // Act / Assert:
-    expect(validateImageFile(bytes).isOk()).toBeTrue();
+    expect(isErr(validateImageFile(bytes))).toBeFalse();
   });
 });
