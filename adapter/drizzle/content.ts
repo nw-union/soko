@@ -234,6 +234,13 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
               publishedAt: sql`excluded.published_at`,
               tags: sql`excluded.tags`,
             },
+            // 中身が同じ行は書き直さない (D1 は書いた行数を数える). NULL どうしも同じとみなすよう IS NOT で比べる
+            setWhere: sql`${videos.title} IS NOT excluded.title
+              OR ${videos.description} IS NOT excluded.description
+              OR ${videos.durationSeconds} IS NOT excluded.duration_seconds
+              OR ${videos.aspectRatio} IS NOT excluded.aspect_ratio
+              OR ${videos.publishedAt} IS NOT excluded.published_at
+              OR ${videos.tags} IS NOT excluded.tags`,
           });
     }),
 
@@ -282,16 +289,16 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
     }),
 
   deleteOrphanVideos: () =>
-    query("deleteOrphanVideos", async () => {
-      const orphans = await db
-        .select({ id: videos.id })
-        .from(videos)
-        .where(sql`${videos.id} NOT IN (SELECT video_id FROM playlist_videos)`);
-      for (const part of chunk(
-        orphans.map((row) => row.id),
-        50,
-      ))
-        await db.delete(videos).where(inArray(videos.id, part));
-      return orphans.length;
-    }),
+    stepAsync(
+      query("deleteOrphanVideos", () =>
+        // 1 文で探して消す (playlist_videos_video_idx を使う)
+        db
+          .delete(videos)
+          .where(
+            sql`NOT EXISTS (SELECT 1 FROM ${playlistVideos} WHERE ${playlistVideos.videoId} = ${videos.id})`,
+          )
+          .returning({ id: videos.id }),
+      ),
+      (removed) => removed.length,
+    ),
 });

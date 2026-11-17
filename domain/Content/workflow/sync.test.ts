@@ -95,6 +95,7 @@ const newSyncFakes = (init: {
     videos: new Map((init.videos ?? []).map((v) => [v.youtubeId, v.id])),
     links: [...(init.links ?? [])],
     upserted: [] as FetchedVideo[],
+    upsertedLinks: [] as Link[],
     renamed: [] as [number, PlaylistInfo][],
     orphanCalls: 0,
   };
@@ -154,6 +155,7 @@ const newSyncFakes = (init: {
       return okAsync(undefined);
     },
     upsertLinks: (links) => {
+      db.upsertedLinks.push(...links);
       for (const link of links) {
         db.links = db.links.filter(
           (l) =>
@@ -280,6 +282,30 @@ describe("syncAll", () => {
       { playlistId: 1, videoId: 1, position: 1 },
     ]);
     expect([...db.videos.keys()].sort()).toEqual(["a", "b"]);
+  });
+
+  it("並びが変わっていない紐付けは, 書き込まない", async () => {
+    // Arrange: DB の紐付けは a・b の順のまま. YouTube の PL1 は [a, b, c]
+    const { repo, youtube, db } = newSyncFakes({
+      remote: { PL1: ["a", "b", "c"] },
+      videos: [
+        { id: 1, youtubeId: "a" },
+        { id: 2, youtubeId: "b" },
+      ],
+      links: [
+        { playlistId: 1, videoId: 1, position: 0 },
+        { playlistId: 1, videoId: 2, position: 1 },
+      ],
+    });
+
+    // Act:
+    const actual = await newSyncWorkflow(repo, youtube).syncAll();
+
+    // Assert: 書き込むのは新しい c の紐付けだけ. 反映した件数はすべて
+    expect(unwrap(actual)).toMatchObject({ type: "Synced", links: 3 });
+    expect(db.upsertedLinks).toEqual([
+      { playlistId: 1, videoId: 3, position: 2 },
+    ]);
   });
 
   it("プレイリストの名前と説明を, YouTube に合わせる", async () => {
@@ -605,6 +631,34 @@ describe("planFullLinks", () => {
 
     // Assert:
     expect(actual.stale).toEqual([{ playlistId: 1, videoIds: [2, 3] }]);
+  });
+  it("changed は, 今の紐付けにないものと並びが変わったものだけ", () => {
+    // Arrange: 今は 1 に a(0)・b(1). YouTube では 1 は [b, a, c]. 2 は a(0) のまま
+    const current = [
+      { playlistId: 1, videoId: 1, position: 0 },
+      { playlistId: 1, videoId: 2, position: 1 },
+      { playlistId: 2, videoId: 1, position: 0 },
+    ];
+
+    // Act:
+    const actual = planFullLinks(
+      [list(1), list(2)],
+      new Map([
+        [1, ["b", "a", "c"]],
+        [2, ["a"]],
+      ]),
+      stored,
+      new Set(["a", "b", "c"]),
+      current,
+    );
+
+    // Assert:
+    expect(actual.links).toHaveLength(4);
+    expect(actual.changed).toEqual([
+      { playlistId: 1, videoId: 2, position: 0 },
+      { playlistId: 1, videoId: 1, position: 1 },
+      { playlistId: 1, videoId: 3, position: 2 },
+    ]);
   });
 });
 
