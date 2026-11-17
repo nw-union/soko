@@ -10,7 +10,6 @@ const video = (id: number, over: Partial<StoredVideo> = {}): StoredVideo => ({
   id,
   youtubeId: `video${String(id).padStart(6, "0")}`,
   title: `動画 ${id}`,
-  description: null,
   durationSeconds: null,
   aspectRatio: null,
   publishedAt: "2026-09-01T00:00:00Z",
@@ -35,16 +34,12 @@ describe("formatPublishedAt", () => {
 });
 
 describe("convToVideoItemDto", () => {
-  it("長さ・縦横比・概要欄がない動画は, 既定の値にする", () => {
+  it("長さ・縦横比がない動画は, 既定の値にする", () => {
     // Act:
     const actual = convToVideoItemDto(video(1), false);
 
     // Assert:
-    expect(actual).toMatchObject({
-      duration: null,
-      aspectRatio: 16 / 9,
-      description: "",
-    });
+    expect(actual).toMatchObject({ duration: null, aspectRatio: 16 / 9 });
   });
 
   it("長さと URL を組み立てる", () => {

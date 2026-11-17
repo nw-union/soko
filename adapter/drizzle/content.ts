@@ -8,7 +8,11 @@ import {
   videoWatches,
 } from "../../db/schema.ts";
 import type { ContentRepositoryPort } from "../../domain/Content/port.ts";
-import type { FetchedVideo, StoredVideo } from "../../domain/Content/type.ts";
+import type {
+  FetchedVideo,
+  Playlist,
+  StoredVideo,
+} from "../../domain/Content/type.ts";
 import { type Database, query } from "./util.ts";
 
 // D1 は 1 文のバインド変数が 100 個までなので, まとめて渡すときは分ける
@@ -42,17 +46,45 @@ export const parseTags = (json: string): string[] => {
   }
 };
 
-const toStoredVideo = (row: typeof videos.$inferSelect): StoredVideo => ({
+// ホームで使う列. 概要欄 (description) は大きいので読まない
+const storedVideoColumns = {
+  id: videos.id,
+  youtubeId: videos.youtubeId,
+  title: videos.title,
+  durationSeconds: videos.durationSeconds,
+  aspectRatio: videos.aspectRatio,
+  publishedAt: videos.publishedAt,
+  tags: videos.tags,
+};
+
+type StoredVideoRow = {
+  [K in keyof typeof storedVideoColumns]: (typeof videos.$inferSelect)[K];
+};
+
+const toStoredVideo = (row: StoredVideoRow): StoredVideo => ({
   type: "StoredVideo",
   id: row.id,
   youtubeId: row.youtubeId,
   title: row.title,
-  description: row.description,
   durationSeconds: row.durationSeconds,
   aspectRatio: row.aspectRatio,
   publishedAt: row.publishedAt,
   tags: parseTags(row.tags),
 });
+
+const toPlaylist = (list: typeof playlists.$inferSelect): Playlist => ({
+  type: "Playlist",
+  id: list.id,
+  playlistId: list.playlistId,
+  name: list.name,
+  description: list.description,
+});
+
+const selectPlaylists = (db: Database) =>
+  db
+    .select()
+    .from(playlists)
+    .orderBy(asc(playlists.position), asc(playlists.id));
 
 // ----------------------------------------------------------------------------
 // Repository
@@ -60,36 +92,50 @@ const toStoredVideo = (row: typeof videos.$inferSelect): StoredVideo => ({
 export const newContentRepository = (db: Database): ContentRepositoryPort => ({
   listPlaylists: () =>
     stepAsync(
-      query("listPlaylists", () =>
-        db
-          .select()
-          .from(playlists)
-          .orderBy(asc(playlists.position), asc(playlists.id)),
-      ),
-      (rows) =>
-        rows.map((list) => ({
-          type: "Playlist" as const,
-          id: list.id,
-          playlistId: list.playlistId,
-          name: list.name,
-          description: list.description,
-        })),
+      query("listPlaylists", () => selectPlaylists(db)),
+      (rows) => rows.map(toPlaylist),
     ),
 
-  listPlaylistVideos: () =>
+  // ページを開くたびに呼ぶので, 3 つの SELECT を db.batch で 1 往復にまとめる
+  loadHomeFeed: (user) =>
     stepAsync(
-      query("listPlaylistVideos", () =>
-        db
-          .select({ playlistId: playlistVideos.playlistId, video: videos })
-          .from(playlistVideos)
-          .innerJoin(videos, eq(videos.id, playlistVideos.videoId))
-          .orderBy(desc(videos.publishedAt), asc(videos.id)),
+      query("loadHomeFeed", () =>
+        db.batch([
+          selectPlaylists(db),
+          db
+            .select({
+              playlistId: playlistVideos.playlistId,
+              video: storedVideoColumns,
+            })
+            .from(playlistVideos)
+            .innerJoin(videos, eq(videos.id, playlistVideos.videoId))
+            .orderBy(desc(videos.publishedAt), asc(videos.id)),
+          db
+            .select({ youtubeId: videoWatches.youtubeId })
+            .from(videoWatches)
+            .where(eq(videoWatches.userId, user)),
+        ]),
       ),
-      (rows) =>
-        rows.map((row) => ({
+      ([lists, rows, watched]) => ({
+        lists: lists.map(toPlaylist),
+        rows: rows.map((row) => ({
           playlistId: row.playlistId,
           video: toStoredVideo(row.video),
         })),
+        watchedIds: watched.map((row) => row.youtubeId),
+      }),
+    ),
+
+  findVideoDescription: (youtubeId) =>
+    stepAsync(
+      query("findVideoDescription", () =>
+        db
+          .select({ description: videos.description })
+          .from(videos)
+          .where(eq(videos.youtubeId, youtubeId))
+          .limit(1),
+      ),
+      (rows) => (rows[0] ? (rows[0].description ?? "") : null),
     ),
 
   listPlaylistVideoDates: () =>
@@ -104,17 +150,6 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
           youtubeId: row.youtube_id,
           publishedAt: row.published_at,
         })),
-    ),
-
-  listWatchedIds: (user) =>
-    stepAsync(
-      query("listWatchedIds", () =>
-        db
-          .select({ youtubeId: videoWatches.youtubeId })
-          .from(videoWatches)
-          .where(eq(videoWatches.userId, user)),
-      ),
-      (rows) => rows.map((row) => row.youtubeId),
     ),
 
   listWatches: (users) =>
@@ -178,18 +213,7 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
           .onConflictDoNothing()
           .returning(),
       ),
-      (rows) => {
-        const list = rows[0];
-        return list
-          ? {
-              type: "Playlist" as const,
-              id: list.id,
-              playlistId: list.playlistId,
-              name: list.name,
-              description: list.description,
-            }
-          : null;
-      },
+      (rows) => (rows[0] ? toPlaylist(rows[0]) : null),
     ),
 
   deletePlaylist: (id) =>

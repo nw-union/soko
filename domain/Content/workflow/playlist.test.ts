@@ -15,9 +15,9 @@ const notUsed = (): never => {
 
 const unusedRepo: ContentRepositoryPort = {
   listPlaylists: notUsed,
-  listPlaylistVideos: notUsed,
+  loadHomeFeed: notUsed,
+  findVideoDescription: notUsed,
   listPlaylistVideoDates: notUsed,
-  listWatchedIds: notUsed,
   listWatches: notUsed,
   listMembers: notUsed,
   insertWatch: notUsed,

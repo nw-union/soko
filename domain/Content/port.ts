@@ -3,11 +3,11 @@ import type { AppError } from "../shared/error.ts";
 import type { UserId, YoutubeId } from "../shared/vo.ts";
 import type {
   FetchedVideo,
+  HomeFeedSource,
   Link,
   Member,
   Playlist,
   PlaylistInfo,
-  PlaylistVideo,
   StaleLinks,
   StoredVideoId,
   VideoDate,
@@ -41,14 +41,18 @@ export interface ContentRepositoryPort {
   // プレイリスト (並び順: position, id の順)
   listPlaylists(): ResultAsync<Playlist[], AppError>;
 
-  // プレイリストと動画の組. 投稿日時の新しい順 (日時のない動画は最後), 同じなら id の順
-  listPlaylistVideos(): ResultAsync<PlaylistVideo[], AppError>;
+  // ホームに並べるもの. DB への 1 往復で読む (ページを開くたびに呼ぶので).
+  // lists はプレイリストの並び順 (listPlaylists と同じ). rows はプレイリストと動画の組で,
+  // 投稿日時の新しい順 (日時のない動画は最後), 同じなら id の順. watchedIds はそのユーザーが見た動画
+  loadHomeFeed(user: UserId): ResultAsync<HomeFeedSource, AppError>;
+
+  // 動画の概要欄. 動画がなければ null, 概要欄が空なら ""
+  findVideoDescription(
+    youtubeId: YoutubeId,
+  ): ResultAsync<string | null, AppError>;
 
   // どれかのプレイリストに入っている動画の投稿日時 (動画ごとに 1 件)
   listPlaylistVideoDates(): ResultAsync<VideoDate[], AppError>;
-
-  // そのユーザーが見た動画の YouTube ID
-  listWatchedIds(user: UserId): ResultAsync<string[], AppError>;
 
   // ユーザーたちの視聴記録
   listWatches(users: UserId[]): ResultAsync<Watch[], AppError>;

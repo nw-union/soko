@@ -216,7 +216,25 @@ const markWatched = (video: Video) => setWatched(video, true);
 // 読み込みの後などにも再生中の通知は来るので、毎回記録すると「未視聴にする」がすぐ戻ってしまう
 let countedPlay = false;
 
+// 動画の概要欄。ホームの HTML を小さくするため、再生画面を開いたときに取りに行き、このページを開いている間は覚えておく
+const descriptions = new SvelteMap<string, string>();
+const loadDescription = async (id: string) => {
+	if (descriptions.has(id)) return;
+	try {
+		const res = await fetch(`/api/videos/${encodeURIComponent(id)}`);
+		if (!res.ok) return;
+		const { description } = (await res.json()) as { description: string };
+		descriptions.set(id, description);
+	} catch {
+		// 読めなくても再生はできる。概要欄を出さないだけ
+	}
+};
+const playingDescription = $derived(
+	playing ? (descriptions.get(playing.youtubeId) ?? "") : "",
+);
+
 const play = (video: Video) => {
+	loadDescription(video.youtubeId);
 	playing = video;
 	played = false;
 	countedPlay = false;
@@ -804,8 +822,8 @@ const bodySwipe = {
               {/if}
             </div>
           </div>
-          {#if playing.description}
-            <p class="desc">{#each splitLinks(playing.description) as part}{#if part.href}<a href={part.href} target="_blank" rel="noopener noreferrer">{part.text}</a>{:else}{part.text}{/if}{/each}</p>
+          {#if playingDescription}
+            <p class="desc">{#each splitLinks(playingDescription) as part}{#if part.href}<a href={part.href} target="_blank" rel="noopener noreferrer">{part.text}</a>{:else}{part.text}{/if}{/each}</p>
           {/if}
         </div>
       </div>

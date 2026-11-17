@@ -14,6 +14,7 @@ describe("newContentUsecase", () => {
         "unwatch",
         "listPlaylists",
         "getHomeFeed",
+        "getVideoDetail",
         "getBadgeCount",
         "countUnwatchedNew",
       ].sort(),

@@ -135,6 +135,19 @@ export type HomeFeedView = {
 };
 
 /**
+ * 動画の概要欄
+ *
+ * ホームには含めず, 再生画面を開いたときに読む (ホームの HTML を小さくするため).
+ * 動画の ID の形が正しくなければ ValidationError, 登録されていない動画なら NotFoundError
+ */
+type GetVideoDetail = (
+  q: GetVideoDetailQuery,
+) => ResultAsync<VideoDetailView, AppError>;
+
+export type GetVideoDetailQuery = { youtubeId: unknown };
+export type VideoDetailView = { description: string };
+
+/**
  * アプリのアイコンのバッジに出す, 未視聴の New の本数
  */
 type GetBadgeCount = (
@@ -172,6 +185,7 @@ export interface ContentUsecase {
   // Queries
   listPlaylists: ListPlaylists;
   getHomeFeed: GetHomeFeed;
+  getVideoDetail: GetVideoDetail;
   getBadgeCount: GetBadgeCount;
   countUnwatchedNew: CountUnwatchedNew;
 }
@@ -202,7 +216,6 @@ export type VideoItemDto = {
   // 通知から開いたとき (/?v=…) に, どの動画かを探すのに使う
   youtubeId: string;
   title: string;
-  description: string;
   // "3:33" / "1:02:03". わからなければ null
   duration: string | null;
   // 再生画面の枠の縦横比. わからない動画は 16:9

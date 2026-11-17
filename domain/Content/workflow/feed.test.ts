@@ -28,9 +28,9 @@ const notUsed = (): never => {
 
 const unusedRepo: ContentRepositoryPort = {
   listPlaylists: notUsed,
-  listPlaylistVideos: notUsed,
+  loadHomeFeed: notUsed,
+  findVideoDescription: notUsed,
   listPlaylistVideoDates: notUsed,
-  listWatchedIds: notUsed,
   listWatches: notUsed,
   listMembers: notUsed,
   insertWatch: notUsed,
@@ -80,7 +80,6 @@ const row: PlaylistVideo = {
     id: 1,
     youtubeId: ID,
     title: "動画",
-    description: null,
     durationSeconds: 61,
     aspectRatio: 1,
     publishedAt: "2026-10-02T00:00:00Z",
@@ -92,22 +91,24 @@ const newFeedFakes = () => {
   const calls: string[] = [];
   const repo: ContentRepositoryPort = {
     ...unusedRepo,
-    listPlaylists: () =>
-      okAsync([
-        {
-          type: "Playlist",
-          id: 1,
-          playlistId: "PL1",
-          name: "リスト",
-          description: "説明",
-        },
-      ]),
-    listPlaylistVideos: () => okAsync([row]),
+    loadHomeFeed: () =>
+      okAsync({
+        lists: [
+          {
+            type: "Playlist",
+            id: 1,
+            playlistId: "PL1",
+            name: "リスト",
+            description: "説明",
+          },
+        ],
+        rows: [row],
+        watchedIds: [ID],
+      }),
     listPlaylistVideoDates: () => {
       calls.push("listPlaylistVideoDates");
       return okAsync([{ youtubeId: ID, publishedAt: row.video.publishedAt }]);
     },
-    listWatchedIds: () => okAsync([ID]),
     listWatches: (users) => {
       calls.push(`listWatches:${users.join(",")}`);
       return okAsync([]);
@@ -135,7 +136,6 @@ const video = (id: number, over: Partial<StoredVideo> = {}): StoredVideo => ({
   id,
   youtubeId: `video${String(id).padStart(6, "0")}`,
   title: `動画 ${id}`,
-  description: null,
   durationSeconds: null,
   aspectRatio: null,
   publishedAt: "2026-09-01T00:00:00Z",
@@ -216,6 +216,40 @@ describe("getHomeFeed", () => {
       aspectRatio: 1,
       tags: ["tag"],
     });
+  });
+});
+
+describe("getVideoDetail", () => {
+  const wfWith = (description: string | null) =>
+    newFeedWorkflow(
+      { ...unusedRepo, findVideoDescription: () => okAsync(description) },
+      random,
+    );
+
+  it("動画の概要欄を返す", async () => {
+    // Act:
+    const actual = await wfWith("概要").getVideoDetail({ youtubeId: ID });
+
+    // Assert:
+    expect(unwrap(actual)).toEqual({ description: "概要" });
+  });
+
+  it("登録されていない動画は NotFoundError", async () => {
+    // Act:
+    const actual = await wfWith(null).getVideoDetail({ youtubeId: ID });
+
+    // Assert:
+    expect(unwrapErr(actual).type).toBe("NotFoundError");
+  });
+
+  it("YouTube の動画 ID の形でなければ, DB に問い合わせずに ValidationError", async () => {
+    // Act:
+    const actual = await newFeedWorkflow(unusedRepo, random).getVideoDetail({
+      youtubeId: "../../etc",
+    });
+
+    // Assert:
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 });
 

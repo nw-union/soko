@@ -12,7 +12,7 @@ export interface StoredVideo {
   readonly id: number;
   readonly youtubeId: string;
   readonly title: string;
-  readonly description: string | null;
+  // 概要欄はホームでは使わないので持たない (再生画面を開いたときに, 別に読む)
   readonly durationSeconds: number | null;
   readonly aspectRatio: number | null;
   // ISO 8601. わからなければ null
@@ -27,6 +27,16 @@ export interface StoredVideo {
 export interface PlaylistVideo {
   readonly playlistId: number;
   readonly video: StoredVideo;
+}
+
+/**
+ * ホームに並べるもの. ContentRepositoryPort.loadHomeFeed で, まとめて読む
+ */
+export interface HomeFeedSource {
+  readonly lists: Playlist[];
+  readonly rows: PlaylistVideo[];
+  // そのユーザーが見た動画の YouTube ID
+  readonly watchedIds: string[];
 }
 
 /**

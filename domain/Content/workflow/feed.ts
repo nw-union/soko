@@ -10,6 +10,7 @@ import {
 } from "@nw-union/nw-utils/lib/rslt";
 import { isYoutubeId } from "../../../lib/youtube.ts";
 import {
+  newNotFoundError,
   newValidationErrorWithMessage,
   type ValidationError,
 } from "../../shared/error.ts";
@@ -36,10 +37,9 @@ import type {
 // ----------------------------------------------------------------------------
 type FeedRepository = Pick<
   ContentRepositoryPort,
-  | "listPlaylists"
-  | "listPlaylistVideos"
+  | "loadHomeFeed"
+  | "findVideoDescription"
   | "listPlaylistVideoDates"
-  | "listWatchedIds"
   | "listWatches"
   | "listMembers"
   | "insertWatch"
@@ -225,7 +225,12 @@ export const newFeedWorkflow = (
   random: RandomPort,
 ): Pick<
   ContentUsecase,
-  "watch" | "unwatch" | "getHomeFeed" | "getBadgeCount" | "countUnwatchedNew"
+  | "watch"
+  | "unwatch"
+  | "getHomeFeed"
+  | "getVideoDetail"
+  | "getBadgeCount"
+  | "countUnwatchedNew"
 > => {
   // ユーザーごとの, 未視聴の New の本数 (getBadgeCount と countUnwatchedNew で使う)
   const counts = (userIds: string[]) =>
@@ -278,19 +283,34 @@ export const newFeedWorkflow = (
       stepAsync(
         // Step 1. バリデーション: [string, Date] -> [UserId, number]
         sequence([newUserId(userId), validateJoinedAt(joinedAt)]),
-        // Step 2. 取得: [UserId, number] -> [Playlist[], PlaylistVideo[], string[], number]
+        // Step 2. 取得: [UserId, number] -> [HomeFeedSource, number]
         ([user, joined]) =>
-          stepAsync(
-            sequenceAsync([
-              r.listPlaylists(),
-              r.listPlaylistVideos(),
-              r.listWatchedIds(user),
-            ]),
-            ([lists, rows, watched]) => ({ lists, rows, watched, joined }),
-          ),
+          stepAsync(r.loadHomeFeed(user), (source) => ({ source, joined })),
         // Step 3. 組み立て
-        ({ lists, rows, watched, joined }) =>
-          buildHomeFeed(lists, rows, new Set(watched), joined, random.float),
+        ({ source, joined }) =>
+          buildHomeFeed(
+            source.lists,
+            source.rows,
+            new Set(source.watchedIds),
+            joined,
+            random.float,
+          ),
+      ),
+
+    /**
+     * 動画の概要欄
+     */
+    getVideoDetail: ({ youtubeId }) =>
+      stepAsync(
+        // Step 1. バリデーション: unknown -> YoutubeId
+        validateWatchedVideo(youtubeId),
+        // Step 2. 取得: YoutubeId -> string | null
+        (id) => r.findVideoDescription(id),
+        // Step 3. View に組み立てる. 登録されていない動画は NotFound
+        (description) =>
+          description === null
+            ? err(newNotFoundError("動画が見つかりません"))
+            : ok({ description }),
       ),
 
     /**
