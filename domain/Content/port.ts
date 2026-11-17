@@ -87,7 +87,8 @@ export interface ContentRepositoryPort {
 
   listVideoIds(): ResultAsync<StoredVideoId[], AppError>;
 
-  // 動画を保存する. 既にあれば (youtube_id が同じなら) タイトル・概要欄などを上書きする
+  // 動画を保存する. 既にあれば (youtube_id が同じなら) タイトル・概要欄などを上書きする.
+  // 中身が同じ行は書き直さない
   upsertVideos(videos: FetchedVideo[]): ResultAsync<void, AppError>;
 
   // 動画を保存する. 既にあれば何もしない (全件の同期と同時に動いても壊れないように). 保存できたものを返す

@@ -131,7 +131,8 @@ export const playlistsToRename = (
  * @param stored - 保存されている動画 (取り込んだ後)
  * @param fetchedIds - 表示対象として取得できた動画の YouTube ID
  * @param current - 今の紐付け
- * @returns stale: プレイリストから外れた (または表示対象でなくなった) 動画. links: あるべき紐付け
+ * @returns stale: プレイリストから外れた (または表示対象でなくなった) 動画. links: あるべき紐付け.
+ *   changed: links のうち, 今の紐付けにない・並びが違うもの (書き込むのはこれだけ)
  */
 export const planFullLinks = (
   lists: readonly Playlist[],
@@ -139,8 +140,11 @@ export const planFullLinks = (
   stored: readonly StoredVideoId[],
   fetchedIds: ReadonlySet<string>,
   current: readonly Link[],
-): { stale: StaleLinks[]; links: Link[] } => {
+): { stale: StaleLinks[]; links: Link[]; changed: Link[] } => {
   const rowId = new Map(stored.map((row) => [row.youtubeId, row.id]));
+  const currentPosition = new Map(
+    current.map((l) => [`${l.playlistId}:${l.videoId}`, l.position]),
+  );
   const stale: StaleLinks[] = [];
   const links: Link[] = [];
   for (const list of lists) {
@@ -164,7 +168,10 @@ export const planFullLinks = (
     for (const [videoId, position] of wanted)
       links.push({ playlistId: list.id, videoId, position });
   }
-  return { stale, links };
+  const changed = links.filter(
+    (l) => currentPosition.get(`${l.playlistId}:${l.videoId}`) !== l.position,
+  );
+  return { stale, links, changed };
 };
 
 /**
@@ -321,7 +328,7 @@ export const newSyncWorkflow = (
                   current,
                 ),
               throughAsync(({ stale }) => inSeries(stale, r.deleteLinks)),
-              throughAsync(({ links }) => r.upsertLinks(links)),
+              throughAsync(({ changed }) => r.upsertLinks(changed)),
               ({ links }) => ({ infos, fetched, links: links.length }),
             ),
           // Step 5. どのプレイリストにも入っていない動画を消す (取得できた動画が 0 件なら消さない)
