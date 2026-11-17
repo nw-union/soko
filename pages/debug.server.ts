@@ -1,16 +1,14 @@
 import { defineHandler, defineHead, type InferProps } from "void";
 import { getUser } from "void/auth";
 import { container } from "../server/container.ts";
-import { throwError } from "../server/http/error.ts";
+import { valueOrThrow } from "../server/http/error.ts";
 
 export type Props = InferProps<typeof loader>;
 
 // 動画の同期とプレイリストの管理を手で行うデバッグ用の画面. ログインしている人だけが入れる
 export const loader = defineHandler(async (c) => {
   if (!getUser()) return c.redirect("/login");
-  return container()
-    .contentUsecase.listPlaylists()
-    .match((evt) => evt, throwError);
+  return valueOrThrow(container().contentUsecase.listPlaylists());
 });
 
 export const head = defineHead(() => ({ title: "Debug | Soko" }));

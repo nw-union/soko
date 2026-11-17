@@ -1,29 +1,39 @@
+import { stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { sql } from "void/db";
 import type { ProfileRepositoryPort } from "../../domain/Member/profile/port.ts";
 import { type Database, query } from "./util.ts";
 
 export const newProfileRepository = (db: Database): ProfileRepositoryPort => ({
   countPasskeys: (user) =>
-    query("countPasskeys", () =>
-      db.all<{ count: number }>(
-        sql`SELECT COUNT(*) AS count FROM passkey WHERE userId = ${user}`,
+    stepAsync(
+      query("countPasskeys", () =>
+        db.all<{ count: number }>(
+          sql`SELECT COUNT(*) AS count FROM passkey WHERE userId = ${user}`,
+        ),
       ),
-    ).map((rows) => rows[0]?.count ?? 0),
+      (rows) => rows[0]?.count ?? 0,
+    ),
 
   readImage: (user) =>
-    query("readImage", () =>
-      db.all<{ image: string | null }>(
-        sql`SELECT image FROM user WHERE id = ${user}`,
+    stepAsync(
+      query("readImage", () =>
+        db.all<{ image: string | null }>(
+          sql`SELECT image FROM user WHERE id = ${user}`,
+        ),
       ),
-    ).map((rows) => rows[0]?.image ?? null),
+      (rows) => rows[0]?.image ?? null,
+    ),
 
   // user テーブルは better-auth の管理で, updatedAt はミリ秒の整数
   updateImage: (user, image, now) =>
-    query("updateImage", () =>
-      db.run(
-        sql`UPDATE user SET image = ${image}, updatedAt = ${now.getTime()} WHERE id = ${user}`,
+    stepAsync(
+      query("updateImage", () =>
+        db.run(
+          sql`UPDATE user SET image = ${image}, updatedAt = ${now.getTime()} WHERE id = ${user}`,
+        ),
       ),
-    ).map(() => undefined),
+      () => undefined,
+    ),
 
   deleteUserData: (user) =>
     // 1 文ずつ消す（drizzle の batch は db.run(sql) を受け付けない）。途中で失敗しても、次の退会処理や手作業で消し直せる

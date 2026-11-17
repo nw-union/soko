@@ -1,4 +1,4 @@
-import { ResultAsync } from "neverthrow";
+import { type ResultAsync, rslt } from "@nw-union/nw-utils/lib/rslt";
 import type { db } from "void/db";
 import {
   type DatabaseError,
@@ -14,7 +14,7 @@ export const query = <T>(
   label: string,
   run: () => Promise<T>,
 ): ResultAsync<T, DatabaseError> =>
-  ResultAsync.fromPromise(run(), (e) =>
+  rslt.tryAsync(run, (e) =>
     newDatabaseError(`DB の操作に失敗しました: ${label}`, e),
   );
 

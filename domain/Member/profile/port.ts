@@ -1,4 +1,4 @@
-import type { ResultAsync } from "neverthrow";
+import type { ResultAsync } from "@nw-union/nw-utils/lib/rslt";
 import type { AppError } from "../../shared/error.ts";
 import type { UserId } from "../../shared/vo.ts";
 import type { AvatarFile, ImageFile } from "./type.ts";

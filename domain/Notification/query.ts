@@ -1,4 +1,4 @@
-import { okAsync } from "neverthrow";
+import { ok } from "@nw-union/nw-utils/lib/rslt";
 import type { NotificationUsecase } from "./api.ts";
 import type { VapidKeys } from "./type.ts";
 
@@ -13,5 +13,5 @@ export const newNotificationQueries = (
   /**
    * 購読に使う VAPID の公開鍵
    */
-  getPublicKey: () => okAsync({ publicKey: vapid?.publicKey ?? null }),
+  getPublicKey: async () => ok({ publicKey: vapid?.publicKey ?? null }),
 });

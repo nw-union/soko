@@ -1,4 +1,10 @@
-import { err, ok, Result } from "neverthrow";
+import {
+  collect,
+  err,
+  ok,
+  type Result,
+  rslt,
+} from "@nw-union/nw-utils/lib/rslt";
 import { isHttpUrl } from "../../rule/url.ts";
 import {
   type ForbiddenError,
@@ -91,18 +97,20 @@ export const validateProfileInput = (input: {
   color?: unknown;
   image?: unknown;
 }): Result<ValidatedProfile, ValidationError> =>
-  Result.combineWithAllErrors([
-    validateName(input.name),
-    validateColor(input.color),
-    validateNoImage(input.image),
-  ]).match(
-    ([name, color]) =>
-      ok({
+  rslt.pipe(
+    collect([
+      validateName(input.name),
+      validateColor(input.color),
+      validateNoImage(input.image),
+    ]),
+    rslt.map(
+      ([name, color]): ValidatedProfile => ({
         type: "ValidatedProfile",
         ...(name !== undefined && { name }),
         ...(color !== undefined && { color }),
       }),
-    (es) => err(mergeValidationError(es)),
+    ),
+    rslt.mapErr(mergeValidationError),
   );
 
 const validateName = (
@@ -110,10 +118,13 @@ const validateName = (
 ): Result<UserName | undefined, ValidationError> =>
   name === undefined
     ? ok(undefined)
-    : newUserName(name, "name").mapErr(() =>
-        newValidationErrorWithMessage(
-          "name",
-          `名前は 1〜${NAME_MAX} 文字で入力してください`,
+    : rslt.pipe(
+        newUserName(name, "name"),
+        rslt.mapErr(() =>
+          newValidationErrorWithMessage(
+            "name",
+            `名前は 1〜${NAME_MAX} 文字で入力してください`,
+          ),
         ),
       );
 
@@ -122,10 +133,13 @@ const validateColor = (
 ): Result<HexColor | null | undefined, ValidationError> =>
   color === undefined || color === null
     ? ok(color)
-    : newHexColor(color, "color").mapErr(() =>
-        newValidationErrorWithMessage(
-          "color",
-          "カラーコードは #rrggbb の形式で入力してください",
+    : rslt.pipe(
+        newHexColor(color, "color"),
+        rslt.mapErr(() =>
+          newValidationErrorWithMessage(
+            "color",
+            "カラーコードは #rrggbb の形式で入力してください",
+          ),
         ),
       );
 

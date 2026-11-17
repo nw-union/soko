@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newDatabaseError, newStorageError } from "../../shared/error.ts";
 import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import type { AvatarStoragePort, ProfileRepositoryPort } from "./port.ts";
@@ -79,7 +85,7 @@ describe("validateProfileUpdate", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ name: "たろう" });
+    expect(unwrap(actual)).toEqual({ name: "たろう" });
   });
 });
 
@@ -94,7 +100,7 @@ describe("validateSignUp", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ name: "ゲスト" });
+    expect(unwrap(actual)).toEqual({ name: "ゲスト" });
   });
 
   it("メールアドレスが違う場合, 名前より先にメールアドレスのエラーを返す", async () => {
@@ -105,7 +111,7 @@ describe("validateSignUp", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       issues: { email: ["登録できません"] },
     });
   });
@@ -125,7 +131,7 @@ describe("changeAvatar", () => {
     const actual = await wf.changeAvatar({ userId: "user1", file: PNG });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       image: `/files/avatars/${NEW_KEY}`,
     });
     expect(put).toEqual([NEW_KEY]);
@@ -157,7 +163,7 @@ describe("changeAvatar", () => {
     const actual = await wf.changeAvatar({ userId: "user1", file: PNG });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
   });
 
   it("画像でない場合, ValidationError となり, 何も保存しない", async () => {
@@ -171,7 +177,7 @@ describe("changeAvatar", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(put).toHaveLength(0);
     expect(updates).toHaveLength(0);
   });
@@ -194,7 +200,7 @@ describe("changeAvatar", () => {
     const actual = await failing.changeAvatar({ userId: "user1", file: PNG });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("StorageError");
+    expect(unwrapErr(actual).type).toBe("StorageError");
     expect(updates).toHaveLength(0);
   });
 });
@@ -213,7 +219,7 @@ describe("removeAvatar", () => {
     const actual = await wf.removeAvatar({ userId: "user1" });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(updates).toEqual([{ user: "user1", image: null, now: NOW }]);
     expect(removed).toEqual([OLD_KEY]);
   });
@@ -234,7 +240,7 @@ describe("cleanupDeletedUser", () => {
     });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(removed).toEqual([OLD_KEY]);
     expect(deletedUsers).toEqual(["user1"]);
   });
@@ -270,7 +276,7 @@ describe("cleanupDeletedUser", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+    expect(unwrapErr(actual).type).toBe("DatabaseError");
   });
 });
 
@@ -286,7 +292,7 @@ describe("checkPasskeyDeletion", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       type: "ForbiddenError",
       code: "SESSION_NOT_FRESH",
     });

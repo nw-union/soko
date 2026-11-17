@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { okAsync } from "neverthrow";
+import { okAsync, unwrap, unwrapErr } from "../../../lib/rslt-test.ts";
 import type { ClockPort } from "../../shared/port.ts";
 import type { InviteRepositoryPort } from "./port.ts";
 import { newInviteQueries } from "./query.ts";
@@ -49,7 +49,7 @@ describe("listInvites", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       limit: 5,
       remaining: 3,
       invites: [
@@ -71,6 +71,6 @@ describe("listInvites", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 });

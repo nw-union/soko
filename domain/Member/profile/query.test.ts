@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newStorageError } from "../../shared/error.ts";
 import type { AvatarStoragePort, ProfileRepositoryPort } from "./port.ts";
 import { newProfileQueries } from "./query.ts";
@@ -54,7 +59,7 @@ describe("getDisplayUser", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       name: "たろう",
       color: "#3cddb7",
       image: null,
@@ -75,7 +80,7 @@ describe("hasPasskey", () => {
     const actual = await newFakes(passkeys).hasPasskey({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ hasPasskey: expected });
+    expect(unwrap(actual)).toEqual({ hasPasskey: expected });
   });
 });
 
@@ -88,7 +93,7 @@ describe("getAvatarFile", () => {
     const actual = await newFakes().getAvatarFile({ key: KEY });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       body,
       contentType: "image/png",
       etag: '"e1"',
@@ -102,7 +107,7 @@ describe("getAvatarFile", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("NotFoundError");
+    expect(unwrapErr(actual).type).toBe("NotFoundError");
   });
 
   it("キーの形が違う場合, ストレージを読まずに NotFoundError となる", async () => {
@@ -110,7 +115,7 @@ describe("getAvatarFile", () => {
     const actual = await newFakes(0, true).getAvatarFile({ key: "../secret" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("NotFoundError");
+    expect(unwrapErr(actual).type).toBe("NotFoundError");
   });
 
   it("ストレージのエラーは, そのまま返す", async () => {
@@ -118,6 +123,6 @@ describe("getAvatarFile", () => {
     const actual = await newFakes(0, true).getAvatarFile({ key: KEY });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("StorageError");
+    expect(unwrapErr(actual).type).toBe("StorageError");
   });
 });

@@ -1,4 +1,6 @@
 import { passkey } from "@better-auth/passkey";
+import { match, P } from "@nw-union/nw-utils/lib/match";
+import type { ResultAsync } from "@nw-union/nw-utils/lib/rslt";
 import {
   APIError,
   createAuthMiddleware,
@@ -22,20 +24,38 @@ import {
 // ユーザー作成の直前（databaseHooks.user.create.before）で Cookie のトークンを使用済みにする。
 
 // WorkFlow のエラーを better-auth のエラーにする。入力の誤りと権限の不足は、理由をそのまま返す
-const toAPIError = (e: AppError) => {
-  switch (e.type) {
-    case "ValidationError":
-      return new APIError("BAD_REQUEST", {
-        message: Object.values(e.issues)[0]?.[0] ?? e.message,
-      });
-    case "ForbiddenError":
-      return new APIError("FORBIDDEN", { message: e.message, code: e.code });
-    default:
-      return new Error(`${e.type}: ${e.message}`, {
-        cause: "cause" in e ? e.cause : undefined,
-      });
-  }
-};
+const toAPIError = (e: AppError) =>
+  match(e)
+    .with(
+      { type: "ValidationError" },
+      (e) =>
+        new APIError("BAD_REQUEST", {
+          message: Object.values(e.issues)[0]?.[0] ?? e.message,
+        }),
+    )
+    .with(
+      { type: "ForbiddenError" },
+      (e) => new APIError("FORBIDDEN", { message: e.message, code: e.code }),
+    )
+    .with(
+      P._,
+      (e) =>
+        new Error(`${e.type}: ${e.message}`, {
+          cause: "cause" in e ? e.cause : undefined,
+        }),
+    )
+    .exhaustive();
+
+// WorkFlow の成功値を取り出す. 失敗なら better-auth のエラーにして throw する
+const valueOrThrowAPIError = async <T>(
+  r: ResultAsync<T, AppError>,
+): Promise<T> =>
+  match(await r)
+    .ok((value) => value)
+    .err((e) => {
+      throw toAPIError(e);
+    })
+    .exhaustive();
 
 export default defineAuth(({ defaults }) => {
   return {
@@ -66,11 +86,12 @@ export default defineAuth(({ defaults }) => {
       deleteUser: {
         enabled: true,
         afterDelete: async (user) => {
-          const cleaned = await container().memberUsecase.cleanupDeletedUser({
-            userId: user.id,
-            image: user.image,
-          });
-          if (cleaned.isErr()) throw toAPIError(cleaned.error);
+          await valueOrThrowAPIError(
+            container().memberUsecase.cleanupDeletedUser({
+              userId: user.id,
+              image: user.image,
+            }),
+          );
         },
       },
       additionalFields: {
@@ -90,33 +111,35 @@ export default defineAuth(({ defaults }) => {
           // 名前は前後の空白を除いて保存する。color は style に埋め込まれるので、形式が正しいものだけ保存する。
           // 画像（image）はここでは設定できない（routes/api/avatar.ts だけが設定する）
           before: async (data) => {
-            const validated =
-              await container().memberUsecase.validateProfileUpdate(data);
-            if (validated.isErr()) throw toAPIError(validated.error);
-            return { data: { ...data, ...validated.value } };
+            const validated = await valueOrThrowAPIError(
+              container().memberUsecase.validateProfileUpdate(data),
+            );
+            return { data: { ...data, ...validated } };
           },
         },
         create: {
           // 招待がないと新規ユーザーは作れない。入力が正しくないときに招待を無駄にしないよう、先に確かめる
           before: async (user, ctx) => {
             // 登録時のメールアドレスは、ブラウザ（pages/login.svelte）が作る使い捨ての <UUID>@nwu.invalid だけ
-            const validated =
-              await container().memberUsecase.validateSignUp(user);
-            if (validated.isErr()) throw toAPIError(validated.error);
-            const data = { ...user, ...validated.value };
+            const validated = await valueOrThrowAPIError(
+              container().memberUsecase.validateSignUp(user),
+            );
+            const data = { ...user, ...validated };
             // 同じトークンで同時に登録されても、成功するのは 1 回だけ。理由は教えずに同じエラーにする
-            const claimed = await container().memberUsecase.claimInvite({
-              token: readInviteCookie(ctx?.request),
-            });
-            if (claimed.isErr()) throw toAPIError(claimed.error);
+            await valueOrThrowAPIError(
+              container().memberUsecase.claimInvite({
+                token: readInviteCookie(ctx?.request),
+              }),
+            );
             return { data };
           },
           after: async (user, ctx) => {
-            const linked = await container().memberUsecase.linkInvitedUser({
-              token: readInviteCookie(ctx?.request),
-              userId: user.id,
-            });
-            if (linked.isErr()) throw toAPIError(linked.error);
+            await valueOrThrowAPIError(
+              container().memberUsecase.linkInvitedUser({
+                token: readInviteCookie(ctx?.request),
+                userId: user.id,
+              }),
+            );
             // 使い終わった招待の Cookie は消す
             ctx?.setCookie(INVITE_COOKIE, "", { path: "/", maxAge: 0 });
           },
@@ -134,11 +157,12 @@ export default defineAuth(({ defaults }) => {
           model: "passkey",
           where: [{ field: "userId", value: session.user.id }],
         });
-        const checked = await container().memberUsecase.checkPasskeyDeletion({
-          sessionCreatedAt: new Date(session.session.createdAt),
-          passkeyCount,
-        });
-        if (checked.isErr()) throw toAPIError(checked.error);
+        await valueOrThrowAPIError(
+          container().memberUsecase.checkPasskeyDeletion({
+            sessionCreatedAt: new Date(session.session.createdAt),
+            passkeyCount,
+          }),
+        );
       }),
     },
     plugins: [

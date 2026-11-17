@@ -1,4 +1,10 @@
-import { okAsync, type ResultAsync } from "neverthrow";
+import {
+  ok,
+  type ResultAsync,
+  sequence,
+  stepAsync,
+  throughAsync,
+} from "@nw-union/nw-utils/lib/rslt";
 import type { AppError } from "../../shared/error.ts";
 import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import { newUserId } from "../../shared/vo.ts";
@@ -34,87 +40,88 @@ export const newProfileWorkFlows = (
    * プロフィールの更新で送られてきた値を確かめる
    */
   validateProfileUpdate: (cmd) =>
-    okAsync(cmd)
+    stepAsync(
       // Step 1. バリデーション: Cmd -> ValidatedProfile
-      .andThen(validateProfileInput)
+      validateProfileInput(cmd),
       // Step 2. イベント発行
-      .map(convToProfileEvt),
+      convToProfileEvt,
+    ),
 
   /**
    * 登録で送られてきた値を確かめる
    */
   validateSignUp: ({ email, ...profile }) =>
-    okAsync(email)
+    stepAsync(
       // Step 1. メールアドレスの確認 (使い捨てのものだけ)
-      .andThen(validateSignupEmail)
+      validateSignupEmail(email),
       // Step 2. バリデーション: Cmd -> ValidatedProfile
-      .andThen(() => validateProfileInput(profile))
+      () => validateProfileInput(profile),
       // Step 3. イベント発行
-      .map(convToProfileEvt),
+      convToProfileEvt,
+    ),
 
   /**
    * アイコン画像を差し替える
    */
   changeAvatar: ({ userId, file }) =>
-    // Step 1. バリデーション: [string, Uint8Array | null] -> [UserId, ImageFile]
-    okAsync(undefined)
-      .andThen(() => newUserId(userId))
-      .andThen((user) => validateImageFile(file).map((f) => [user, f] as const))
+    stepAsync(
+      // Step 1. バリデーション: [string, Uint8Array | null] -> [UserId, ImageFile]
+      sequence([newUserId(userId), validateImageFile(file)]),
       // Step 2. ストレージに保存: [UserId, ImageFile] -> [UserId, AvatarKey]
-      .andThen(([user, f]) => {
+      ([user, f]) => {
         const key = createAvatarKey(random.bytes(16), f.ext);
-        return s.putAvatar(key, f).map(() => [user, key] as const);
-      })
+        return stepAsync(s.putAvatar(key, f), () => [user, key] as const);
+      },
       // Step 3. DB 保存 (古い画像を覚えておく): [UserId, AvatarKey] -> [string, string | null]
-      .andThen(([user, key]) =>
-        r
-          .readImage(user)
-          .andThen((old) =>
-            r
-              .updateImage(user, toAvatarPath(key), clock.now())
-              .map(() => [toAvatarPath(key), old] as const),
+      ([user, key]) =>
+        stepAsync(
+          r.readImage(user),
+          throughAsync(() =>
+            r.updateImage(user, toAvatarPath(key), clock.now()),
           ),
-      )
+          (old) => [toAvatarPath(key), old] as const,
+        ),
       // Step 4. 古い画像を消す (失敗しても差し替えは成功させる)
-      .andThrough(([, old]) => removeOldAvatar(s)(old))
+      throughAsync(([, old]) => removeOldAvatar(s)(old)),
       // Step 5. イベント発行
-      .map(([image]) => ({ image })),
+      ([image]) => ({ image }),
+    ),
 
   /**
    * アイコン画像を外す
    */
   removeAvatar: ({ userId }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
+      newUserId(userId),
       // Step 2. DB 保存 (古い画像を覚えておく): UserId -> string | null
-      .andThen((user) =>
-        r
-          .readImage(user)
-          .andThrough(() => r.updateImage(user, null, clock.now())),
-      )
+      (user) =>
+        stepAsync(
+          r.readImage(user),
+          throughAsync(() => r.updateImage(user, null, clock.now())),
+        ),
       // Step 3. 古い画像を消す (失敗しても外すのは成功させる)
-      .andThen(removeOldAvatar(s)),
+      removeOldAvatar(s),
+    ),
 
   /**
    * 退会したユーザーの後始末
    */
   cleanupDeletedUser: ({ userId, image }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
+      newUserId(userId),
       // Step 2. アイコン画像を消す (失敗しても続ける)
-      .andThrough(() => removeOldAvatar(s)(image))
+      throughAsync(() => removeOldAvatar(s)(image)),
       // Step 3. DB 削除
-      .andThen(r.deleteUserData),
+      r.deleteUserData,
+    ),
 
   /**
    * パスキーを削除してよいか確かめる
    */
-  checkPasskeyDeletion: ({ sessionCreatedAt, passkeyCount }) =>
-    okAsync(undefined).andThen(() =>
-      ensurePasskeyDeletable(sessionCreatedAt, passkeyCount, clock.now()),
-    ),
+  checkPasskeyDeletion: async ({ sessionCreatedAt, passkeyCount }) =>
+    ensurePasskeyDeletable(sessionCreatedAt, passkeyCount, clock.now()),
 });
 
 /**
@@ -122,11 +129,10 @@ export const newProfileWorkFlows = (
  */
 const removeOldAvatar =
   (s: AvatarStoragePort) =>
-  (image: unknown): ResultAsync<void, AppError> => {
+  async (image: unknown): ResultAsync<void, AppError> => {
     const key = parseAvatarPath(image);
-    return key
-      ? s.deleteAvatar(key).orElse(() => okAsync(undefined))
-      : okAsync(undefined);
+    if (key) await s.deleteAvatar(key);
+    return ok();
   };
 
 const convToProfileEvt = (p: ValidatedProfile) => ({

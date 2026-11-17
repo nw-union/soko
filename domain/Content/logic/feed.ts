@@ -1,5 +1,5 @@
 // ホーム・New・視聴の純粋な関数（ホームに並べる動画の組み立て、未視聴の New の本数、視聴の入力の検証）
-import { err, ok, type Result } from "neverthrow";
+import { err, ok, type Result, rslt } from "@nw-union/nw-utils/lib/rslt";
 import { isYoutubeId } from "../../rule/youtube.ts";
 import {
   newValidationErrorWithMessage,
@@ -160,8 +160,14 @@ export const countUnwatchedNew = (
 export const validateWatchedVideo = (
   youtubeId: unknown,
 ): Result<YoutubeId, ValidationError> =>
-  newYoutubeId(youtubeId, "youtubeId").mapErr(() =>
-    newValidationErrorWithMessage("youtubeId", "動画の指定が正しくありません"),
+  rslt.pipe(
+    newYoutubeId(youtubeId, "youtubeId"),
+    rslt.mapErr(() =>
+      newValidationErrorWithMessage(
+        "youtubeId",
+        "動画の指定が正しくありません",
+      ),
+    ),
   );
 
 /**

@@ -1,21 +1,24 @@
 import { describe, expect, it } from "bun:test";
-import * as v from "valibot";
+import { match } from "@nw-union/nw-utils/lib/match";
+import { type Schema, v } from "@nw-union/nw-utils/lib/vo";
 import {
   mergeValidationError,
   newValidationError,
   newValidationErrorWithMessage,
 } from "./error.ts";
 
-const issuesOf = (schema: v.GenericSchema, src: unknown) => {
-  const r = v.safeParse(schema, src);
-  if (r.success) throw new Error("schema must fail");
-  return r.issues;
-};
+const issuesOf = <T>(schema: Schema<T>, src: unknown) =>
+  match(schema(src))
+    .ok(() => {
+      throw new Error("schema must fail");
+    })
+    .err((issue) => [issue])
+    .exhaustive();
 
 describe("newValidationError", () => {
   it("フィールド名をキーにしたエラー内容を持つ", () => {
     // Arrange:
-    const e = issuesOf(v.pipe(v.string(), v.minLength(1)), "");
+    const e = issuesOf(v.chain(v.string, v.minLength(1)), "");
 
     // Act:
     const actual = newValidationError("name", e);
@@ -42,11 +45,11 @@ describe("mergeValidationError", () => {
     // Arrange:
     const e1 = newValidationError(
       "name",
-      issuesOf(v.pipe(v.string(), v.minLength(1)), ""),
+      issuesOf(v.chain(v.string, v.minLength(1)), ""),
     );
     const e2 = newValidationError(
       "color",
-      issuesOf(v.pipe(v.string(), v.minLength(1)), ""),
+      issuesOf(v.chain(v.string, v.minLength(1)), ""),
     );
 
     // Act:
@@ -61,11 +64,11 @@ describe("mergeValidationError", () => {
     // Arrange:
     const e1 = newValidationError(
       "name",
-      issuesOf(v.pipe(v.string(), v.minLength(1)), ""),
+      issuesOf(v.chain(v.string, v.minLength(1)), ""),
     );
     const e2 = newValidationError(
       "name",
-      issuesOf(v.pipe(v.string(), v.maxLength(0)), "a"),
+      issuesOf(v.chain(v.string, v.maxLength(0)), "a"),
     );
 
     // Act:

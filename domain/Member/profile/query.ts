@@ -1,4 +1,4 @@
-import { errAsync, okAsync } from "neverthrow";
+import { err, ok, rslt, stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { newNotFoundError } from "../../shared/error.ts";
 import { newUserId } from "../../shared/vo.ts";
 import type { MemberUsecase } from "../api.ts";
@@ -18,8 +18,8 @@ export const newProfileQueries = (
   /**
    * 画面に出すユーザー
    */
-  getDisplayUser: ({ user }) =>
-    okAsync({
+  getDisplayUser: async ({ user }) =>
+    ok({
       name: user.name,
       color: resolveColor(user.color, user.id),
       image: resolveImage(user.image),
@@ -29,31 +29,35 @@ export const newProfileQueries = (
    * パスキーを作ったか
    */
   hasPasskey: ({ userId }) =>
-    okAsync(userId)
+    stepAsync(
       // Step 1. バリデーション: string -> UserId
-      .andThen((id) => newUserId(id))
+      newUserId(userId),
       // Step 2. 数える
-      .andThen(r.countPasskeys)
+      r.countPasskeys,
       // Step 3. View に組み立てる
-      .map((count) => ({ hasPasskey: count > 0 })),
+      (count) => ({ hasPasskey: count > 0 }),
+    ),
 
   /**
    * アイコン画像のファイル. キーの形が違っても, 画像がなくても, 同じ NotFoundError
    */
   getAvatarFile: ({ key }) =>
-    okAsync(key)
+    stepAsync(
       // Step 1. バリデーション: unknown -> AvatarKey
-      .andThen((k) => newAvatarKey(k).mapErr(() => newNotFoundError(NOT_FOUND)))
+      rslt.pipe(
+        newAvatarKey(key),
+        rslt.mapErr(() => newNotFoundError(NOT_FOUND)),
+      ),
       // Step 2. 取得
-      .andThen(s.getAvatar)
+      s.getAvatar,
       // Step 3. View に組み立てる
-      .andThen((file) =>
+      (file) =>
         file
-          ? okAsync({
+          ? ok({
               body: file.body,
               contentType: file.contentType,
               etag: file.etag,
             })
-          : errAsync(newNotFoundError(NOT_FOUND)),
-      ),
+          : err(newNotFoundError(NOT_FOUND)),
+    ),
 });

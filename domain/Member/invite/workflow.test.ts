@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { errAsync, okAsync } from "neverthrow";
+import { isErr } from "@nw-union/nw-utils/lib/rslt";
+import {
+  errAsync,
+  okAsync,
+  unwrap,
+  unwrapErr,
+} from "../../../lib/rslt-test.ts";
 import { newDatabaseError } from "../../shared/error.ts";
 import type { ClockPort, RandomPort } from "../../shared/port.ts";
 import type { InviteRepositoryPort } from "./port.ts";
@@ -96,7 +102,7 @@ describe("issueInvite", () => {
     const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({
+    expect(unwrap(actual)).toEqual({
       token: "ABCD-EFGH-JKMN-PQRS",
       days: 7,
     });
@@ -116,7 +122,7 @@ describe("issueInvite", () => {
     const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ConflictError");
+    expect(unwrapErr(actual).type).toBe("ConflictError");
     expect(inserted).toHaveLength(0);
   });
 
@@ -136,7 +142,7 @@ describe("issueInvite", () => {
     const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("DatabaseError");
+    expect(unwrapErr(actual).type).toBe("DatabaseError");
   });
 });
 
@@ -152,7 +158,7 @@ describe("revokeInvite", () => {
     const actual = await wf.revokeInvite({ userId: "user1", id: "12" });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(deleted).toEqual([{ id: 12, inviter: "user1" }]);
   });
 
@@ -164,7 +170,7 @@ describe("revokeInvite", () => {
     const actual = await wf.revokeInvite({ userId: "user1", id: "abc" });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
     expect(deleted).toHaveLength(0);
   });
 });
@@ -180,7 +186,7 @@ describe("startInvite", () => {
     });
 
     // Assert:
-    expect(actual._unsafeUnwrap()).toEqual({ token: TOKEN });
+    expect(unwrap(actual)).toEqual({ token: TOKEN });
   });
 
   it.each([
@@ -191,7 +197,7 @@ describe("startInvite", () => {
     const actual = await newFakes().wf.startInvite({ token });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr()).toMatchObject({
+    expect(unwrapErr(actual)).toMatchObject({
       type: "ValidationError",
       issues: { token: ["招待コードが正しくないか、期限切れです"] },
     });
@@ -210,7 +216,7 @@ describe("claimInvite", () => {
     const actual = await wf.claimInvite({ token: TOKEN });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(claimedAt).toEqual([NOW]);
   });
 
@@ -223,7 +229,7 @@ describe("claimInvite", () => {
     const actual = await wf.claimInvite({ token: TOKEN });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 
   it("Cookie がない場合, ValidationError となる", async () => {
@@ -231,7 +237,7 @@ describe("claimInvite", () => {
     const actual = await newFakes().wf.claimInvite({ token: null });
 
     // Assert:
-    expect(actual._unsafeUnwrapErr().type).toBe("ValidationError");
+    expect(unwrapErr(actual).type).toBe("ValidationError");
   });
 });
 
@@ -244,7 +250,7 @@ describe("linkInvitedUser", () => {
     const actual = await wf.linkInvitedUser({ token: TOKEN, userId: "user2" });
 
     // Assert:
-    expect(actual.isOk()).toBeTrue();
+    expect(isErr(actual)).toBeFalse();
     expect(linked).toEqual([{ hash: TOKEN_HASH, user: "user2" }]);
   });
 });
