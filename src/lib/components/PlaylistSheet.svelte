@@ -4,7 +4,7 @@ import DurationLabel from "./DurationLabel.svelte";
 import NewLabel from "./NewLabel.svelte";
 import { swipeToClose } from "../client/swipe-to-close";
 import { splitLinks } from "../client/link";
-import { thumbnailFallback } from "../client/thumbnail";
+import { tileThumbnailUrl } from "../../../lib/youtube.ts";
 
 // プレイリストの全動画を縦のリストで見せる、右から出る全画面のシート（iOS のナビゲーションの push と同じ動き）。
 // URL は変えず、トップページの上に重ねる。動画を押すと、再生画面がこの上に開き、閉じるとここへ戻る
@@ -146,7 +146,7 @@ const click = (e: MouseEvent, video: Video) => {
             <li>
               <a class="item" href={video.url} target="_blank" rel="noopener noreferrer" onclick={(e) => click(e, video)}>
                 <span class="thumb">
-                  <img use:thumbnailFallback src={video.thumbnail} alt="" loading="lazy" decoding="async" />
+                  <img src={tileThumbnailUrl(video.youtubeId)} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span class="text">
                   <span class="title">{video.title}</span>

@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import DurationLabel from "./DurationLabel.svelte";
 import NewLabel from "./NewLabel.svelte";
 import { thumbnailFallback, thumbnailTint } from "../client/thumbnail";
@@ -27,11 +26,17 @@ let {
 	onexternal: () => void;
 } = $props();
 
-// サムネイルの代表色（"r g b"）。取れるまで・取れなかったときは、これまでのガラスのまま
+// サムネイルの代表色（"r g b"）。取れるまで・取れなかったときは、これまでのガラスのまま。
+// 代表色を取る画像の読み込みが、ホームを開いた直後の画像の読み込みと競わないよう、このタイルのサムネイルが読めてから取る
+// （サムネイルは loading="lazy" なので、画面の外のタイルは、近くまでスクロールしたときになる）
 let tint = $state<string | null>(null);
-onMount(() => {
-	thumbnailTint(thumbnail).then((color) => (tint = color));
-});
+const loadTint = () => {
+	if (tint === null) thumbnailTint(thumbnail).then((color) => (tint = color));
+};
+// ハイドレーションの前に読み込みが終わっていたときは、load が来ないので、ここで拾う
+const tintWhenLoaded = (img: HTMLImageElement) => {
+	if (img.complete && img.naturalWidth > 0) loadTint();
+};
 
 const click = (e: MouseEvent) => {
 	if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) {
@@ -45,7 +50,7 @@ const click = (e: MouseEvent) => {
 
 <a class="tile glass tile-link" class:tinted={tint} style:--tint={tint} href={url} target="_blank" rel="noopener noreferrer" onclick={click}>
   <span class="thumb">
-    <img use:thumbnailFallback src={thumbnail} alt="" loading="lazy" decoding="async" />
+    <img use:thumbnailFallback use:tintWhenLoaded onload={loadTint} src={thumbnail} alt="" loading="lazy" decoding="async" />
   </span>
   <span class="title">
     <span class="clamp">{title}</span>

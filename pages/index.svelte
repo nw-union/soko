@@ -5,7 +5,12 @@ import { SvelteMap } from "svelte/reactivity";
 import type { Props } from "./index.server";
 import { syncBadge } from "../src/lib/client/push";
 import { splitLinks } from "../src/lib/client/link";
-import { previewUrl, shortUrl, studioUrl } from "../lib/youtube.ts";
+import {
+	previewUrl,
+	shortUrl,
+	studioUrl,
+	tileThumbnailUrl,
+} from "../lib/youtube.ts";
 import { thumbnailFallback, thumbnailTintVar } from "../src/lib/client/thumbnail";
 import Avatar from "../src/lib/components/Avatar.svelte";
 import PlaylistSheet from "../src/lib/components/PlaylistSheet.svelte";
@@ -623,7 +628,7 @@ const bodySwipe = {
     <ul class="row" aria-labelledby="list-{list.id}">
       {#each list.videos.slice(0, PREVIEW_COUNT) as video (video.id)}
         <li>
-          <VideoTile url={video.url} thumbnail={video.thumbnail} title={video.title} duration={video.duration} tags={video.tags} watched={isWatched(video)} isNew={unwatchedNewIds.has(video.youtubeId)} onplay={() => play(video)} onexternal={() => markWatched(video)} />
+          <VideoTile url={video.url} thumbnail={tileThumbnailUrl(video.youtubeId)} title={video.title} duration={video.duration} tags={video.tags} watched={isWatched(video)} isNew={unwatchedNewIds.has(video.youtubeId)} onplay={() => play(video)} onexternal={() => markWatched(video)} />
         </li>
       {/each}
       {#if list.videos.length > PREVIEW_COUNT}
