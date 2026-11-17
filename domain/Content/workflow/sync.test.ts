@@ -20,6 +20,7 @@ import {
   canRemoveOrphans,
   extractHashtags,
   isDisplayable,
+  newlyAddedIds,
   newSyncWorkflow,
   parseEmbedAspectRatio,
   parseIsoDuration,
@@ -270,6 +271,7 @@ describe("syncAll", () => {
     // Assert:
     expect(unwrap(actual)).toEqual({
       type: "Synced",
+      addedVideoIds: [],
       videos: 2,
       playlists: 1,
       links: 2,
@@ -282,6 +284,24 @@ describe("syncAll", () => {
       { playlistId: 1, videoId: 1, position: 1 },
     ]);
     expect([...db.videos.keys()].sort()).toEqual(["a", "b"]);
+  });
+
+  it("保存する前の DB になかった動画を, 新しく足した動画として返す", async () => {
+    // Arrange: DB には a だけ. YouTube の PL1 は [a, b, c]
+    const { repo, youtube } = newSyncFakes({
+      remote: { PL1: ["a", "b", "c"] },
+      videos: [{ id: 1, youtubeId: "a" }],
+      links: [{ playlistId: 1, videoId: 1, position: 0 }],
+    });
+
+    // Act:
+    const actual = await newSyncWorkflow(repo, youtube).syncAll();
+
+    // Assert:
+    expect(unwrap(actual)).toMatchObject({
+      type: "Synced",
+      addedVideoIds: ["b", "c"],
+    });
   });
 
   it("並びが変わっていない紐付けは, 書き込まない", async () => {
@@ -378,7 +398,7 @@ describe("syncNew", () => {
     // Assert:
     expect(unwrap(actual)).toEqual({
       type: "Synced",
-      added: 1,
+      addedVideoIds: ["b"],
       links: 1,
     });
     expect(youtubeCalls).toEqual([["b"]]);
@@ -418,7 +438,7 @@ describe("syncNew", () => {
     // Assert:
     expect(unwrap(actual)).toEqual({
       type: "Synced",
-      added: 0,
+      addedVideoIds: [],
       links: 1,
     });
     expect(youtubeCalls).toHaveLength(0);
@@ -438,7 +458,7 @@ describe("syncNew", () => {
     // Assert:
     expect(unwrap(actual)).toEqual({
       type: "Synced",
-      added: 0,
+      addedVideoIds: [],
       links: 0,
     });
     expect(db.videos.size).toBe(0);
@@ -665,6 +685,23 @@ describe("planFullLinks", () => {
 describe("canRemoveOrphans", () => {
   it("取得できた動画が 0 件なら, 消さない (API の異常で全部消さないように)", () => {
     expect(canRemoveOrphans([])).toBeFalse();
+  });
+});
+
+describe("newlyAddedIds", () => {
+  it("保存する前の DB になかった動画の ID だけを返す", () => {
+    // Arrange:
+    const fetched = toFetchedVideos([
+      apiItem({ id: "a" }),
+      apiItem({ id: "x" }),
+      apiItem({ id: "c" }),
+    ]);
+
+    // Act:
+    const actual = newlyAddedIds(fetched, stored);
+
+    // Assert:
+    expect(actual).toEqual(["x"]);
   });
 });
 

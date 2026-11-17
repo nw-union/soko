@@ -1,4 +1,4 @@
-// 新着動画のプッシュ通知を送り、結果をログに残す。ポリシー（server/process/policy.ts）と、全件の同期の cron（crons/sync-videos.ts）から呼ぶ
+// 新着動画のプッシュ通知を送り、結果をログに残す。ポリシー（server/process/policy.ts）から呼ぶ
 import { match } from "@nw-union/nw-utils/lib/match";
 import { container } from "../container.ts";
 import { valueOrThrow } from "../http/error.ts";

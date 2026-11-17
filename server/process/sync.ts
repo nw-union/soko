@@ -6,36 +6,33 @@ import { container } from "../container.ts";
 import { valueOrThrow } from "../http/error.ts";
 import { log } from "../log/log.ts";
 import { notifyNew } from "./notify.ts";
-import { onNewSynced } from "./policy.ts";
+import { onVideosSynced } from "./policy.ts";
 
-/** 全件の同期. 同期できたら新着を通知する */
+/** 全件の同期. 動画が増えたら, ポリシーが新着を通知する */
 export const runSyncAll = async (): Promise<AllSyncedEvt> => {
   const evt = await valueOrThrow(container().contentUsecase.syncAll());
-  const done = match(evt)
-    .with({ type: "NoApiKey" }, () => {
+  match(evt)
+    .with({ type: "NoApiKey" }, () =>
       log().warn(
         "sync-videos: YOUTUBE_API_KEY が未設定のため、取得をスキップします",
-      );
-      return false;
-    })
-    .with({ type: "NoPlaylists" }, () => {
+      ),
+    )
+    .with({ type: "NoPlaylists" }, () =>
       log().warn(
         "sync-videos: playlists にプレイリストが登録されていないため、取得をスキップします",
-      );
-      return false;
-    })
+      ),
+    )
     .with({ type: "Synced" }, (e) => {
       if (e.removalSkipped)
         log().warn(
           "sync-videos: 取得できた動画が 0 件のため、動画の削除はスキップします",
         );
       log().info(
-        `sync-videos: 動画 ${e.videos} 件、プレイリスト ${e.playlists} 件、紐付け ${e.links} 件を反映し、動画 ${e.removed} 件を削除、プレイリストの名前・説明 ${e.renamed} 件を更新しました`,
+        `sync-videos: 動画 ${e.videos} 件（うち新規 ${e.addedVideoIds.length} 件）、プレイリスト ${e.playlists} 件、紐付け ${e.links} 件を反映し、動画 ${e.removed} 件を削除、プレイリストの名前・説明 ${e.renamed} 件を更新しました`,
       );
-      return true;
     })
     .exhaustive();
-  if (done) await notifyNew();
+  await onVideosSynced(evt, notifyNew);
   return evt;
 };
 
@@ -44,10 +41,10 @@ export const runSyncNew = async (): Promise<NewSyncedEvt> => {
   const evt = await valueOrThrow(container().contentUsecase.syncNew());
   // 未設定・未登録の警告は、全件の同期が出す
   if (evt.type !== "Synced") return evt;
-  if (evt.added > 0 || evt.links > 0)
+  if (evt.addedVideoIds.length > 0 || evt.links > 0)
     log().info(
-      `sync-new-videos: 動画 ${evt.added} 件、紐付け ${evt.links} 件を追加しました`,
+      `sync-new-videos: 動画 ${evt.addedVideoIds.length} 件、紐付け ${evt.links} 件を追加しました`,
     );
-  await onNewSynced(evt, notifyNew);
+  await onVideosSynced(evt, notifyNew);
   return evt;
 };

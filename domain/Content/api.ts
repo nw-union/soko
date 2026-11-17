@@ -29,6 +29,8 @@ export type AllSyncedEvt =
   | SyncSkipped
   | {
       type: "Synced";
+      // 新しく足した動画の YouTube ID (1 本以上なら, ポリシーが新着を通知する)
+      addedVideoIds: string[];
       // 表示対象として取得できた動画の数
       videos: number;
       playlists: number;
@@ -54,8 +56,8 @@ export type NewSyncedEvt =
   | SyncSkipped
   | {
       type: "Synced";
-      // 足した動画の数 (1 本以上なら, ポリシーが新着を通知する)
-      added: number;
+      // 足した動画の YouTube ID (1 本以上なら, ポリシーが新着を通知する)
+      addedVideoIds: string[];
       // 足した紐付けの数
       links: number;
     };

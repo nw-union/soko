@@ -181,6 +181,21 @@ export const planFullLinks = (
 export const canRemoveOrphans = (fetched: readonly FetchedVideo[]): boolean =>
   fetched.length > 0;
 
+/**
+ * 新しく足す動画の YouTube ID. 取得した動画のうち, 保存する前の DB になかったもの
+ *
+ * @param stored - 保存されている動画 (保存する前)
+ */
+export const newlyAddedIds = (
+  fetched: readonly FetchedVideo[],
+  stored: readonly StoredVideoId[],
+): string[] => {
+  const known = new Set(stored.map((row) => row.youtubeId));
+  return fetched
+    .map((video) => video.youtubeId)
+    .filter((youtubeId) => !known.has(youtubeId));
+};
+
 // ----------------------------------------------------------------------------
 // Step: 差分の同期の計画
 // ----------------------------------------------------------------------------
@@ -313,10 +328,20 @@ export const newSyncWorkflow = (
               r.updatePlaylistInfo(id, info),
             ),
           ),
-          // Step 3. 動画を保存する (変更も直す)
-          throughAsync(({ fetched }) => r.upsertVideos(fetched)),
-          // Step 4. 紐付けを作り直す
+          // Step 3. 動画を保存する (変更も直す). 保存する前に, 新しく足す動画を調べておく
           ({ idsByList, infos, fetched }) =>
+            stepAsync(
+              r.listVideoIds(),
+              (stored) => ({
+                idsByList,
+                infos,
+                fetched,
+                addedVideoIds: newlyAddedIds(fetched, stored),
+              }),
+              throughAsync(() => r.upsertVideos(fetched)),
+            ),
+          // Step 4. 紐付けを作り直す
+          ({ idsByList, infos, fetched, addedVideoIds }) =>
             stepAsync(
               sequenceAsync([r.listVideoIds(), r.listLinks()]),
               ([stored, current]) =>
@@ -329,14 +354,20 @@ export const newSyncWorkflow = (
                 ),
               throughAsync(({ stale }) => inSeries(stale, r.deleteLinks)),
               throughAsync(({ changed }) => r.upsertLinks(changed)),
-              ({ links }) => ({ infos, fetched, links: links.length }),
+              ({ links }) => ({
+                infos,
+                fetched,
+                addedVideoIds,
+                links: links.length,
+              }),
             ),
           // Step 5. どのプレイリストにも入っていない動画を消す (取得できた動画が 0 件なら消さない)
-          ({ infos, fetched, links }) =>
+          ({ infos, fetched, addedVideoIds, links }) =>
             stepAsync(
               canRemoveOrphans(fetched) ? r.deleteOrphanVideos() : ok(0),
               (removed): AllSyncedEvt => ({
                 type: "Synced",
+                addedVideoIds,
                 videos: fetched.length,
                 playlists: lists.length,
                 links,
@@ -382,7 +413,7 @@ export const newSyncWorkflow = (
               throughAsync((links) => r.insertLinks(links)),
               (links): NewSyncedEvt => ({
                 type: "Synced",
-                added: inserted.length,
+                addedVideoIds: inserted.map((video) => video.youtubeId),
                 links: links.length,
               }),
             ),
