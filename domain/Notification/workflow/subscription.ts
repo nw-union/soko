@@ -1,4 +1,4 @@
-// ワークフロー: 購読 (Subscribe 購読する・Unsubscribe 購読をやめる・購読に使う公開鍵)
+// ワークフロー: 購読 (Subscribe 購読する・Unsubscribe 購読をやめる・UnsubscribeAll すべての購読をやめる・購読に使う公開鍵)
 import {
   err,
   ok,
@@ -25,7 +25,10 @@ import { newPushAuth, newPushEndpoint, newPushP256dh } from "../vo.ts";
 // ----------------------------------------------------------------------------
 type SubscriptionRepository = Pick<
   PushRepositoryPort,
-  "upsertSubscription" | "trimSubscriptions" | "deleteSubscription"
+  | "upsertSubscription"
+  | "trimSubscriptions"
+  | "deleteSubscription"
+  | "deleteUserSubscriptions"
 >;
 
 /**
@@ -121,7 +124,10 @@ export const validateEndpointToDelete = (
 export const newSubscriptionWorkflow = (
   r: SubscriptionRepository,
   vapid: VapidKeys | null,
-): Pick<NotificationUsecase, "subscribe" | "unsubscribe" | "getPublicKey"> => ({
+): Pick<
+  NotificationUsecase,
+  "subscribe" | "unsubscribe" | "unsubscribeAll" | "getPublicKey"
+> => ({
   /**
    * 購読を保存する
    */
@@ -145,6 +151,17 @@ export const newSubscriptionWorkflow = (
       sequence([newUserId(userId), validateEndpointToDelete(endpoint)]),
       // Step 2. DB 削除
       ([user, e]) => r.deleteSubscription(user, e),
+    ),
+
+  /**
+   * ユーザーの購読をすべて消す (退会したとき)
+   */
+  unsubscribeAll: ({ userId }) =>
+    stepAsync(
+      // Step 1. バリデーション: string -> UserId
+      newUserId(userId),
+      // Step 2. DB 削除
+      r.deleteUserSubscriptions,
     ),
 
   /**

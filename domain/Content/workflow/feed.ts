@@ -1,4 +1,4 @@
-// ワークフロー: ホームと視聴 (Watch 視聴する・Unwatch 未視聴にする・ホームの動画・未視聴の New の本数)
+// ワークフロー: ホームと視聴 (Watch 視聴する・Unwatch 未視聴にする・ForgetWatches 視聴記録を消す・ホームの動画・未視聴の New の本数)
 import {
   err,
   ok,
@@ -44,6 +44,7 @@ type FeedRepository = Pick<
   | "listMembers"
   | "insertWatch"
   | "deleteWatch"
+  | "deleteWatches"
 >;
 
 // ランダムに選ぶときの候補の数と, 選ぶ数 (画面の SLIDE_COUNT と同じ)
@@ -227,6 +228,7 @@ export const newFeedWorkflow = (
   ContentUsecase,
   | "watch"
   | "unwatch"
+  | "forgetWatches"
   | "getHomeFeed"
   | "getVideoDetail"
   | "getBadgeCount"
@@ -274,6 +276,17 @@ export const newFeedWorkflow = (
         sequence([newUserId(userId), validateWatchedVideo(youtubeId)]),
         // Step 2. DB 削除
         ([user, id]) => r.deleteWatch(user, id),
+      ),
+
+    /**
+     * ユーザーの視聴記録をすべて消す (退会したとき)
+     */
+    forgetWatches: ({ userId }) =>
+      stepAsync(
+        // Step 1. バリデーション: string -> UserId
+        newUserId(userId),
+        // Step 2. DB 削除
+        r.deleteWatches,
       ),
 
     /**

@@ -11,7 +11,13 @@ describe("newNotificationUsecase", () => {
       null,
     );
     expect(Object.keys(uc).sort()).toEqual(
-      ["subscribe", "unsubscribe", "notifyNew", "getPublicKey"].sort(),
+      [
+        "subscribe",
+        "unsubscribe",
+        "unsubscribeAll",
+        "notifyNew",
+        "getPublicKey",
+      ].sort(),
     );
   });
 });

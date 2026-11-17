@@ -23,5 +23,5 @@ export const newMemberUsecase = (
   ...newInviteWorkflow(invite, clock, random),
   ...newProfileWorkflow(),
   ...newAvatarWorkflow(profile, avatar, clock, random),
-  ...newAccountWorkflow(profile, avatar, clock),
+  ...newAccountWorkflow(profile, invite, avatar, clock),
 });

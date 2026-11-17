@@ -202,6 +202,14 @@ export const newContentRepository = (db: Database): ContentRepositoryPort => ({
       () => undefined,
     ),
 
+  deleteWatches: (user) =>
+    stepAsync(
+      query("deleteWatches", () =>
+        db.run(sql`DELETE FROM video_watches WHERE user_id = ${user}`),
+      ),
+      () => undefined,
+    ),
+
   // ---- プレイリストの管理 ----
 
   insertPlaylist: (id) =>

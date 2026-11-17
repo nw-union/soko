@@ -42,6 +42,7 @@ const newFakes = (init: { vapid?: VapidKeys | null } = {}) => {
   const upserted: NewSubscription[] = [];
   const trimmed: [string, number][] = [];
   const deleted: [string, string][] = [];
+  const deletedUsers: string[] = [];
 
   const repo: PushRepositoryPort = {
     upsertSubscription: (s) => {
@@ -56,6 +57,10 @@ const newFakes = (init: { vapid?: VapidKeys | null } = {}) => {
       deleted.push([user, endpoint]);
       return okAsync(undefined);
     },
+    deleteUserSubscriptions: (user) => {
+      deletedUsers.push(user);
+      return okAsync(undefined);
+    },
     listSubscriptions: notUsed,
     deleteSubscriptions: notUsed,
     claimUnnotifiedVideos: notUsed,
@@ -68,6 +73,7 @@ const newFakes = (init: { vapid?: VapidKeys | null } = {}) => {
     upserted,
     trimmed,
     deleted,
+    deletedUsers,
   };
 };
 
@@ -134,6 +140,32 @@ describe("unsubscribe", () => {
 
     // Assert:
     expect(deleted).toEqual([["user1", "https://x"]]);
+  });
+});
+
+describe("unsubscribeAll", () => {
+  it("ユーザーの購読をすべて消す", async () => {
+    // Arrange:
+    const { wf, deletedUsers } = newFakes();
+
+    // Act:
+    const actual = await wf.unsubscribeAll({ userId: "user1" });
+
+    // Assert:
+    expect(unwrap(actual)).toBeUndefined();
+    expect(deletedUsers).toEqual(["user1"]);
+  });
+
+  it("ユーザー ID が不正な場合, ValidationError となり, 消さない", async () => {
+    // Arrange:
+    const { wf, deletedUsers } = newFakes();
+
+    // Act:
+    const actual = await wf.unsubscribeAll({ userId: "" });
+
+    // Assert:
+    expect(unwrapErr(actual).type).toBe("ValidationError");
+    expect(deletedUsers).toHaveLength(0);
   });
 });
 

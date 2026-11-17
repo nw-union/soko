@@ -68,6 +68,9 @@ export interface ContentRepositoryPort {
   // 視聴記録を消す. なくても成功
   deleteWatch(user: UserId, youtubeId: YoutubeId): ResultAsync<void, AppError>;
 
+  // ユーザーの視聴記録をすべて消す (退会したとき). なくても成功
+  deleteWatches(user: UserId): ResultAsync<void, AppError>;
+
   // ---- プレイリストの管理 ----
 
   // プレイリストを足す. 同じ YouTube の ID が既にあれば何もせず null (確認と書き込みを 1 文で行う).

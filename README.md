@@ -36,7 +36,7 @@ NWU の創作を「置く」場所
 
 Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は、`domain/<Context>/api.ts` に定義した `…Usecase` だけを呼ぶ。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、それぞれ 1 つの `…Usecase` を持ち、`container()` の `contentUsecase`・`memberUsecase`・`notificationUsecase` から呼ぶ。`…Usecase` の操作は 2 種類に分かれる。
 
-- **コマンド**（表の WF）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/workflow/` のワークフローのファイル。全 20 本
+- **コマンド**（表の WF）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/workflow/` のワークフローのファイル。全 22 本
 - **Query**（表の Qry）: 読むだけ（Read Model）。戻り値は `…View` / `…Dto`。コマンドと同じワークフローのファイルに置く。全 9 本
 
 better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `startInvite` は、書き込みの前提を確かめるコマンドの一部なのでコマンドに置く。
@@ -60,7 +60,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `validateSignUp` | 登録の入力を確かめる。メールは使い捨てのものだけ |
 | WF | `changeAvatar` | アイコン画像を差し替える。古い画像は消す（消せなくても成功） |
 | WF | `removeAvatar` | アイコン画像を外して、頭文字の表示に戻す |
-| WF | `cleanupDeletedUser` | 退会後の後始末（画像・未使用の招待・通知の購読・視聴記録） |
+| WF | `cleanupDeletedUser` | 退会後の後始末のうち、メンバー集約の分（アイコン画像・未使用の招待）。メンバーが退会したとき、ポリシー（`server/process/policy.ts` の `onMemberDeleted`）が呼ぶ |
 | WF | `checkPasskeyDeletion` | パスキーを削除してよいか確かめる。ログインし直した直後でなければ Forbidden、最後の 1 つなら ValidationError |
 | Qry | `getDisplayUser` | 画面に出すユーザー（表示に必要な最小限） |
 | Qry | `hasPasskey` | パスキーを作ったか。未作成なら /welcome から出さない |
@@ -76,6 +76,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | WF | `deletePlaylist` | プレイリストを消す（動画との紐付けも消える） |
 | WF | `watch` | 視聴を記録する。登録済みの動画だけ。何度送っても 1 件 |
 | WF | `unwatch` | 視聴記録を消して未視聴に戻す |
+| WF | `forgetWatches` | ユーザーの視聴記録をすべて消す。メンバーが退会したとき、ポリシー（`onMemberDeleted`）が呼ぶ |
 | Qry | `listPlaylists` | 同期の対象のプレイリストの一覧（並び順） |
 | Qry | `getHomeFeed` | ホームに並べる動画（New の候補・ランダム・プレイリストごと） |
 | Qry | `getBadgeCount` | アイコンのバッジに出す、未視聴の New の本数 |
@@ -87,6 +88,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | :-- | :-- | :-- |
 | WF | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | WF | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
+| WF | `unsubscribeAll` | ユーザーの購読をすべて消す。メンバーが退会したとき、ポリシー（`onMemberDeleted`）が呼ぶ |
 | WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。差分の同期で動画が増えたとき、ポリシー（`server/process/policy.ts`）が呼ぶ。全件の同期の cron も取りこぼしを拾うために呼ぶ |
 | Qry | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 
