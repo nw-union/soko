@@ -168,10 +168,17 @@ async function pickAvatar(event: Event) {
 					: "画像をアップロードできませんでした。時間をおいて、もう一度お試しください";
 			return;
 		}
-		window.location.reload();
+		await reloadWithNewUser();
 	} finally {
 		avatarBusy = false;
 	}
+}
+
+// アイコン画像は better-auth を通さずに変えるので、セッションの Cookie（auth.ts の cookieCache）に古い画像が残る。
+// DB から読み直して Cookie を作り直してから、画面を読み込み直す
+async function reloadWithNewUser() {
+	await authClient.getSession({ query: { disableCookieCache: true } }).catch(() => {});
+	window.location.reload();
 }
 
 async function removeAvatar() {
@@ -185,7 +192,7 @@ async function removeAvatar() {
 	avatarBusy = true;
 	const res = await fetch("/api/avatar", { method: "DELETE" }).catch(() => null);
 	if (res?.ok) {
-		window.location.reload();
+		await reloadWithNewUser();
 		return;
 	}
 	avatarBusy = false;

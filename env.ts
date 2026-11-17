@@ -8,6 +8,9 @@ export default defineEnv({
   LOG_ADAPTER: oneOf(["json", "console"]).optional(),
   LOG_LEVEL: oneOf(["debug", "info", "warn", "error"]).optional(),
   YOUTUBE_API_KEY: string().optional(),
+  // better-auth の署名の鍵。Void がデプロイ時に作る。ここでは、パスキーを作ったことを覚える Cookie（server/http/passkey-cookie.ts）の署名にも使う。
+  // ローカルの開発サーバーでは未設定でよい（その Cookie を使わず、毎回 DB で確かめる）
+  BETTER_AUTH_SECRET: string().optional(),
   // 新着動画のプッシュ通知（Web Push の VAPID）用。scripts/generate-vapid-keys.mjs で作る。
   // どれかが未設定なら、通知は送らず、プロフィールにも通知の設定を出さない。
   // SUBJECT は連絡先（mailto:… か https://…）。プッシュサービス（Apple など）が問題のあるときに使う

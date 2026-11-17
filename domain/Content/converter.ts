@@ -36,7 +36,6 @@ export const convToVideoItemDto = (
   id: video.id,
   youtubeId: video.youtubeId,
   title: video.title,
-  description: video.description ?? "",
   duration: video.durationSeconds
     ? formatDuration(video.durationSeconds)
     : null,

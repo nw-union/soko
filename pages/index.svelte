@@ -5,7 +5,12 @@ import { SvelteMap } from "svelte/reactivity";
 import type { Props } from "./index.server";
 import { syncBadge } from "../src/lib/client/push";
 import { splitLinks } from "../src/lib/client/link";
-import { previewUrl, shortUrl, studioUrl } from "../lib/youtube.ts";
+import {
+	previewUrl,
+	shortUrl,
+	studioUrl,
+	tileThumbnailUrl,
+} from "../lib/youtube.ts";
 import { thumbnailFallback, thumbnailTintVar } from "../src/lib/client/thumbnail";
 import Avatar from "../src/lib/components/Avatar.svelte";
 import PlaylistSheet from "../src/lib/components/PlaylistSheet.svelte";
@@ -216,7 +221,25 @@ const markWatched = (video: Video) => setWatched(video, true);
 // 読み込みの後などにも再生中の通知は来るので、毎回記録すると「未視聴にする」がすぐ戻ってしまう
 let countedPlay = false;
 
+// 動画の概要欄。ホームの HTML を小さくするため、再生画面を開いたときに取りに行き、このページを開いている間は覚えておく
+const descriptions = new SvelteMap<string, string>();
+const loadDescription = async (id: string) => {
+	if (descriptions.has(id)) return;
+	try {
+		const res = await fetch(`/api/videos/${encodeURIComponent(id)}`);
+		if (!res.ok) return;
+		const { description } = (await res.json()) as { description: string };
+		descriptions.set(id, description);
+	} catch {
+		// 読めなくても再生はできる。概要欄を出さないだけ
+	}
+};
+const playingDescription = $derived(
+	playing ? (descriptions.get(playing.youtubeId) ?? "") : "",
+);
+
 const play = (video: Video) => {
+	loadDescription(video.youtubeId);
 	playing = video;
 	played = false;
 	countedPlay = false;
@@ -605,7 +628,7 @@ const bodySwipe = {
     <ul class="row" aria-labelledby="list-{list.id}">
       {#each list.videos.slice(0, PREVIEW_COUNT) as video (video.id)}
         <li>
-          <VideoTile url={video.url} thumbnail={video.thumbnail} title={video.title} duration={video.duration} tags={video.tags} watched={isWatched(video)} isNew={unwatchedNewIds.has(video.youtubeId)} onplay={() => play(video)} onexternal={() => markWatched(video)} />
+          <VideoTile url={video.url} thumbnail={tileThumbnailUrl(video.youtubeId)} title={video.title} duration={video.duration} tags={video.tags} watched={isWatched(video)} isNew={unwatchedNewIds.has(video.youtubeId)} onplay={() => play(video)} onexternal={() => markWatched(video)} />
         </li>
       {/each}
       {#if list.videos.length > PREVIEW_COUNT}
@@ -804,8 +827,8 @@ const bodySwipe = {
               {/if}
             </div>
           </div>
-          {#if playing.description}
-            <p class="desc">{#each splitLinks(playing.description) as part}{#if part.href}<a href={part.href} target="_blank" rel="noopener noreferrer">{part.text}</a>{:else}{part.text}{/if}{/each}</p>
+          {#if playingDescription}
+            <p class="desc">{#each splitLinks(playingDescription) as part}{#if part.href}<a href={part.href} target="_blank" rel="noopener noreferrer">{part.text}</a>{:else}{part.text}{/if}{/each}</p>
           {/if}
         </div>
       </div>

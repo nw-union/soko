@@ -18,6 +18,11 @@ export const shortUrl = (id: string) => `https://youtu.be/${id}`;
 export const thumbnailUrl = (id: string) =>
   `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 
+// 小さなタイル用（480×360、どの動画にもある）。maxresdefault の数分の 1 の大きさで、404 からの読み直しも起きない。
+// 4:3 で上下に黒帯があるが、16:9 の枠に cover で入れると黒帯が切れてちょうど収まる
+export const tileThumbnailUrl = (id: string) =>
+  `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+
 // アプリ内で再生する埋め込みプレイヤー。nocookie ドメインで、再生後に関連動画を出さない。
 // enablejsapi=1 で、アプリのボタンから再生速度を変えられるようにする
 export const embedUrl = (id: string) =>
