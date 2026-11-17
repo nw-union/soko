@@ -35,7 +35,8 @@ export type UnsubscribeCmd = { userId: string; endpoint: unknown };
  * NotifyNew 新着を通知する
  *
  * まだ通知していない動画を通知済みにして, そのうち最近のものを全購読者に 1 通で知らせる.
- * 新規追加動画があった場合に, ポリシー (server/process/policy.ts) が呼ぶ. 全件の同期の cron も, 取りこぼしを拾うために呼ぶ
+ * 新規追加動画があった場合に, ポリシー (server/process/policy.ts) が呼ぶ.
+ * まだ通知していない動画はすべて対象にするので, 前回の取りこぼしも次の新着と一緒に拾う
  */
 type NotifyNew = () => ResultAsync<NewNotifiedEvt, AppError>;
 
