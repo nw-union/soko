@@ -77,7 +77,14 @@ export default defineAuth(({ defaults }) => {
     ],
     // パスキーの追加・削除とアカウントの削除は、この時間内にパスキーでログインし直したセッションでだけ受け付ける
     // （セッションが盗まれても、パスキーを差し替えて乗っ取られないように）。既定は 24 時間
-    session: { ...defaults.session, freshAge: FRESH_AGE_SECONDS },
+    session: {
+      ...defaults.session,
+      freshAge: FRESH_AGE_SECONDS,
+      // セッションとユーザーを署名つきの Cookie に 5 分持ち、その間はページを開くたびの DB の読み出し（D1 の primary への往復）をしない。
+      // 代わりに、別の端末でのログアウトやアカウントの削除は、最大 5 分遅れて効く。
+      // better-auth を通さずに user を変えたとき（アイコン画像）は、画面側で disableCookieCache を付けて読み直す（ProfileSheet.svelte）
+      cookieCache: { enabled: true, maxAge: 5 * 60 },
+    },
     // イメージカラー（#rrggbb）。プロフィールで本人が変更できる
     user: {
       // プロフィール画面からアカウントを削除できる（HIG: 作れるなら削除もできるように）。

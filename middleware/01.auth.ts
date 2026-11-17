@@ -2,8 +2,13 @@ import { match } from "@nw-union/nw-utils/lib/match";
 import { endTime, startTime } from "hono/timing";
 import { defineMiddleware } from "void";
 import { getUser } from "void/auth";
+import { env } from "void/env";
 import { container } from "../server/container.ts";
 import { valueOrThrow } from "../server/http/error.ts";
+import {
+  readPasskeyCookie,
+  writePasskeyCookie,
+} from "../server/http/passkey-cookie.ts";
 
 declare module "void" {
   interface CloudContextVariables {
@@ -48,13 +53,20 @@ export default defineMiddleware(async (c, next) => {
     isFile;
   if (!isPublic && c.req.method === "GET") {
     if (!user) return c.redirect("/login");
-    // パスキーがログインの唯一の手段。まだ作っていない（登録の途中の）人は、作るまで /welcome から出さない
-    startTime(c, "passkey");
-    const { hasPasskey } = await valueOrThrow(
-      container().memberUsecase.hasPasskey({ userId: user.id }),
-    );
-    endTime(c, "passkey");
-    if (!hasPasskey) return c.redirect("/welcome");
+    // パスキーがログインの唯一の手段。まだ作っていない（登録の途中の）人は、作るまで /welcome から出さない。
+    // 一度確かめたら Cookie に覚えておき、次からは DB に聞かない
+    if (!(await readPasskeyCookie(c, env.BETTER_AUTH_SECRET, user.id))) {
+      startTime(c, "passkey");
+      const { hasPasskey } = await valueOrThrow(
+        container().memberUsecase.hasPasskey({ userId: user.id }),
+      );
+      endTime(c, "passkey");
+      if (!hasPasskey) return c.redirect("/welcome");
+      await next();
+      // 応答ができてから付ける（ページの描画で作り直される応答にも残るように）
+      await writePasskeyCookie(c, env.BETTER_AUTH_SECRET, user.id);
+      return;
+    }
   }
   await next();
 });
