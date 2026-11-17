@@ -1,9 +1,9 @@
 <script lang="ts">
 import { onMount, type Snippet } from "svelte";
 import "../styles/glass.css";
-import sokoPng from "../../assets/nwu-soko.png";
+import sokoJpg from "../../assets/nwu-soko.jpg";
 import sokoWebp from "../../assets/nwu-soko.webp";
-import sokoWidePng from "../../assets/nwu-soko-wide.png";
+import sokoWideJpg from "../../assets/nwu-soko-wide.jpg";
 import sokoWideWebp from "../../assets/nwu-soko-wide.webp";
 // 18x24 の極小画像（約 1KB）。?inline で data URI として HTML に埋め込まれ、追加リクエストが要らない
 import placeholder from "../../assets/nwu-soko-lqip.png?inline";
@@ -71,13 +71,14 @@ onMount(() => {
   <!--
     画面が横長（PC など）なら wide 版、縦長（スマホなど）なら縦長版を使う。
     それぞれ webp に対応したブラウザには webp、それ以外には jpg を配信する。
+    上にノイズと走査線を重ねるので、画質は落として（webp は品質 75、jpg は 80）、1 枚 200KB 前後にしている。
     <source> は上から順に評価され、最初に合致したものが使われる。
   -->
   <picture>
     <source srcset={sokoWideWebp} type="image/webp" media="(min-aspect-ratio: 1/1)" />
-    <source srcset={sokoWidePng} media="(min-aspect-ratio: 1/1)" />
+    <source srcset={sokoWideJpg} media="(min-aspect-ratio: 1/1)" />
     <source srcset={sokoWebp} type="image/webp" />
-    <img class="art" src={sokoPng} alt="" fetchpriority="high" decoding="async" />
+    <img class="art" src={sokoJpg} alt="" fetchpriority="high" decoding="async" />
   </picture>
   <canvas class="grain" bind:this={canvas}></canvas>
   <div class="scanlines"></div>
