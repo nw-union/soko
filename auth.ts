@@ -7,8 +7,8 @@ import {
   getSessionFromCtx,
 } from "better-auth/api";
 import { defineAuth } from "void/auth";
-import { DEFAULT_INVITE_LIMIT } from "./domain/Member/invite/logic.ts";
-import { FRESH_AGE_SECONDS } from "./domain/Member/profile/logic.ts";
+import { FRESH_AGE_SECONDS } from "./domain/Member/workflow/account.ts";
+import { DEFAULT_INVITE_LIMIT } from "./domain/Member/workflow/invite.ts";
 import type { AppError } from "./domain/shared/error.ts";
 import { container } from "./server/container.ts";
 import {

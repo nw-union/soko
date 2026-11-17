@@ -14,7 +14,7 @@ import {
   type Vo,
   v,
 } from "@nw-union/nw-utils/lib/vo";
-import { isYoutubeId } from "../rule/youtube.ts";
+import { isYoutubeId } from "../../lib/youtube.ts";
 import { newValidationError, type ValidationError } from "./error.ts";
 
 /**

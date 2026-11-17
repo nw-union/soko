@@ -36,8 +36,8 @@ NWU の創作を「置く」場所
 
 Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は、`domain/<Context>/api.ts` に定義した `…Usecase` だけを呼ぶ。コンテキスト（イベストの集約）は Content・Member・Notification の 3 つで、それぞれ 1 つの `…Usecase` を持ち、`container()` の `contentUsecase`・`memberUsecase`・`notificationUsecase` から呼ぶ。`…Usecase` の操作は 2 種類に分かれる。
 
-- **コマンド**（表の WF）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/` 以下の `workflow.ts`。全 20 本
-- **Query**（表の Qry）: 読むだけ（Read Model）。戻り値は `…View` / `…Dto`。実装は `domain/<Context>/` 以下の `query.ts`。全 9 本
+- **コマンド**（表の WF）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/workflow/` のワークフローのファイル。全 20 本
+- **Query**（表の Qry）: 読むだけ（Read Model）。戻り値は `…View` / `…Dto`。コマンドと同じワークフローのファイルに置く。全 9 本
 
 better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `startInvite` は、書き込みの前提を確かめるコマンドの一部なのでコマンドに置く。
 

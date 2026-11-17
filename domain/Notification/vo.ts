@@ -36,7 +36,7 @@ export const newPushEndpoint = newVo(
 export type PushEndpoint = InferVo<typeof newPushEndpoint>;
 
 /**
- * PushP256dh 端末の公開鍵 (base64url). 形の確認だけで, 曲線上の点かは logic.ts の validateSubscription で確かめる
+ * PushP256dh 端末の公開鍵 (base64url). 形の確認だけで, 曲線上の点かは workflow/subscription.ts の validateSubscription で確かめる
  */
 export const newPushP256dh = newVo(
   "PushP256dh",

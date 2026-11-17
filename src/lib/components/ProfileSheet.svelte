@@ -7,7 +7,7 @@ import {
 	AVATAR_SIZE,
 	isHexColor,
 	NAME_MAX,
-} from "../../../domain/Member/profile/rule.ts";
+} from "../../../domain/Member/rule.ts";
 import {
 	disablePush,
 	enablePush,

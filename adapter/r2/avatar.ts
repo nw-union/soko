@@ -1,7 +1,7 @@
 import { rslt, stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import type { storage } from "void/storage";
-import type { AvatarStoragePort } from "../../domain/Member/profile/port.ts";
-import type { AvatarKey } from "../../domain/Member/profile/vo.ts";
+import type { AvatarStoragePort } from "../../domain/Member/port.ts";
+import type { AvatarKey } from "../../domain/Member/vo.ts";
 import { newStorageError } from "../../domain/shared/error.ts";
 
 type Storage = typeof storage;

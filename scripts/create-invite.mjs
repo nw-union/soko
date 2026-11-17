@@ -11,12 +11,12 @@
 // 一覧: bunx void db execute "SELECT id, inviter_user_id, expires_at, used_at FROM invites ORDER BY id DESC"
 // 取り消し: bunx void db execute "DELETE FROM invites WHERE id = <id> AND used_at IS NULL"
 import { spawnSync } from "node:child_process";
-import { formatToken } from "../domain/Member/invite/logic.ts";
+import { formatToken } from "../domain/Member/converter.ts";
 import {
 	createInviteToken,
 	createTokenHash,
 	TOKEN_LENGTH,
-} from "../domain/Member/invite/vo.ts";
+} from "../domain/Member/vo.ts";
 
 function fail(message) {
 	console.error(`エラー: ${message}`);

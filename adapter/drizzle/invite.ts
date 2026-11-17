@@ -1,6 +1,6 @@
 import { stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { sql } from "void/db";
-import type { InviteRepositoryPort } from "../../domain/Member/invite/port.ts";
+import type { InviteRepositoryPort } from "../../domain/Member/port.ts";
 import { type Database, query, toSqliteDatetime } from "./util.ts";
 
 type InviteRow = {

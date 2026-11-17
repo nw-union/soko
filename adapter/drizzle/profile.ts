@@ -1,6 +1,6 @@
 import { stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { sql } from "void/db";
-import type { ProfileRepositoryPort } from "../../domain/Member/profile/port.ts";
+import type { ProfileRepositoryPort } from "../../domain/Member/port.ts";
 import { type Database, query } from "./util.ts";
 
 export const newProfileRepository = (db: Database): ProfileRepositoryPort => ({

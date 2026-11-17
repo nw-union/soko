@@ -5,12 +5,12 @@ import type {
   PushRepositoryPort,
   PushSenderPort,
 } from "./port.ts";
-import { newNotificationQueries } from "./query.ts";
 import type { VapidKeys } from "./type.ts";
-import { newNotificationWorkFlows } from "./workflow.ts";
+import { newNotifyWorkflow } from "./workflow/notify.ts";
+import { newSubscriptionWorkflow } from "./workflow/subscription.ts";
 
 /**
- * 通知集約のユースケース. コマンド (workflow.ts) と Query (query.ts) をまとめる
+ * 通知集約のユースケース. workflow/ のワークフローに依存を渡してまとめる
  *
  * @param vapid - VAPID の鍵. どれかが未設定なら null (通知の機能を使わない)
  */
@@ -21,6 +21,6 @@ export const newNotificationUsecase = (
   clock: ClockPort,
   vapid: VapidKeys | null,
 ): NotificationUsecase => ({
-  ...newNotificationWorkFlows(r, sender, badge, clock, vapid),
-  ...newNotificationQueries(vapid),
+  ...newSubscriptionWorkflow(r, vapid),
+  ...newNotifyWorkflow(r, sender, badge, clock, vapid),
 });
