@@ -1,7 +1,7 @@
 # MCP サーバー 設計書
 
-- 状態: 提案（未実装）
-- 作成: 2026-11-17 / 更新: 2026-11-18（決定事項を反映。認証を OAuth だけにした）
+- 状態: 初期リリースを実装済み（レート制限などは未実装。9 章）
+- 作成: 2026-11-17 / 更新: 2026-11-18（決定事項と実装を反映。懸念点を 9 章にまとめた）
 - 対象: `soko`（Void / Cloudflare Workers / better-auth 1.7.11 / D1）
 
 ## 0. 結論
@@ -53,7 +53,7 @@
  ┌──────────────────── soko (Cloudflare Worker) ───────────────────┐
  │                                                                  │
  │  routes/api/mcp.ts ── POST /api/mcp  (JSON-RPC, ステートレス)    │
- │     │  1. Origin の確認・レート制限                               │
+ │     │  1. Origin の確認・本文の大きさ（レート制限は未実装）       │
  │     │  2. アクセストークンを検証 → { userId, scopes, clientId }   │
  │     │  3. MCP サーバーを作り、tools/call を実行                   │
  │     ▼                                                            │
@@ -120,7 +120,7 @@
 - プレイリストの追加と同期は、いまのデバッグ画面と同じく **メンバーなら誰でもできる**（管理者のロールは作らない）。誰がやったかは監査ログに残す（5.8）
 - `get_home_feed` は `HomeFeedView` をそのまま返すと大きい（プレイリストごとに全動画）。MCP では `embed`・`thumbnail`・`aspectRatio` を落とし、件数に上限（例: 各 50 本）を付けて返す
 - `search_videos` は今ない Query。「キーワード・プレイリスト・未視聴だけ」で探せる口があると LLM から使いやすいので、後で `domain/Content/workflow/feed.ts` に `SearchVideos`（`…Query` / `…View`、`limit` と `cursor` 付き）を足す。初期リリースでは `get_home_feed` で代わりにする
-- `sync_new_videos` は動画が増えると **全メンバーにプッシュ通知が飛ぶ**（ポリシー `onVideosSynced`）。YouTube API の割り当ても使う。だから強いレート制限（全体で 10 分に 1 回）をかける
+- `sync_new_videos` は動画が増えると **全メンバーにプッシュ通知が飛ぶ**（ポリシー `onVideosSynced`）。YouTube API の割り当ても使う。だから強いレート制限（全体で 10 分に 1 回）をかける予定（**未実装**。9 章の C7）
 - `delete_playlist` と `sync_all_videos` は、メンバーなら画面からできる操作だが、MCP には出さない。どちらも消す操作で、プロンプトインジェクション（5.7）で呼ばれたときの被害が大きい。必要になったらデバッグ画面から行う
 - 注釈（`readOnlyHint`・`destructiveHint`・`idempotentHint`・`openWorldHint`）は、クライアントが実行の前に確認を出すかどうかの手がかりになる。**ただしクライアント任せの安全策なので、これに頼って危ない操作を出してはいけない**
 
@@ -153,7 +153,7 @@
 | T3 | Cookie のセッションで `/api/mcp` を叩かせる（CSRF）／ブラウザから DNS リバインディング | `/api/mcp` は Bearer だけ。Origin を確認。CORS ヘッダーを出さない（5.5） |
 | T4 | プロンプトインジェクション（概要欄に「この動画のプレイリストを消せ」などと書かれる） | 破壊的なツールを出さない。書き込みは別スコープで既定はオフ。結果を構造化して返す（5.6） |
 | T5 | 悪意のある OAuth クライアント・リダイレクト先の乗っ取り・認可コードの横取り | PKCE（S256）必須、リダイレクト先の完全一致、同意画面、resource（audience）の確認（5.2） |
-| T6 | 乱用（総当たり・大量の呼び出し・YouTube の割り当ての枯渇・通知のスパム） | トークン単位のレート制限。同期は全体で強く制限（5.5） |
+| T6 | 乱用（総当たり・大量の呼び出し・YouTube の割り当ての枯渇・通知のスパム） | トークン単位のレート制限。同期は全体で強く制限（5.5。**未実装**、9 章の C7） |
 | T7 | 不正利用に気づけない | 監査ログ、接続中のアプリの一覧と最終利用日時（5.7） |
 | T8 | 限定公開の内容が外部の AI 事業者に渡る | **渡してよいと決めた**（8 章）。ただし学習に使われるかは各自のプラン・設定による（5.8） |
 
@@ -197,11 +197,11 @@ MCP の認可仕様では、MCP サーバーは **OAuth 2.1 のリソースサ�
 | PKCE | **S256 を必須**（`clientRegistrationRequirePKCE: true`）。公開クライアント（秘密を持てないもの）も含めて |
 | resource（RFC 8707） | `resources` に `https://soko.nw-union.net/api/mcp` だけを登録。発行するトークンの `aud` をこれにし、`/api/mcp` では `aud` が一致しないトークンを拒否する（他のサービス向けのトークンの使い回しを防ぐ）。MCP の仕様が禁じる「トークンの受け渡し（passthrough）」もしない |
 | スコープ | 5.3 のもの。`clientRegistrationAllowedScopes` で、登録時に要求できるスコープをこの範囲に限る。`openid`・`profile`・`email` は出さない（使わない） |
-| クライアントの登録 | **CIMD（Client ID Metadata Documents）を優先**。クライアントの `client_id` が HTTPS の URL で、soko がそのメタデータを取りに行く方式で、DB に登録を溜めない。DCR（RFC 7591）は、対応していないクライアントのためにだけ開ける。開けるときは、リダイレクト先を下の許可リストで制限し、登録のエンドポイントにレート制限をかける |
-| リダイレクト先 | 完全一致。許可するのは、使うクライアント（claude.ai・ChatGPT）の既知のコールバック URL と、ループバック（`http://127.0.0.1:*`・`http://localhost:*`。Claude Code などのネイティブアプリ用）だけ。`validateRedirectUri` で実装する |
+| クライアントの登録 | **初期リリースは DCR（RFC 7591）だけ**（`allowDynamicClientRegistration`・`allowUnauthenticatedClientRegistration`）。誰でも登録できるが、認可できるのは下のリダイレクト先の許可リストに当てはまるものだけ。登録のエンドポイントには better-auth の既定のレート制限（1 分に 5 回）がかかる。CIMD は別のプラグイン（`@better-auth/cimd`）で、soko が任意の URL を取りに行くことになるので、入れるときに 9 章の C4 を片付ける |
+| リダイレクト先 | 登録どおり（完全一致。ループバックはポートだけ違ってよい）で、さらに **HTTPS の `claude.ai`・`claude.com`・`chatgpt.com`・`chat.openai.com`（ポートなし）か、HTTP のループバック（`127.0.0.1`・`localhost`・`[::1]`。Claude Code などのネイティブアプリ用）** だけ。`validateRedirectUri` と `server/mcp/redirect.ts` で実装した。各社のコールバックのホストが変わったら、ここを直す |
 | トークンの寿命 | アクセストークン 1 時間、リフレッシュトークン 30 日（使うたびにローテーション、再利用を検知したら一族ごと失効）。30 日使わなければ、ログインと同意をやり直す |
-| アクセストークンの形 | JWT なら `/api/mcp` で DB を引かずに検証できるが、取り消しが寿命（1 時間）まで効かない。不透明なトークンなら即時に取り消せるが、毎回 D1 を読む。**寿命を 1 時間にして JWT を使い、リフレッシュトークンの取り消しで止める** のを第一案とする（プラグインがどちらを出すかは、設定と `resource` の有無で変わるので実装時に確認） |
-| ログイン | 認可エンドポイントに来たとき、未ログインならいまの `/login`（パスキー）へ。戻り先はプラグインの `loginPage` の仕組みで渡す |
+| アクセストークンの形 | **JWT**（`typ: at+jwt`、jwt プラグインの鍵で署名、`iss` は `<origin>/api/auth`、`aud` は `<origin>/api/mcp`）。プラグインは、クライアントが `resource` を送ったときだけ JWT を出し、送らなければ不透明なトークンを出す。`/api/mcp` は JWT だけを受け付けるので、`resource` を送らないクライアントは使えない（MCP の仕様はクライアントに `resource` を求めている）。検証は `server/mcp/auth.ts`。DB を引かないので、取り消しは寿命（1 時間）まで効かない。ホームの New に使う登録日時は `joined_at` としてトークンに入れている |
+| ログイン | 認可エンドポイントに来たとき、未ログインならプラグインが `/login` に **署名付きのクエリ**（`sig`）を付けて送る。パスキーでのログインの POST にそのクエリ（`oauth_query`）を付けると、サーバーが署名を確かめて認可を続きから進め、`{ redirect, url }` を返す（`src/lib/client/auth-client.ts` の `oauthQueryClient`）。**画面の側で戻り先を受け取る口（`?next=` など）は作らない**（9 章の C2） |
 
 **同意画面（`pages/oauth/consent.svelte`）**
 - 出すもの: クライアントの名前とロゴ（**自己申告なので「〜を名乗るアプリ」と書く**）、リダイレクト先のホスト名、要求されたスコープの説明（「新着の動画と概要欄を読めます」「視聴済みにできます」）
@@ -212,8 +212,8 @@ MCP の認可仕様では、MCP サーバーは **OAuth 2.1 のリソースサ�
 **接続中のアプリ（プロフィール画面）**
 - 同意したクライアントの一覧（名前・スコープ・最終利用・同意した日）
 - 「取り消す」で、リフレッシュトークンと同意を消す（アクセストークンは最長 1 時間で切れる）
-- 一覧と取り消しは better-auth のプラグインのエンドポイントを画面から呼ぶ（パスキーの一覧・削除と同じ。Web 層から DB は触らない）
-- 退会したら、ユーザーに連動してプラグインのデータも消えることを確かめる（消えなければ `cleanupDeletedUser` で消す）
+- プラグインの `/oauth2/delete-consent` は同意を消すだけで、リフレッシュトークンが残る（更新し続けられる）。そこで、一覧と取り消しは Member のワークフロー（`domain/Member/workflow/connection.ts` の `listConnectedApps`・`revokeConnectedApp`）にし、`/api/connections` から呼ぶ。取り消しでは、アクセストークン・リフレッシュトークン・同意の記録をまとめて消す
+- 退会すると、外部キー（ON DELETE CASCADE）でプラグインの同意とトークンも消える（生成したマイグレーションで確認した）
 
 ### 5.3 スコープ
 
@@ -231,7 +231,7 @@ MCP の認可仕様では、MCP サーバーは **OAuth 2.1 のリソースサ�
 ### 5.4 トークンの扱い
 
 - トークンの発行・保存・ローテーションは better-auth のプラグインに任せ、自前で作らない
-- `/api/mcp` では、毎回 署名・期限・`aud`・`iss`・スコープを確かめる。ユーザーが退会していたら 401
+- `/api/mcp` では、毎回 署名・期限・`aud`・`iss`・`typ`・スコープを確かめる。退会したユーザーのトークンは、DB を引かないので寿命（最長 1 時間）まで通る（9 章の C6）
 - トークンを、ログ・エラーメッセージ・ツールの結果のどこにも出さない
 
 ### 5.5 エンドポイントの守り
@@ -243,7 +243,7 @@ MCP の認可仕様では、MCP サーバーは **OAuth 2.1 のリソースサ�
 | CORS | `/api/mcp` にはヘッダーを出さない（ブラウザから直接呼ばせない）。`/.well-known/…` はクライアントによっては要るので、実装時に確認する |
 | キャッシュ | 応答には `Cache-Control: no-store` を付ける（Void が自動で付けるのは Cookie のセッションがあるときなので、自分で付ける） |
 | 401 / 403 | 401 には `WWW-Authenticate: Bearer resource_metadata="…"` を付ける（クライアントが認可の流れに入れるように）。スコープ不足は、ツールのエラーにするか、403 `insufficient_scope` にする |
-| レート制限 | トークンごと（例: 1 分に 60 回）と IP ごと（認証の失敗。例: 1 分に 10 回）。`sync_new_videos` は全体で 10 分に 1 回。Void の KV（固定窓のカウンタ）か、Cloudflare のレート制限の仕組みを使う（どちらが Void から使えるかは実装時に確認）。`auth.ts` の `rateLimit` は OAuth の `/token`・登録にも効くので、`storage: "database"` で Worker のインスタンスをまたいで数える |
+| レート制限 | **未実装**（9 章の C7）。予定: トークンごと（例: 1 分に 60 回）と IP ごと（認証の失敗。例: 1 分に 10 回）、`sync_new_videos` は全体で 10 分に 1 回。OAuth のエンドポイント（`/token`・`/authorize`・`/register`）には better-auth の既定のレート制限がかかっているが、Worker のインスタンスごとに数えている |
 | 大きさの上限 | リクエストの本文（例: 64KB）と、ツールの応答の件数（4.1）に上限を付ける。JSON-RPC のバッチは受け付けない |
 | エラーの中身 | `DatabaseError`・`StorageError`・`ExternalError` の中身は返さない（`server/http/error.ts` と同じく `logAppError` でログにだけ残し、固定の文言を返す） |
 
@@ -275,38 +275,55 @@ LLM に渡す動画のタイトル・概要欄・プレイリストの説明は�
 - 接続の案内（README やプロフィール画面）に「各サービスの設定で、会話を学習に使わない設定にしてください」と書く
 - soko 側でできることは、渡すデータを必要な分に絞ること（4.1 の `get_home_feed` の縮小、件数の上限）
 
-### 5.9 実装前のチェックリスト
+### 5.9 チェックリスト（実装時に確かめた結果）
 
-- [ ] userId・joinedAt がトークンからだけ決まり、引数から来ない
-- [ ] `/api/mcp` が Cookie だけのリクエストを 401 にする（テストする）
-- [ ] 期限切れ・`aud` 違い・署名違い・退会したユーザーのトークンが 401 になる
-- [ ] スコープのないツールが `tools/list` に出ず、`tools/call` でも拒否される
-- [ ] PKCE なし・`resource` 違い・リダイレクト先違いの認可リクエストが拒否される
-- [ ] リフレッシュトークンの再利用で一族ごと失効する
-- [ ] 同意画面で、書き込みのスコープが既定でオフになっている
-- [ ] 退会で、OAuth の同意とトークンが消える
-- [ ] `Origin` 付きの他のオリジンからのリクエストが 403 になる
-- [ ] 内部エラーの中身がツールの結果に出ない
+「単体」は `bun test`、「E2E」は開発サーバー（workerd）と Playwright（仮想のパスキー）で、登録 → DCR → 認可 → 同意 → トークン → MCP → 解除まで通して確かめたもの。
+
+- [x] userId・joinedAt がトークンからだけ決まり、引数から来ない（単体）
+- [x] `/api/mcp` が Cookie だけのリクエストを 401 にする（E2E）
+- [x] 期限切れ・`aud` 違い・`iss` 違い・署名違い・`typ` 違いのトークンが 401 になる（単体。改ざんは E2E も）
+- [ ] 退会したユーザーのトークンが 401 になる → しない（9 章の C6）
+- [x] スコープのないツールが `tools/list` に出ず、`tools/call` でも拒否される（単体・E2E）
+- [x] 許可リストにないリダイレクト先の認可リクエストが拒否される（E2E: `invalid_redirect`）
+- [ ] PKCE なし・`resource` 違いの認可リクエストが拒否される（プラグインの設定に任せている。手では未確認）
+- [ ] リフレッシュトークンの再利用で一族ごと失効する（プラグインの既定 `refreshTokenReuseInterval: 0` に任せている。手では未確認）
+- [x] 同意画面で、書き込みのスコープが既定でオフになっている（E2E）
+- [x] 接続を解除すると、リフレッシュトークンが使えなくなる（E2E: `invalid_grant`）
+- [x] 退会で、OAuth の同意とトークンが消える（マイグレーションの外部キー）
+- [x] `Origin` 付きの他のオリジンからのリクエストが 403 になる（手で確認）
+- [x] 内部エラーの中身がツールの結果に出ない（単体）
+- [x] 未ログインで認可に来たとき、パスキーでログインすると同意画面へ続きから進む（E2E）
 
 ## 6. コードの置き場所
 
 AGENTS.md の依存の向き（`routes/ → server/ → domain/ ← adapter/`）を変えない。MCP は Web 層の入口の 1 つとして扱う。
 
 ```
-routes/api/mcp.ts           POST: Origin・レート制限・認証 → server/mcp/handler。GET/DELETE は 405
-routes/.well-known/…        RFC 9728 / RFC 8414 のメタデータ（プラグインのヘルパーで返す。置き場所は Void のルーティングで確認）
+routes/api/mcp.ts                         POST: Origin・本文の大きさ・認証 → server/mcp/handler。GET/DELETE は 405
+routes/api/connections.ts                 接続中のアプリの一覧（GET）と解除（DELETE）。Cookie のセッションで認証
+routes/.well-known/
+  oauth-protected-resource/api/mcp.ts     RFC 9728（パス付き）。index.ts はパスなしで探すクライアント用
+  oauth-authorization-server/api/auth.ts  RFC 8414（発行者が /api/auth なのでパス付き）。index.ts も同じ
 server/mcp/
-  handler.ts                McpServer とトランスポートをリクエストごとに作る
-  tools.ts                  ツールの定義（名前・説明・zod の入力・注釈・スコープ）→ …Usecase を呼ぶ
-  auth.ts                   Bearer の取り出しと、oauth-provider のトークン検証 → McpPrincipal { userId, joinedAt, scopes, clientId }
-  result.ts                 AppError → ツールのエラー（server/http/error.ts の考え方に合わせる）
-  view.ts                   HomeFeedView などを MCP 向けに小さくする
-auth.ts                     oauthProvider(...) をプラグインに足す（スコープ・resource・PKCE・寿命・validateRedirectUri）
-pages/oauth/consent.svelte  同意画面
-pages/ (プロフィール)       接続中のアプリの一覧と取り消し
+  scope.ts      スコープ・リソース・発行者の URL（auth.ts からも使う）
+  redirect.ts   リダイレクト先の許可リスト（auth.ts からも使う）
+  auth.ts       Bearer の取り出しと JWT の検証 → McpPrincipal { userId, joinedAt, scopes, clientId }
+  handler.ts    McpServer とトランスポートをリクエストごとに作る（検証器は Workers 用の cfworker）
+  tools.ts      ツールの定義（名前・説明・zod の入力・注釈・スコープ）→ …Usecase を呼ぶ
+  result.ts     AppError → ツールの結果（server/http/error.ts の考え方に合わせる）
+  view.ts       HomeFeedView を MCP 向けに小さくする
+  http.ts       401 のチャレンジ・Protected Resource Metadata・応答のヘッダー
+server/http/void-auth.ts                  Void が作る better-auth のインスタンス（__voidAuth）を取り出す（9 章の C8）
+auth.ts                                   jwt() と oauthProvider(...) をプラグインに足す。/oauth2/consent の前にセッションの新しさを確かめる
+domain/Member/workflow/account.ts         checkOAuthConsent（ログインし直したばかりか）
+domain/Member/workflow/connection.ts      listConnectedApps・revokeConnectedApp
+adapter/drizzle/connection.ts             oauthConsent・oauthRefreshToken・oauthAccessToken・oauthClient を読む・消す
+pages/oauth/consent.(server.ts|svelte)    同意画面
+src/lib/client/auth-client.ts             認可の途中の POST に oauth_query を付けるプラグイン（oauth-query.ts）
+src/lib/components/ProfileSheet.svelte    接続中のアプリの一覧と解除
 ```
 
-- ドメイン（`domain/`）は変えない。`search_videos` を足すときだけ `domain/Content` に Query が増える
+- ドメインに足したのは Member の 3 つの操作（`checkOAuthConsent`・`listConnectedApps`・`revokeConnectedApp`）だけ。`search_videos` を足すときは `domain/Content` に Query が増える
 - `zod` は MCP の SDK が要求する。使うのは `server/mcp/` の中だけにし、ドメインの検証は今までどおり `@nw-union/nw-utils/lib/vo` の VO で行う（zod のスキーマは型の大まかな形だけ）
 - `auth.ts` は Void の CLI から読まれるので、プラグインの設定に足すものも `.ts` 付きの相対 import・エイリアスなしの規則を守る
 - AppError → MCP の結果の対応
@@ -322,7 +339,9 @@ pages/ (プロフィール)       接続中のアプリの一覧と取り消し
 
 ### テスト
 
-- `server/mcp/` は、fake の `…Usecase` とトークンの検証を渡してツールを呼ぶテスト（userId が引数で上書きできないこと、スコープの確認、エラーの変換）。`server/mcp/handler.ts` に `container` と検証の関数を引数で渡せる形にしておくとテストしやすい
+- `server/mcp/handler.test.ts`: fake の `…Usecase` を渡して JSON-RPC でツールを呼ぶ（userId が引数で上書きできないこと、スコープの確認、エラーの変換、監査ログ）
+- `server/mcp/auth.test.ts`: その場で作った鍵で JWT を署名し、検証が通るもの・拒否するものを確かめる
+- `server/mcp/redirect.test.ts`・`adapter/drizzle/connection.test.ts`・`domain/Member/workflow/connection.test.ts` ほか
 - `bun run check`・`bun run build`・`bunx void db generate` が通ること
 - 手で: Claude Code から `claude mcp add` して認可からツールまで一通り。MCP Inspector と、claude.ai・ChatGPT のコネクタでも確かめる
 
@@ -330,8 +349,9 @@ pages/ (プロフィール)       接続中のアプリの一覧と取り消し
 
 | 段階 | 内容 | 終わりの条件 |
 | :-- | :-- | :-- |
-| 0 | better-auth と `@better-auth/passkey` を 1.7.25 以上に上げる（別 PR） | 既存のログイン・登録・パスキーが動く |
-| 1（初期リリース） | oauth-provider・メタデータ・同意画面・接続中のアプリ・`/api/mcp`・4.1 の「初期」のツール・監査ログ・レート制限 | Claude Code・claude.ai・ChatGPT から使える |
+| 0 | better-auth と `@better-auth/passkey` を 1.7.25 に上げる | 済み（同じブランチで上げた。E2E で登録・パスキー・ログインを確認） |
+| 1（初期リリース） | oauth-provider・メタデータ・同意画面・接続中のアプリ・`/api/mcp`・4.1 の「初期」のツール・監査ログ | 実装済み。本番で Claude Code・claude.ai・ChatGPT から使えるかは未確認 |
+| 1.5 | 9 章の懸念点のうち、レート制限（C7）など | 未着手 |
 | 2 | `search_videos`（Content に Query を足す） | 検索で動画を探せる |
 
 ## 8. 決定事項
@@ -343,6 +363,26 @@ pages/ (プロフィール)       接続中のアプリの一覧と取り消し
 | 3 | PAT を作るか | 作らない。最初から OAuth だけ |
 | 4 | `search_videos` を足すか | 足すが、初期リリースでは対応しない |
 | 5 | トークンの有効期限 | アクセストークン 1 時間・リフレッシュトークン 30 日（ローテーション）。PAT をやめたので、PAT の期限（90 日・最長 1 年）は不要になった |
+
+## 9. 懸念点
+
+設計の後に洗い出した懸念点と、いまの状態。「対策済み」以外は、初期リリースでは後回しにしたもの。
+
+| # | 懸念 | 状態 | 内容・次にやること |
+| :-- | :-- | :-- | :-- |
+| C1 | 本番のドメイン以外（プレビュー版の URL・`*.workers.dev`）からも MCP と認可サーバーに届く | **一部対策済み** | `void.config.ts` の `preview_urls` を `false` にした。`workers_dev` は `true` のまま。発行者とリソースはリクエストの origin から作るので、ホストごとに別の認可サーバーになり、本番のドメインで発行したトークンは `*.workers.dev` では使えない（逆も同じ）。`*.workers.dev` を使っていなければ、`workers_dev: false` にするとよい |
+| C2 | ログイン後の戻り先によるオープンリダイレクト | **対策済み** | `/login` に戻り先の引数（`?next=` など）を作らなかった。認可の続きは、プラグインが署名したクエリ（`sig`）からサーバーが決め、送り先は `validateRedirectUri` の許可リストで絞る。画面はサーバーの応答（`{ redirect, url }`）にだけ従う |
+| C3 | プロンプトインジェクションで、他のメンバーに被害が広がる | 後回し | `playlists:write` を持つ AI が概要欄の指示に従ってプレイリストを足すと、攻撃者の文章が soko に入り、他のメンバーの AI に届く。同期で全員に通知も飛ぶ。いまは「書き込みは同意画面で既定でオフ」「ツールの説明に注意書き」だけ。案: MCP から足したプレイリストは承認待ちにする、プレイリストの数と動画の数に上限を付ける |
+| C4 | CIMD を入れると、soko が任意の URL を取りに行く | 未使用 | 初期リリースは DCR だけ。CIMD を入れるときは、取りに行くホストを事業者のものに限り、サイズとタイムアウトに上限を付ける |
+| C5 | JWT の署名鍵が D1 にある | 後回し | 鍵は jwt プラグインの既定で暗号化して保存している（外していない）。D1 と `BETTER_AUTH_SECRET` の両方が漏れると、誰にでもなれるトークンを作られる。案: `jwks.rotationInterval` で定期的に作り直す。`BETTER_AUTH_SECRET` を作り直すときは、全員が接続し直す |
+| C6 | 退会しても、アクセストークンは最長 1 時間使える | 後回し | `/api/mcp` は DB を引かずに JWT を検証している。リフレッシュトークンは退会で消えるので、1 時間後には止まる。案: ユーザーがいるかだけ毎回確かめる（ツールはどうせ D1 を読むので、増える負担は小さい） |
+| C7 | レート制限がない | 後回し | `/api/mcp` と `sync_new_videos` に、まだレート制限がない。`sync_new_videos` を連打されると、YouTube の割り当てを使い切られる（通知は新着があるときだけ）。OAuth のエンドポイントには better-auth の既定があるが、Worker のインスタンスごとに数えている。案: Void の KV で固定窓のカウンタ（バインディングが増える）、better-auth の `rateLimit.storage: "database"` |
+| C8 | Void の内部の値（`__voidAuth`）に頼っている | 受け入れる | Void は better-auth のインスタンスを公開の API で渡さないので、`server/http/void-auth.ts` で Context の `__voidAuth` を読んでいる（jwks・メタデータ・クライアント名）。Void の更新で取れなくなったら、`/api/mcp` と `.well-known` と同意画面が 500 になる（形を確かめて例外にしている）。Void を上げたら E2E で確かめる |
+| C9 | 依存が増えた | 受け入れる | `@modelcontextprotocol/sdk` は `express`・`ajv` などに依存し、サーバー側の出力（`dist/ssr`、ソースマップ込み）が 12MB から 13MB に増えた。`ajv` はコード生成（`new Function`）を使うので Workers では動かないが、検証器に `CfWorkerJsonSchemaValidator` を渡しているので使われない（開発サーバーの workerd で MCP の呼び出しが通ることを確かめた）。バージョンは固定し、上げたら E2E で確かめる |
+| C10 | `resource` を送らないクライアントは使えない | 受け入れる | プラグインは `resource` がないと不透明なトークンを出し、`/api/mcp` はそれを受け付けない。MCP の仕様に従うクライアントは送る |
+| C11 | ログアウトしても MCP は使い続けられる | 受け入れる | soko の Web でログアウトしても、`offline_access` のリフレッシュトークンは残る（OIDC の決まり）。止めるには、プロフィールの「接続中のアプリ」で解除する |
+| C12 | リダイレクト先の許可リストのホストが正しいか | 要確認 | `claude.ai`・`claude.com`・`chatgpt.com`・`chat.openai.com` は、各社のコールバック URL を確かめずに入れている。本番でつないで、`invalid_redirect` になったら `server/mcp/redirect.ts` を直す |
+| C13 | 監査ログの置き場所 | 受け入れる | `log()` の info で出している（Workers のログ）。保存期間は Workers のログの設定による |
 
 ## 参考
 
