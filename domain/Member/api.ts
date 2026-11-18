@@ -224,6 +224,18 @@ export type HasPasskeyQuery = { userId: string };
 export type PasskeyStatusView = { hasPasskey: boolean };
 
 /**
+ * メンバーがいるか (退会していないか)
+ *
+ * 外部のアプリ (MCP) のアクセストークンは DB を引かずに検証するので, 退会した人のトークンを止めるのに使う
+ */
+type GetMemberStatus = (
+  q: GetMemberStatusQuery,
+) => ResultAsync<MemberStatusView, AppError>;
+
+export type GetMemberStatusQuery = { userId: string };
+export type MemberStatusView = { active: boolean };
+
+/**
  * アイコン画像のファイル (配信に使う). キーの形が違うか, 画像がなければ NotFoundError
  *
  * キーはランダムで, 差し替えると別のキーになるので, 応答はずっとキャッシュしてよい
@@ -280,6 +292,7 @@ export interface MemberUsecase {
   listInvites: ListInvites;
   getDisplayUser: GetDisplayUser;
   hasPasskey: HasPasskey;
+  getMemberStatus: GetMemberStatus;
   getAvatarFile: GetAvatarFile;
   listConnectedApps: ListConnectedApps;
 }

@@ -63,6 +63,9 @@ export interface ProfileRepositoryPort {
   // ユーザーのパスキーの数 (passkey テーブルは better-auth が管理している)
   countPasskeys(user: UserId): ResultAsync<number, AppError>;
 
+  // ユーザーがいるか (退会していないか)
+  existsUser(user: UserId): ResultAsync<boolean, AppError>;
+
   // user.image. ユーザーがいなければ null
   readImage(user: UserId): ResultAsync<string | null, AppError>;
 

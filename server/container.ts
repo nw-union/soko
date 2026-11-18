@@ -9,6 +9,7 @@ import { newConnectionRepository } from "../adapter/drizzle/connection.ts";
 import { newContentRepository } from "../adapter/drizzle/content.ts";
 import { newInviteRepository } from "../adapter/drizzle/invite.ts";
 import { newProfileRepository } from "../adapter/drizzle/profile.ts";
+import { newRateLimitRepository } from "../adapter/drizzle/rate-limit.ts";
 import { newPushRepository } from "../adapter/drizzle/push.ts";
 import { newAvatarStorage } from "../adapter/r2/avatar.ts";
 import { cryptoRandom, systemClock } from "../adapter/system.ts";
@@ -18,6 +19,8 @@ import { newContentUsecase } from "../domain/Content/usecase.ts";
 import { newMemberUsecase } from "../domain/Member/usecase.ts";
 import type { VapidKeys } from "../domain/Notification/type.ts";
 import { newNotificationUsecase } from "../domain/Notification/usecase.ts";
+import { log } from "./log/log.ts";
+import { newRateLimiter } from "./mcp/rate-limit.ts";
 
 // VAPID の鍵（新着動画のプッシュ通知）。どれかが未設定なら null（通知を送らず、プロフィールにも通知の設定を出さない）
 const vapidKeys = (): VapidKeys | null =>
@@ -34,6 +37,7 @@ export const container = () => {
   const inviteRepository = newInviteRepository(db);
   const profileRepository = newProfileRepository(db);
   const avatarStorage = newAvatarStorage(storage);
+  const rateLimit = newRateLimitRepository(db);
   const vapid = vapidKeys();
   // コンテンツ集約: 動画の自動取得・プレイリストの登録・視聴記録と、ホーム・バッジの本数・プレイリストの一覧。
   // YOUTUBE_API_KEY が未設定なら取得しない（アプリは動く）。取得するプレイリストは DB の playlists に登録する
@@ -68,5 +72,8 @@ export const container = () => {
       systemClock,
       vapid,
     ),
+    // レート制限（MCP。server/mcp/rate-limit.ts）。回数は D1 の rate_limits に数える
+    rateLimit,
+    checkRateLimit: newRateLimiter(rateLimit, systemClock, log()),
   };
 };

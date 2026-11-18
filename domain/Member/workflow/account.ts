@@ -31,7 +31,7 @@ export const FRESH_AGE_SECONDS = 10 * 60;
 // ----------------------------------------------------------------------------
 type AccountRepository = Pick<
   ProfileRepositoryPort,
-  "countPasskeys" | "deleteUserData"
+  "countPasskeys" | "deleteUserData" | "existsUser"
 >;
 
 // ----------------------------------------------------------------------------
@@ -93,6 +93,7 @@ export const newAccountWorkflow = (
   | "checkOAuthConsent"
   | "cleanupDeletedUser"
   | "hasPasskey"
+  | "getMemberStatus"
 > => ({
   /**
    * パスキーを削除してよいか確かめる
@@ -131,5 +132,18 @@ export const newAccountWorkflow = (
       r.countPasskeys,
       // Step 3. View に組み立てる
       (count) => ({ hasPasskey: count > 0 }),
+    ),
+
+  /**
+   * メンバーがいるか (退会していないか)
+   */
+  getMemberStatus: ({ userId }) =>
+    stepAsync(
+      // Step 1. バリデーション: string -> UserId
+      newUserId(userId),
+      // Step 2. DB 取得
+      r.existsUser,
+      // Step 3. View に組み立てる
+      (active) => ({ active }),
     ),
 });
