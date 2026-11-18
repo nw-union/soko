@@ -3,12 +3,13 @@ import type { AppError } from "../shared/error.ts";
 import type { UserId } from "../shared/vo.ts";
 import type {
   AvatarFile,
+  ConnectedApp,
   ImageFile,
   InviteUsage,
   IssuedInvite,
   NewInvite,
 } from "./type.ts";
-import type { AvatarKey, InviteId, TokenHash } from "./vo.ts";
+import type { AvatarKey, InviteId, OAuthClientId, TokenHash } from "./vo.ts";
 
 // ----------------------------------------------------------------------------
 // 招待
@@ -85,4 +86,19 @@ export interface AvatarStoragePort {
   deleteAvatar(key: AvatarKey): ResultAsync<void, AppError>;
   // 保存されている画像. なければ null
   getAvatar(key: AvatarKey): ResultAsync<AvatarFile | null, AppError>;
+}
+
+// ----------------------------------------------------------------------------
+// 外部のアプリ (OAuth のクライアント)
+// ----------------------------------------------------------------------------
+/**
+ * 接続中のアプリのリポジトリ (oauthConsent・oauthRefreshToken・oauthAccessToken・oauthClient は better-auth の oauth-provider が管理している)
+ */
+export interface ConnectionRepositoryPort {
+  // user が許可したアプリの一覧 (許可した日時の新しい順)
+  listConnectedApps(user: UserId): ResultAsync<ConnectedApp[], AppError>;
+
+  // user が client に与えた許可を取り消す. 同意と, リフレッシュトークン・アクセストークンの記録を消す.
+  // 当てはまるものがなくても成功. 発行済みの JWT のアクセストークンは期限 (1 時間) まで使える
+  deleteGrant(user: UserId, client: OAuthClientId): ResultAsync<void, AppError>;
 }

@@ -1,11 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import { unwrap } from "../../lib/rslt-test.ts";
 import {
+  convToConnectedAppDto,
   convToInviteDto,
   formatToken,
   resolveColor,
   resolveImage,
 } from "./converter.ts";
+import type { ConnectedApp } from "./type.ts";
+import { newOAuthClientId } from "./vo.ts";
+import { mustVo } from "../shared/vo.ts";
 import { newInviteToken } from "./vo.ts";
 
 export const mustInviteToken = (s: string) => unwrap(newInviteToken(s));
@@ -78,4 +82,37 @@ describe("resolveImage", () => {
   ])("%s は使わない", (_, image) => {
     expect(resolveImage(image)).toBeNull();
   });
+});
+
+// ----------------------------------------------------------------------------
+// convToConnectedAppDto
+// ----------------------------------------------------------------------------
+describe("convToConnectedAppDto", () => {
+  const app = (uri: string | null): ConnectedApp => ({
+    type: "ConnectedApp",
+    clientId: mustVo(newOAuthClientId("client1")),
+    name: "Claude",
+    uri,
+    scopes: ["videos:read"],
+    consentedAt: new Date("2026-11-01T00:00:00Z"),
+    lastUsedAt: new Date("2026-11-02T00:00:00Z"),
+  });
+
+  it("日時を ISO 8601 にする", () => {
+    expect(convToConnectedAppDto(app("https://claude.ai"))).toEqual({
+      clientId: "client1",
+      name: "Claude",
+      uri: "https://claude.ai",
+      scopes: ["videos:read"],
+      consentedAt: "2026-11-01T00:00:00.000Z",
+      lastUsedAt: "2026-11-02T00:00:00.000Z",
+    });
+  });
+
+  it.each([["javascript:alert(1)"], ["not a url"]])(
+    "http(s) でない URL は落とす (%p)",
+    (uri) => {
+      expect(convToConnectedAppDto(app(uri)).uri).toBeNull();
+    },
+  );
 });

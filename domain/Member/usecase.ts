@@ -2,11 +2,13 @@ import type { ClockPort, RandomPort } from "../shared/port.ts";
 import type { MemberUsecase } from "./api.ts";
 import type {
   AvatarStoragePort,
+  ConnectionRepositoryPort,
   InviteRepositoryPort,
   ProfileRepositoryPort,
 } from "./port.ts";
 import { newAccountWorkflow } from "./workflow/account.ts";
 import { newAvatarWorkflow } from "./workflow/avatar.ts";
+import { newConnectionWorkflow } from "./workflow/connection.ts";
 import { newInviteWorkflow } from "./workflow/invite.ts";
 import { newProfileWorkflow } from "./workflow/profile.ts";
 
@@ -17,6 +19,7 @@ export const newMemberUsecase = (
   invite: InviteRepositoryPort,
   profile: ProfileRepositoryPort,
   avatar: AvatarStoragePort,
+  connection: ConnectionRepositoryPort,
   clock: ClockPort,
   random: RandomPort,
 ): MemberUsecase => ({
@@ -24,4 +27,5 @@ export const newMemberUsecase = (
   ...newProfileWorkflow(),
   ...newAvatarWorkflow(profile, avatar, clock, random),
   ...newAccountWorkflow(profile, avatar, clock),
+  ...newConnectionWorkflow(connection),
 });

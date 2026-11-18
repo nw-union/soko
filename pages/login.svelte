@@ -7,6 +7,7 @@ export const layout = false;
   import { useRouter } from "@void/svelte";
   import Stage from "../src/lib/components/Stage.svelte";
   import { authClient, isPasskeyCancelled } from "../src/lib/client/auth-client";
+  import { isOAuthFlow } from "../src/lib/client/oauth-query";
   import { GUEST_NAME } from "../domain/Member/rule.ts";
   import { clearBadge } from "../src/lib/client/push";
   import { registerServiceWorker } from "../src/lib/client/pwa";
@@ -66,6 +67,9 @@ export const layout = false;
           signInError = "パスキーでログインできませんでした。もう一度「パスキーでログイン」を押してください";
         return;
       }
+      // 外部のアプリ（MCP のクライアント）の認可の途中なら、サーバーが返した続きの画面（同意画面など）へ
+      // better-auth のクライアントが移動する。ここでは何もしない
+      if (isOAuthFlow(window.location.search)) return;
       router.visit("/", { replace: true });
     } finally {
       pending = null;

@@ -5,6 +5,7 @@ import { stepAsync } from "@nw-union/nw-utils/lib/rslt";
 import { db } from "void/db";
 import { env } from "void/env";
 import { storage } from "void/storage";
+import { newConnectionRepository } from "../adapter/drizzle/connection.ts";
 import { newContentRepository } from "../adapter/drizzle/content.ts";
 import { newInviteRepository } from "../adapter/drizzle/invite.ts";
 import { newProfileRepository } from "../adapter/drizzle/profile.ts";
@@ -43,11 +44,12 @@ export const container = () => {
   );
   return {
     contentUsecase,
-    // メンバー集約: 招待（Invite）と、プロフィール・ログイン（Profile）
+    // メンバー集約: 招待（Invite）と、プロフィール・ログイン（Profile）、外部のアプリ（MCP のクライアント）への許可
     memberUsecase: newMemberUsecase(
       inviteRepository,
       profileRepository,
       avatarStorage,
+      newConnectionRepository(db),
       systemClock,
       cryptoRandom,
     ),

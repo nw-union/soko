@@ -157,3 +157,15 @@ export const parseAvatarPath = (image: unknown): AvatarKey | null => {
     .err(() => null)
     .exhaustive();
 };
+
+// ----------------------------------------------------------------------------
+// 外部のアプリ (OAuth のクライアント)
+// ----------------------------------------------------------------------------
+/**
+ * OAuthClientId OAuth のクライアント ID (better-auth の oauth-provider が発行する)
+ */
+export const newOAuthClientId = newVo(
+  "OAuthClientId",
+  v.chain(v.string, v.minLength(1), v.maxLength(255)),
+);
+export type OAuthClientId = InferVo<typeof newOAuthClientId>;

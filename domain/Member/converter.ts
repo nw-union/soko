@@ -1,8 +1,8 @@
 // Converter: ドメインの型 (type.ts) → DTO (api.ts) の変換. 画面に出す形にする
 import { isHttpUrl } from "../../lib/url.ts";
-import type { InviteDto, ValidateProfileEvt } from "./api.ts";
+import type { ConnectedAppDto, InviteDto, ValidateProfileEvt } from "./api.ts";
 import { isAvatarPath, isHexColor } from "./rule.ts";
-import type { IssuedInvite, ValidatedProfile } from "./type.ts";
+import type { ConnectedApp, IssuedInvite, ValidatedProfile } from "./type.ts";
 import type { InviteToken } from "./vo.ts";
 
 // ----------------------------------------------------------------------------
@@ -75,3 +75,18 @@ export const resolveImage = (image: unknown): string | null =>
   typeof image === "string" && (isAvatarPath(image) || isHttpUrl(image))
     ? image
     : null;
+
+// ----------------------------------------------------------------------------
+// 外部のアプリ
+// ----------------------------------------------------------------------------
+/**
+ * 接続中のアプリを, 画面に出す形にする. URL は http(s) のものだけ (リンクにするため)
+ */
+export const convToConnectedAppDto = (a: ConnectedApp): ConnectedAppDto => ({
+  clientId: a.clientId,
+  name: a.name,
+  uri: a.uri !== null && isHttpUrl(a.uri) ? a.uri : null,
+  scopes: a.scopes,
+  consentedAt: a.consentedAt.toISOString(),
+  lastUsedAt: a.lastUsedAt?.toISOString() ?? null,
+});
