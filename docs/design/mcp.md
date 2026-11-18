@@ -1,6 +1,6 @@
 # MCP サーバー 設計書
 
-- 状態: 初期リリースを実装済み（レート制限などは未実装。9 章）
+- 状態: 初期リリースを実装済み。レート制限・退会したユーザーのトークンの停止・署名鍵の作り直しを追加（9 章）
 - 作成: 2026-11-17 / 更新: 2026-11-18（決定事項と実装を反映。懸念点を 9 章にまとめた）
 - 対象: `soko`（Void / Cloudflare Workers / better-auth 1.7.11 / D1）
 
@@ -53,7 +53,7 @@
  ┌──────────────────── soko (Cloudflare Worker) ───────────────────┐
  │                                                                  │
  │  routes/api/mcp.ts ── POST /api/mcp  (JSON-RPC, ステートレス)    │
- │     │  1. Origin の確認・本文の大きさ（レート制限は未実装）       │
+ │     │  1. Origin・本文の大きさ・レート制限（server/mcp/gate.ts）   │
  │     │  2. アクセストークンを検証 → { userId, scopes, clientId }   │
  │     │  3. MCP サーバーを作り、tools/call を実行                   │
  │     ▼                                                            │
@@ -120,7 +120,7 @@
 - プレイリストの追加と同期は、いまのデバッグ画面と同じく **メンバーなら誰でもできる**（管理者のロールは作らない）。誰がやったかは監査ログに残す（5.8）
 - `get_home_feed` は `HomeFeedView` をそのまま返すと大きい（プレイリストごとに全動画）。MCP では `embed`・`thumbnail`・`aspectRatio` を落とし、件数に上限（例: 各 50 本）を付けて返す
 - `search_videos` は今ない Query。「キーワード・プレイリスト・未視聴だけ」で探せる口があると LLM から使いやすいので、後で `domain/Content/workflow/feed.ts` に `SearchVideos`（`…Query` / `…View`、`limit` と `cursor` 付き）を足す。初期リリースでは `get_home_feed` で代わりにする
-- `sync_new_videos` は動画が増えると **全メンバーにプッシュ通知が飛ぶ**（ポリシー `onVideosSynced`）。YouTube API の割り当ても使う。だから強いレート制限（全体で 10 分に 1 回）をかける予定（**未実装**。9 章の C7）
+- `sync_new_videos` は動画が増えると **全メンバーにプッシュ通知が飛ぶ**（ポリシー `onVideosSynced`）。YouTube API の割り当ても使う。だから強いレート制限（全体で 10 分に 1 回）をかけている（9 章の C7）
 - `delete_playlist` と `sync_all_videos` は、メンバーなら画面からできる操作だが、MCP には出さない。どちらも消す操作で、プロンプトインジェクション（5.7）で呼ばれたときの被害が大きい。必要になったらデバッグ画面から行う
 - 注釈（`readOnlyHint`・`destructiveHint`・`idempotentHint`・`openWorldHint`）は、クライアントが実行の前に確認を出すかどうかの手がかりになる。**ただしクライアント任せの安全策なので、これに頼って危ない操作を出してはいけない**
 
@@ -153,7 +153,7 @@
 | T3 | Cookie のセッションで `/api/mcp` を叩かせる（CSRF）／ブラウザから DNS リバインディング | `/api/mcp` は Bearer だけ。Origin を確認。CORS ヘッダーを出さない（5.5） |
 | T4 | プロンプトインジェクション（概要欄に「この動画のプレイリストを消せ」などと書かれる） | 破壊的なツールを出さない。書き込みは別スコープで既定はオフ。結果を構造化して返す（5.6） |
 | T5 | 悪意のある OAuth クライアント・リダイレクト先の乗っ取り・認可コードの横取り | PKCE（S256）必須、リダイレクト先の完全一致、同意画面、resource（audience）の確認（5.2） |
-| T6 | 乱用（総当たり・大量の呼び出し・YouTube の割り当ての枯渇・通知のスパム） | トークン単位のレート制限。同期は全体で強く制限（5.5。**未実装**、9 章の C7） |
+| T6 | 乱用（総当たり・大量の呼び出し・YouTube の割り当ての枯渇・通知のスパム） | 1 人あたり・IP あたりのレート制限。同期は全体で強く制限（5.5） |
 | T7 | 不正利用に気づけない | 監査ログ、接続中のアプリの一覧と最終利用日時（5.7） |
 | T8 | 限定公開の内容が外部の AI 事業者に渡る | **渡してよいと決めた**（8 章）。ただし学習に使われるかは各自のプラン・設定による（5.8） |
 
@@ -231,7 +231,7 @@ MCP の認可仕様では、MCP サーバーは **OAuth 2.1 のリソースサ�
 ### 5.4 トークンの扱い
 
 - トークンの発行・保存・ローテーションは better-auth のプラグインに任せ、自前で作らない
-- `/api/mcp` では、毎回 署名・期限・`aud`・`iss`・`typ`・スコープを確かめる。退会したユーザーのトークンは、DB を引かないので寿命（最長 1 時間）まで通る（9 章の C6）
+- `/api/mcp` では、毎回 署名・期限・`aud`・`iss`・`typ`・スコープを確かめる。さらに、ユーザーが退会していないかを毎回 DB で確かめ、退会していれば 401 にする（9 章の C6）
 - トークンを、ログ・エラーメッセージ・ツールの結果のどこにも出さない
 
 ### 5.5 エンドポイントの守り
@@ -243,7 +243,7 @@ MCP の認可仕様では、MCP サーバーは **OAuth 2.1 のリソースサ�
 | CORS | `/api/mcp` にはヘッダーを出さない（ブラウザから直接呼ばせない）。`/.well-known/…` はクライアントによっては要るので、実装時に確認する |
 | キャッシュ | 応答には `Cache-Control: no-store` を付ける（Void が自動で付けるのは Cookie のセッションがあるときなので、自分で付ける） |
 | 401 / 403 | 401 には `WWW-Authenticate: Bearer resource_metadata="…"` を付ける（クライアントが認可の流れに入れるように）。スコープ不足は、ツールのエラーにするか、403 `insufficient_scope` にする |
-| レート制限 | **未実装**（9 章の C7）。予定: トークンごと（例: 1 分に 60 回）と IP ごと（認証の失敗。例: 1 分に 10 回）、`sync_new_videos` は全体で 10 分に 1 回。OAuth のエンドポイント（`/token`・`/authorize`・`/register`）には better-auth の既定のレート制限がかかっているが、Worker のインスタンスごとに数えている |
+| レート制限 | D1 の `rate_limits` に固定の時間窓で数える（1 文の UPSERT。`adapter/drizzle/rate-limit.ts`）。1 人あたり 1 分に 60 回（超えたら 429 と `Retry-After`）、認証の失敗は IP あたり 1 分に 20 回、`sync_new_videos` は全員で 10 分に 1 回、`add_playlist` は 1 人 1 時間に 10 回（ツールのエラーにする）。数えられなかったときは止めずに通してログに残す。古い行は全件の同期の cron が消す。値は `server/mcp/rate-limit.ts` の `MCP_LIMITS` |
 | 大きさの上限 | リクエストの本文（例: 64KB）と、ツールの応答の件数（4.1）に上限を付ける。JSON-RPC のバッチは受け付けない |
 | エラーの中身 | `DatabaseError`・`StorageError`・`ExternalError` の中身は返さない（`server/http/error.ts` と同じく `logAppError` でログにだけ残し、固定の文言を返す） |
 
@@ -313,11 +313,14 @@ server/mcp/
   result.ts     AppError → ツールの結果（server/http/error.ts の考え方に合わせる）
   view.ts       HomeFeedView を MCP 向けに小さくする
   http.ts       401 のチャレンジ・Protected Resource Metadata・応答のヘッダー
+  gate.ts       入口の確認（Origin・本文の大きさ・認証・退会・1 人あたりのレート制限）
+  rate-limit.ts レート制限の値（MCP_LIMITS）と数え方
 server/http/void-auth.ts                  Void が作る better-auth のインスタンス（__voidAuth）を取り出す（9 章の C8）
 auth.ts                                   jwt() と oauthProvider(...) をプラグインに足す。/oauth2/consent の前にセッションの新しさを確かめる
 domain/Member/workflow/account.ts         checkOAuthConsent（ログインし直したばかりか）
 domain/Member/workflow/connection.ts      listConnectedApps・revokeConnectedApp
 adapter/drizzle/connection.ts             oauthConsent・oauthRefreshToken・oauthAccessToken・oauthClient を読む・消す
+adapter/drizzle/rate-limit.ts             rate_limits を 1 文で数える・古い行を消す（cron から）
 pages/oauth/consent.(server.ts|svelte)    同意画面
 src/lib/client/auth-client.ts             認可の途中の POST に oauth_query を付けるプラグイン（oauth-query.ts）
 src/lib/components/ProfileSheet.svelte    接続中のアプリの一覧と解除
@@ -370,19 +373,20 @@ src/lib/components/ProfileSheet.svelte    接続中のアプリの一覧と解�
 
 | # | 懸念 | 状態 | 内容・次にやること |
 | :-- | :-- | :-- | :-- |
-| C1 | 本番のドメイン以外（プレビュー版の URL・`*.workers.dev`）からも MCP と認可サーバーに届く | **一部対策済み** | `void.config.ts` の `preview_urls` を `false` にした。`workers_dev` は `true` のまま。発行者とリソースはリクエストの origin から作るので、ホストごとに別の認可サーバーになり、本番のドメインで発行したトークンは `*.workers.dev` では使えない（逆も同じ）。`*.workers.dev` を使っていなければ、`workers_dev: false` にするとよい |
+| C1 | 本番のドメイン以外（プレビュー版の URL・`*.workers.dev`）からも MCP と認可サーバーに届く | **一部対策済み・要対応** | `void.config.ts` の `preview_urls` を `false` にした。**これで CI のデプロイが止まるようになった**（C14）。`workers_dev` は `true` のまま。発行者とリソースはリクエストの origin から作るので、ホストごとに別の認可サーバーになり、本番のドメインで発行したトークンは `*.workers.dev` では使えない（逆も同じ） |
 | C2 | ログイン後の戻り先によるオープンリダイレクト | **対策済み** | `/login` に戻り先の引数（`?next=` など）を作らなかった。認可の続きは、プラグインが署名したクエリ（`sig`）からサーバーが決め、送り先は `validateRedirectUri` の許可リストで絞る。画面はサーバーの応答（`{ redirect, url }`）にだけ従う |
 | C3 | プロンプトインジェクションで、他のメンバーに被害が広がる | 後回し | `playlists:write` を持つ AI が概要欄の指示に従ってプレイリストを足すと、攻撃者の文章が soko に入り、他のメンバーの AI に届く。同期で全員に通知も飛ぶ。いまは「書き込みは同意画面で既定でオフ」「ツールの説明に注意書き」だけ。案: MCP から足したプレイリストは承認待ちにする、プレイリストの数と動画の数に上限を付ける |
 | C4 | CIMD を入れると、soko が任意の URL を取りに行く | 未使用 | 初期リリースは DCR だけ。CIMD を入れるときは、取りに行くホストを事業者のものに限り、サイズとタイムアウトに上限を付ける |
-| C5 | JWT の署名鍵が D1 にある | 後回し | 鍵は jwt プラグインの既定で暗号化して保存している（外していない）。D1 と `BETTER_AUTH_SECRET` の両方が漏れると、誰にでもなれるトークンを作られる。案: `jwks.rotationInterval` で定期的に作り直す。`BETTER_AUTH_SECRET` を作り直すときは、全員が接続し直す |
-| C6 | 退会しても、アクセストークンは最長 1 時間使える | 後回し | `/api/mcp` は DB を引かずに JWT を検証している。リフレッシュトークンは退会で消えるので、1 時間後には止まる。案: ユーザーがいるかだけ毎回確かめる（ツールはどうせ D1 を読むので、増える負担は小さい） |
-| C7 | レート制限がない | 後回し | `/api/mcp` と `sync_new_videos` に、まだレート制限がない。`sync_new_videos` を連打されると、YouTube の割り当てを使い切られる（通知は新着があるときだけ）。OAuth のエンドポイントには better-auth の既定があるが、Worker のインスタンスごとに数えている。案: Void の KV で固定窓のカウンタ（バインディングが増える）、better-auth の `rateLimit.storage: "database"` |
+| C5 | JWT の署名鍵が D1 にある | **対策済み** | 鍵は jwt プラグインの既定で暗号化して保存している（外していない）。`jwks.rotationInterval` で 30 日ごとに作り直し、古い鍵は 7 日だけ検証に使う（アクセストークンは 1 時間なので足りる）。D1 と `BETTER_AUTH_SECRET` の両方が漏れたときの備えは変わらない。`BETTER_AUTH_SECRET` を作り直すときは、全員が接続し直す |
+| C6 | 退会しても、アクセストークンは最長 1 時間使える | **対策済み** | `/api/mcp` の入口（`server/mcp/gate.ts`）で、毎回 `memberUsecase.getMemberStatus` でユーザーがいるかを確かめ、いなければ 401 にする（D1 の読み出しが 1 回増える）。確かめられなかったときは 500 |
+| C7 | レート制限がない | **対策済み** | 5.5 のとおり。D1 に数えるので、1 リクエストごとに書き込みが 1 回増える（soko の規模なら問題ない）。OAuth のエンドポイント（`/token` など）は better-auth の既定のまま（Worker のインスタンスごとに数える） |
 | C8 | Void の内部の値（`__voidAuth`）に頼っている | 受け入れる | Void は better-auth のインスタンスを公開の API で渡さないので、`server/http/void-auth.ts` で Context の `__voidAuth` を読んでいる（jwks・メタデータ・クライアント名）。Void の更新で取れなくなったら、`/api/mcp` と `.well-known` と同意画面が 500 になる（形を確かめて例外にしている）。Void を上げたら E2E で確かめる |
 | C9 | 依存が増えた | 受け入れる | `@modelcontextprotocol/sdk` は `express`・`ajv` などに依存し、サーバー側の出力（`dist/ssr`、ソースマップ込み）が 12MB から 13MB に増えた。`ajv` はコード生成（`new Function`）を使うので Workers では動かないが、検証器に `CfWorkerJsonSchemaValidator` を渡しているので使われない（開発サーバーの workerd で MCP の呼び出しが通ることを確かめた）。バージョンは固定し、上げたら E2E で確かめる |
 | C10 | `resource` を送らないクライアントは使えない | 受け入れる | プラグインは `resource` がないと不透明なトークンを出し、`/api/mcp` はそれを受け付けない。MCP の仕様に従うクライアントは送る |
 | C11 | ログアウトしても MCP は使い続けられる | 受け入れる | soko の Web でログアウトしても、`offline_access` のリフレッシュトークンは残る（OIDC の決まり）。止めるには、プロフィールの「接続中のアプリ」で解除する |
-| C12 | リダイレクト先の許可リストのホストが正しいか | 要確認 | `claude.ai`・`claude.com`・`chatgpt.com`・`chat.openai.com` は、各社のコールバック URL を確かめずに入れている。本番でつないで、`invalid_redirect` になったら `server/mcp/redirect.ts` を直す |
+| C12 | リダイレクト先の許可リストのホストが正しいか | 一部確認 | 本番の claude.ai からつながることを確かめた。ChatGPT（`chatgpt.com`・`chat.openai.com`）はまだ |
 | C13 | 監査ログの置き場所 | 受け入れる | `log()` の info で出している（Workers のログ）。保存期間は Workers のログの設定による |
+| C14 | `preview_urls: false` で、CI のデプロイが失敗する | **要対応** | Void はアップロードした Worker をプレビュー版の URL で確かめてから本番に出す。プレビュー版の URL がないと、`CLOUDFLARE_WORKERS_SUBDOMAIN`（アカウントの workers.dev のサブドメイン）が必要になる。ワークフローは `vars.CLOUDFLARE_WORKERS_SUBDOMAIN` を渡しているので、リポジトリの変数に設定すれば直る。#26・#27 のマージ後のデプロイはこれで止まった（マイグレーションは適用済み。テーブルを足しただけなので、古い版のままでも動く） |
 
 ## 参考
 
