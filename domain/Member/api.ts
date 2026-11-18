@@ -163,6 +163,30 @@ export type CheckPasskeyDeletionCmd = {
   passkeyCount: number;
 };
 
+/**
+ * CheckOAuthConsent 外部のアプリ (MCP のクライアント) への許可を受け付けてよいか確かめる
+ *
+ * 長く使えるリフレッシュトークンを渡すので, ログインし直したばかりのセッションだけが許可できる.
+ * 古ければ ForbiddenError (code: SESSION_NOT_FRESH)
+ */
+type CheckOAuthConsent = (
+  cmd: CheckOAuthConsentCmd,
+) => ResultAsync<void, AppError>;
+
+export type CheckOAuthConsentCmd = { sessionCreatedAt: Date };
+
+/**
+ * RevokeConnectedApp 外部のアプリへの許可を取り消す
+ *
+ * 同意と, そのアプリのリフレッシュトークンを消す (次の更新でトークンを受け取れなくなる).
+ * 発行済みのアクセストークンは期限 (最長 1 時間) まで使える. 許可していないアプリでも成功
+ */
+type RevokeConnectedApp = (
+  cmd: RevokeConnectedAppCmd,
+) => ResultAsync<void, AppError>;
+
+export type RevokeConnectedAppCmd = { userId: string; clientId: unknown };
+
 // ----------------------------------------------------------------------------
 // Queries
 // ----------------------------------------------------------------------------
@@ -219,6 +243,16 @@ export type AvatarFileView = {
   etag: string;
 };
 
+/**
+ * 接続中のアプリ (本人が許可した OAuth のクライアント) の一覧
+ */
+type ListConnectedApps = (
+  q: ListConnectedAppsQuery,
+) => ResultAsync<ConnectedAppsView, AppError>;
+
+export type ListConnectedAppsQuery = { userId: string };
+export type ConnectedAppsView = { apps: ConnectedAppDto[] };
+
 // ----------------------------------------------------------------------------
 // メンバー集約 ユースケース
 // ----------------------------------------------------------------------------
@@ -237,12 +271,17 @@ export interface MemberUsecase {
   removeAvatar: RemoveAvatar;
   cleanupDeletedUser: CleanupDeletedUser;
   checkPasskeyDeletion: CheckPasskeyDeletion;
+  checkOAuthConsent: CheckOAuthConsent;
+
+  // Commands: 外部のアプリ
+  revokeConnectedApp: RevokeConnectedApp;
 
   // Queries
   listInvites: ListInvites;
   getDisplayUser: GetDisplayUser;
   hasPasskey: HasPasskey;
   getAvatarFile: GetAvatarFile;
+  listConnectedApps: ListConnectedApps;
 }
 
 // ----------------------------------------------------------------------------
@@ -270,4 +309,18 @@ export type DisplayUserDto = {
   color: string;
   // このアプリで保存したアイコンのパスか, http(s) の URL. なければ null
   image: string | null;
+};
+
+/**
+ * ConnectedAppDto 接続中のアプリ
+ *
+ * 名前・URL はアプリが名乗ったもの (自己申告). 日時は ISO 8601
+ */
+export type ConnectedAppDto = {
+  clientId: string;
+  name: string | null;
+  uri: string | null;
+  scopes: string[];
+  consentedAt: string;
+  lastUsedAt: string | null;
 };

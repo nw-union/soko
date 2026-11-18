@@ -10,6 +10,7 @@ import { newDatabaseError, newStorageError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
 import type { AvatarStoragePort, ProfileRepositoryPort } from "../port.ts";
 import {
+  ensureFreshSession,
   ensurePasskeyDeletable,
   FRESH_AGE_SECONDS,
   newAccountWorkflow,
@@ -182,6 +183,34 @@ describe("checkPasskeyDeletion", () => {
 });
 
 // ----------------------------------------------------------------------------
+// checkOAuthConsent
+// ----------------------------------------------------------------------------
+describe("checkOAuthConsent", () => {
+  it("ログインし直したばかりなら受け付ける", async () => {
+    // Act:
+    const actual = await newFakes().wf.checkOAuthConsent({
+      sessionCreatedAt: new Date(NOW.getTime() - 60 * 1000),
+    });
+
+    // Assert:
+    expect(isErr(actual)).toBeFalse();
+  });
+
+  it("ログインから時間がたっていれば, SESSION_NOT_FRESH の ForbiddenError となる", async () => {
+    // Act:
+    const actual = await newFakes().wf.checkOAuthConsent({
+      sessionCreatedAt: new Date(NOW.getTime() - 11 * 60 * 1000),
+    });
+
+    // Assert:
+    expect(unwrapErr(actual)).toMatchObject({
+      type: "ForbiddenError",
+      code: "SESSION_NOT_FRESH",
+    });
+  });
+});
+
+// ----------------------------------------------------------------------------
 // hasPasskey
 // ----------------------------------------------------------------------------
 describe("hasPasskey", () => {
@@ -203,6 +232,24 @@ describe("hasPasskey", () => {
 // ----------------------------------------------------------------------------
 // Step
 // ----------------------------------------------------------------------------
+describe("ensureFreshSession", () => {
+  const now = new Date("2026-11-01T00:10:00Z");
+
+  it("10 分より前に作られたセッションなら受け付ける", () => {
+    const fresh = new Date(now.getTime() - (FRESH_AGE_SECONDS - 1) * 1000);
+    expect(isErr(ensureFreshSession(fresh, now))).toBeFalse();
+  });
+
+  it("10 分以上たっていれば, SESSION_NOT_FRESH の ForbiddenError となる", () => {
+    const stale = new Date(now.getTime() - FRESH_AGE_SECONDS * 1000);
+    expect(unwrapErr(ensureFreshSession(stale, now))).toEqual({
+      type: "ForbiddenError",
+      message: "Session is not fresh",
+      code: "SESSION_NOT_FRESH",
+    });
+  });
+});
+
 describe("ensurePasskeyDeletable", () => {
   const now = new Date("2026-11-01T00:10:00Z");
   const fresh = new Date(now.getTime() - (FRESH_AGE_SECONDS - 1) * 1000);

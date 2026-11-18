@@ -2,10 +2,13 @@
   "version": 1,
   "source": {
     "workers_dev": true,
-    "preview_urls": true,
+    "preview_urls": false,
     "routes": []
   },
   "resolved": {
+    "workers_dev": true,
+    "preview_urls": false,
+    "routes": [],
     "d1_databases": [
       {
         "binding": "DB",
@@ -15,9 +18,6 @@
     ],
     "name": "soko",
     "compatibility_date": "2026-02-24",
-    "workers_dev": true,
-    "preview_urls": true,
-    "routes": [],
     "r2_buckets": [
       {
         "binding": "STORAGE",
@@ -25,5 +25,5 @@
       }
     ]
   },
-  "text": "{\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"name\": \"soko\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"workers_dev\": true,\n  \"preview_urls\": true,\n  \"routes\": [],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"STORAGE\",\n      \"bucket_name\": \"soko-storage\"\n    }\n  ]\n}\n"
+  "text": "{\n  \"workers_dev\": true,\n  \"preview_urls\": false,\n  \"routes\": [],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"name\": \"soko\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"r2_buckets\": [\n    {\n      \"binding\": \"STORAGE\",\n      \"bucket_name\": \"soko-storage\"\n    }\n  ]\n}\n"
 }

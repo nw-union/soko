@@ -50,6 +50,8 @@ export default defineMiddleware(async (c, next) => {
     path === "/login" ||
     path === "/welcome" ||
     path.startsWith("/api/") ||
+    // OAuth・MCP のメタデータ（RFC 8414・RFC 9728）。MCP のクライアントがログインなしで読む
+    path.startsWith("/.well-known/") ||
     isFile;
   if (!isPublic && c.req.method === "GET") {
     if (!user) return c.redirect("/login");

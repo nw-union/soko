@@ -1,4 +1,5 @@
-// ワークフロー: アカウント (CheckPasskeyDeletion パスキーを削除してよいか確かめる・CleanupDeletedUser 退会したユーザーの後始末をする・パスキーを作ったか)
+// ワークフロー: アカウント (CheckPasskeyDeletion パスキーを削除してよいか確かめる・CheckOAuthConsent 外部のアプリへの許可を受け付けてよいか確かめる・CleanupDeletedUser 退会したユーザーの後始末をする・パスキーを作ったか)
+import { match } from "@nw-union/nw-utils/lib/match";
 import {
   err,
   ok,
@@ -34,6 +35,20 @@ type AccountRepository = Pick<
 >;
 
 // ----------------------------------------------------------------------------
+// Step: セッションの新しさの確認
+// ----------------------------------------------------------------------------
+/**
+ * ログインし直したばかりのセッションか確かめる. 古ければ ForbiddenError (code: SESSION_NOT_FRESH)
+ */
+export const ensureFreshSession = (
+  sessionCreatedAt: Date,
+  now: Date,
+): Result<void, ForbiddenError> =>
+  now.getTime() - sessionCreatedAt.getTime() >= FRESH_AGE_SECONDS * 1000
+    ? err(newForbiddenError("Session is not fresh", "SESSION_NOT_FRESH"))
+    : ok(undefined);
+
+// ----------------------------------------------------------------------------
 // Step: パスキーの削除の確認
 // ----------------------------------------------------------------------------
 /**
@@ -46,18 +61,21 @@ export const ensurePasskeyDeletable = (
   sessionCreatedAt: Date,
   passkeyCount: number,
   now: Date,
-): Result<void, ForbiddenError | ValidationError> => {
-  if (now.getTime() - sessionCreatedAt.getTime() >= FRESH_AGE_SECONDS * 1000)
-    return err(newForbiddenError("Session is not fresh", "SESSION_NOT_FRESH"));
-  if (passkeyCount <= 1)
-    return err(
-      newValidationErrorWithMessage(
-        "passkey",
-        "最後のパスキーは削除できません（ログインできなくなります）",
-      ),
-    );
-  return ok(undefined);
-};
+): Result<void, ForbiddenError | ValidationError> =>
+  match(ensureFreshSession(sessionCreatedAt, now))
+    .ok(
+      (): Result<void, ValidationError> =>
+        passkeyCount <= 1
+          ? err(
+              newValidationErrorWithMessage(
+                "passkey",
+                "最後のパスキーは削除できません（ログインできなくなります）",
+              ),
+            )
+          : ok(undefined),
+    )
+    .err((e): Result<void, ForbiddenError> => err(e))
+    .exhaustive();
 
 // ----------------------------------------------------------------------------
 // 実装
@@ -71,13 +89,23 @@ export const newAccountWorkflow = (
   clock: ClockPort,
 ): Pick<
   MemberUsecase,
-  "checkPasskeyDeletion" | "cleanupDeletedUser" | "hasPasskey"
+  | "checkPasskeyDeletion"
+  | "checkOAuthConsent"
+  | "cleanupDeletedUser"
+  | "hasPasskey"
 > => ({
   /**
    * パスキーを削除してよいか確かめる
    */
   checkPasskeyDeletion: async ({ sessionCreatedAt, passkeyCount }) =>
     ensurePasskeyDeletable(sessionCreatedAt, passkeyCount, clock.now()),
+
+  /**
+   * 外部のアプリ (MCP のクライアント) への許可を受け付けてよいか確かめる.
+   * 長く使えるリフレッシュトークンを渡すので, パスキーの追加と同じく, ログインし直したばかりのセッションだけにする
+   */
+  checkOAuthConsent: async ({ sessionCreatedAt }) =>
+    ensureFreshSession(sessionCreatedAt, clock.now()),
 
   /**
    * 退会したユーザーの後始末

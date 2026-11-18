@@ -9,6 +9,7 @@ describe("newMemberUsecase", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
     expect(Object.keys(uc).sort()).toEqual(
       [
@@ -25,11 +26,15 @@ describe("newMemberUsecase", () => {
         "removeAvatar",
         "cleanupDeletedUser",
         "checkPasskeyDeletion",
+        "checkOAuthConsent",
+        // Commands: 外部のアプリ
+        "revokeConnectedApp",
         // Queries
         "listInvites",
         "getDisplayUser",
         "hasPasskey",
         "getAvatarFile",
+        "listConnectedApps",
       ].sort(),
     );
   });

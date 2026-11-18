@@ -14,6 +14,7 @@ import {
 	type PushState,
 	pushState,
 } from "../client/push";
+import { knownScopes, SCOPE_LABELS } from "../client/oauth-scopes";
 import { swipeToClose } from "../client/swipe-to-close";
 
 // アプリのページはログイン必須（middleware/01.auth.ts）なので、user は必ずある
@@ -376,6 +377,48 @@ async function revokeInvite(id: number) {
 	await loadInvites();
 }
 
+// ---- 接続中のアプリ（MCP のクライアント: Claude・ChatGPT など） ----
+type ConnectedApp = {
+	clientId: string;
+	name: string | null;
+	uri: string | null;
+	scopes: string[];
+	consentedAt: string;
+	lastUsedAt: string | null;
+};
+let apps = $state<ConnectedApp[]>([]);
+let appsLoaded = $state(false);
+let appError = $state("");
+
+async function loadApps() {
+	const res = await fetch("/api/connections").catch(() => null);
+	appsLoaded = true;
+	if (!res?.ok) {
+		appError =
+			"接続中のアプリを読み込めませんでした。時間をおいて、もう一度お試しください";
+		return;
+	}
+	apps = ((await res.json()) as { apps: ConnectedApp[] }).apps;
+}
+
+async function revokeApp(app: ConnectedApp) {
+	const ok = await confirmDialog?.ask({
+		title: "接続を解除しますか？",
+		message: `「${app.name ?? "名前のないアプリ"}」は soko を使えなくなります（使用中の場合、最長 1 時間で切れます）。もう一度使うには、アプリから接続し直してください。`,
+		confirmLabel: "接続を解除",
+	});
+	if (!ok) return;
+	appError = "";
+	const res = await fetch(
+		`/api/connections?clientId=${encodeURIComponent(app.clientId)}`,
+		{ method: "DELETE" },
+	).catch(() => null);
+	if (!res?.ok)
+		appError =
+			"接続を解除できませんでした。時間をおいて、もう一度お試しください";
+	await loadApps();
+}
+
 // ---- アカウントの削除 ----
 let accountError = $state("");
 let deleting = $state(false);
@@ -419,6 +462,7 @@ export function open() {
 	canShare = typeof navigator.share === "function";
 	loadPasskeys();
 	loadInvites();
+	loadApps();
 	pushState()
 		.then((state) => (push = state))
 		.catch(() => (push = "unsupported"));
@@ -683,6 +727,34 @@ const bodySwipe = {
     {/if}
   </section>
 
+  <!-- 接続中のアプリ（Claude・ChatGPT などの AI から soko を使う許可）。名前はアプリが名乗ったもの -->
+  <section class="tile wide" aria-labelledby="apps-title">
+    <h2 id="apps-title">接続中のアプリ</h2>
+    {#if !appsLoaded}
+      <p class="status">読み込んでいます…</p>
+    {:else if apps.length === 0}
+      <p class="status">接続しているアプリはありません</p>
+    {:else}
+      <ul class="items">
+        {#each apps as app (app.clientId)}
+          <li>
+            <span class="item-name">
+              {app.name ?? "名前のないアプリ"}
+              <small>
+                {knownScopes(app.scopes).map((s) => SCOPE_LABELS[s]).join("・")}
+              </small>
+            </span>
+            <small>{new Date(app.lastUsedAt ?? app.consentedAt).toLocaleDateString("ja-JP")}</small>
+            <button type="button" class="btn small" onclick={() => revokeApp(app)}>接続を解除</button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+    {#if appError}
+      <p role="alert" class="error">{appError}</p>
+    {/if}
+  </section>
+
   <!-- 普段使う操作と分けるため、間隔を空けて一番下に置く -->
   <div class="wide account">
     <button type="button" class="tile btn logout" onclick={signOut}>ログアウト</button>
@@ -908,6 +980,12 @@ const bodySwipe = {
 
   .items small {
     opacity: 0.8;
+  }
+
+  /* 接続中のアプリの、許可した内容 */
+  .item-name small {
+    display: block;
+    font-weight: 400;
   }
 
   /* ガラスのボタン。タップできる高さは 44pt 以上（HIG） */

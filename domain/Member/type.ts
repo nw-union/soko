@@ -1,5 +1,11 @@
 import type { UserId } from "../shared/vo.ts";
-import type { HexColor, InviteToken, TokenHash, UserName } from "./vo.ts";
+import type {
+  HexColor,
+  InviteToken,
+  OAuthClientId,
+  TokenHash,
+  UserName,
+} from "./vo.ts";
 
 // ----------------------------------------------------------------------------
 // 招待
@@ -78,4 +84,25 @@ export interface ValidatedProfile {
   readonly type: "ValidatedProfile";
   readonly name?: UserName;
   readonly color?: HexColor | null;
+}
+
+// ----------------------------------------------------------------------------
+// 外部のアプリ (OAuth のクライアント)
+// ----------------------------------------------------------------------------
+/**
+ * 接続中のアプリ (本人が許可した OAuth のクライアント)
+ *
+ * 名前・URL はクライアントが登録のときに名乗ったもの (自己申告)
+ */
+export interface ConnectedApp {
+  readonly type: "ConnectedApp";
+  readonly clientId: OAuthClientId;
+  readonly name: string | null;
+  readonly uri: string | null;
+  // 許可したスコープ
+  readonly scopes: string[];
+  // 許可した日時 (同意を更新したら, その日時)
+  readonly consentedAt: Date;
+  // 最後にトークンを発行・更新した日時. なければ null
+  readonly lastUsedAt: Date | null;
 }
