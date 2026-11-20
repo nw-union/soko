@@ -384,7 +384,7 @@ src/lib/components/ProfileSheet.svelte    接続中のアプリの一覧と解�
 | C9 | 依存が増えた | 受け入れる | `@modelcontextprotocol/sdk` は `express`・`ajv` などに依存し、サーバー側の出力（`dist/ssr`、ソースマップ込み）が 12MB から 13MB に増えた。`ajv` はコード生成（`new Function`）を使うので Workers では動かないが、検証器に `CfWorkerJsonSchemaValidator` を渡しているので使われない（開発サーバーの workerd で MCP の呼び出しが通ることを確かめた）。バージョンは固定し、上げたら E2E で確かめる |
 | C10 | `resource` を送らないクライアントは使えない | 受け入れる | プラグインは `resource` がないと不透明なトークンを出し、`/api/mcp` はそれを受け付けない。MCP の仕様に従うクライアントは送る |
 | C11 | ログアウトしても MCP は使い続けられる | 受け入れる | soko の Web でログアウトしても、`offline_access` のリフレッシュトークンは残る（OIDC の決まり）。止めるには、プロフィールの「接続中のアプリ」で解除する |
-| C12 | リダイレクト先の許可リストのホストが正しいか | 一部確認 | 本番の claude.ai からつながることを確かめた。ChatGPT（`chatgpt.com`・`chat.openai.com`）はまだ |
+| C12 | リダイレクト先の許可リストのホストが正しいか | 一部確認 | 本番の claude.ai からつながることを確かめた。ChatGPT（`chatgpt.com`・`chat.openai.com`）はまだ。Muse（Meta の AI エージェント）は、ホストではなくコールバックの URL `https://agent.meta.ai/api/hatch/oauth/callback` を完全一致で許可した（`ALLOWED_REDIRECT_URIS`）。Muse が認可とトークンのリクエストに `resource` を付けないと、`/api/mcp` は 401 になる（C10） |
 | C13 | 監査ログの置き場所 | 受け入れる | `log()` の info で出している（Workers のログ）。保存期間は Workers のログの設定による |
 | C14 | `preview_urls: false` で、CI のデプロイが失敗する | **要対応** | Void はアップロードした Worker をプレビュー版の URL で確かめてから本番に出す。プレビュー版の URL がないと、`CLOUDFLARE_WORKERS_SUBDOMAIN`（アカウントの workers.dev のサブドメイン）が必要になる。ワークフローは `vars.CLOUDFLARE_WORKERS_SUBDOMAIN` を渡しているので、リポジトリの変数に設定すれば直る。#26・#27 のマージ後のデプロイはこれで止まった（マイグレーションは適用済み。テーブルを足しただけなので、古い版のままでも動く） |
 

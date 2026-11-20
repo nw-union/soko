@@ -6,6 +6,8 @@ describe("isAllowedRedirectUri", () => {
     "https://claude.ai/api/mcp/auth_callback",
     "https://claude.com/api/mcp/auth_callback",
     "https://chatgpt.com/connector_platform_oauth_redirect",
+    // Muse は URL の完全一致
+    "https://agent.meta.ai/api/hatch/oauth/callback",
     "http://localhost:33418/callback",
     "http://127.0.0.1:6274/oauth/callback",
     "http://[::1]:8080/cb",
@@ -18,6 +20,18 @@ describe("isAllowedRedirectUri", () => {
     "https://evil.example.com/cb",
     "https://claude.ai.evil.example.com/cb",
     "https://evilclaude.ai/cb",
+    // Muse の URL と完全一致しないもの（同じホストの別のパス・前方一致・クエリ・大文字・末尾のスラッシュ）
+    "https://agent.meta.ai/",
+    "https://agent.meta.ai/other",
+    "https://agent.meta.ai/api/hatch/oauth/callback/evil",
+    "https://agent.meta.ai/api/hatch/oauth/callback?x=1",
+    "https://agent.meta.ai/api/hatch/oauth/callback/",
+    "https://AGENT.meta.ai/api/hatch/oauth/callback",
+    "http://agent.meta.ai/api/hatch/oauth/callback",
+    "https://evil.meta.ai/api/hatch/oauth/callback",
+    // 自分のドメインや任意の HTTPS も通さない
+    "https://soko.nw-union.net/callback",
+    "https://example.com/callback",
     // HTTP の外部ホスト
     "http://claude.ai/api/mcp/auth_callback",
     // ポート付きの HTTPS
