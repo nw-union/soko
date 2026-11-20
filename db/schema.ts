@@ -110,3 +110,12 @@ export const invites = sqliteTable("invites", {
   usedByUserId: text("used_by_user_id"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
+
+// レート制限の回数（固定の時間窓）。key は「何を・誰が」（例: mcp:user:<userId>、mcp:sync）。
+// 窓が変わったら 1 から数え直す（adapter/drizzle/rate-limit.ts が 1 文で数える）。古い行は全件の同期の cron が消す
+export const rateLimits = sqliteTable("rate_limits", {
+  key: text("key").primaryKey(),
+  // 窓の始まり（Unix 時間の秒）
+  windowStart: integer("window_start").notNull(),
+  count: integer("count").notNull(),
+});

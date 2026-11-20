@@ -44,6 +44,8 @@ const ALL: McpPrincipal["scopes"] = [
 const newFakes = () => {
   const calls: { op: string; arg: unknown }[] = [];
   const logs: string[] = [];
+  const rateLimits: string[] = [];
+  const blocked = new Set<string>();
   const log = {
     debug: () => {},
     info: (m: string) => logs.push(`info ${m}`),
@@ -93,13 +95,19 @@ const newFakes = () => {
         });
       },
     },
+    checkRateLimit: async (limit, subject) => {
+      rateLimits.push(subject ? `${limit.name}:${subject}` : limit.name);
+      return blocked.has(limit.name)
+        ? { allowed: false, retryAfter: 120 }
+        : { allowed: true };
+    },
     syncNew: async () => {
       calls.push({ op: "syncNew", arg: null });
       return { type: "Synced", addedVideoIds: [], links: 0 };
     },
     log,
   };
-  return { deps, calls, logs };
+  return { deps, calls, logs, rateLimits, blocked };
 };
 
 const rpc = async (
@@ -306,5 +314,34 @@ describe("tools/call", () => {
     const line = logs.find((l) => l.includes("tool=get_video_detail"));
     expect(line).toContain("user=user1 client=client1 ok=true");
     expect(line).not.toContain("dQw4w9WgXcQ");
+  });
+
+  test("add_playlist: 1 人あたりで数え, 上限を超えたら追加しない", async () => {
+    const { deps, calls, rateLimits, blocked } = newFakes();
+    await call(principal(ALL), deps, "add_playlist", { playlistId: "PLabc" });
+    expect(rateLimits).toEqual(["mcp:add-playlist:user1"]);
+
+    blocked.add("mcp:add-playlist");
+    const res = await call(principal(ALL), deps, "add_playlist", {
+      playlistId: "PLdef",
+    });
+    expect(res.result?.isError).toBeTrue();
+    expect(res.result?.content?.[0]?.text).toContain("2 分ほど待って");
+    expect(calls.filter((c) => c.op === "createPlaylist")).toHaveLength(1);
+  });
+
+  test("sync_new_videos: 全員で数え, 上限を超えたら同期しない", async () => {
+    const { deps, calls, rateLimits, blocked } = newFakes();
+    blocked.add("mcp:sync");
+    const res = await call(principal(ALL), deps, "sync_new_videos");
+    expect(rateLimits).toEqual(["mcp:sync"]);
+    expect(res.result?.isError).toBeTrue();
+    expect(calls).toEqual([]);
+  });
+
+  test("読み取りのツールは, ツールごとには数えない", async () => {
+    const { deps, rateLimits } = newFakes();
+    await call(principal(ALL), deps, "get_home_feed");
+    expect(rateLimits).toEqual([]);
   });
 });

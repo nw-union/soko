@@ -14,6 +14,16 @@ export const newProfileRepository = (db: Database): ProfileRepositoryPort => ({
       (rows) => rows[0]?.count ?? 0,
     ),
 
+  existsUser: (user) =>
+    stepAsync(
+      query("existsUser", () =>
+        db.all<{ found: number }>(
+          sql`SELECT 1 AS found FROM user WHERE id = ${user} LIMIT 1`,
+        ),
+      ),
+      (rows) => rows.length > 0,
+    ),
+
   readImage: (user) =>
     stepAsync(
       query("readImage", () =>

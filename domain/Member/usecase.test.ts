@@ -33,6 +33,7 @@ describe("newMemberUsecase", () => {
         "listInvites",
         "getDisplayUser",
         "hasPasskey",
+        "getMemberStatus",
         "getAvatarFile",
         "listConnectedApps",
       ].sort(),

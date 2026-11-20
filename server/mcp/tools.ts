@@ -13,6 +13,12 @@ import { z } from "zod";
 import type { ContentUsecase, NewSyncedEvt } from "../../domain/Content/api.ts";
 import type { AppError } from "../../domain/shared/error.ts";
 import type { McpPrincipal } from "./auth.ts";
+import {
+  type CheckRateLimit,
+  formatRetryAfter,
+  MCP_LIMITS,
+  type RateLimit,
+} from "./rate-limit.ts";
 import { INTERNAL_MESSAGE, toolAppError, toolError, toolOk } from "./result.ts";
 import type { McpScope } from "./scope.ts";
 import { toMcpHomeFeed } from "./view.ts";
@@ -31,6 +37,8 @@ export type McpToolDeps = {
   >;
   // 差分の同期（server/process/sync.ts の runSyncNew。動画が増えたら通知まで行う）
   syncNew: () => Promise<NewSyncedEvt>;
+  // レート制限（server/mcp/rate-limit.ts）
+  checkRateLimit: CheckRateLimit;
   log: Logger;
 };
 
@@ -64,6 +72,21 @@ const respond = async <T>(
     .ok((v) => toolOk(onOk(v)))
     .err((e) => toolAppError(deps.log, e))
     .exhaustive();
+
+/** 回数の上限を超えていたら、ツールのエラーを返す。超えていなければ run の結果 */
+const limited = async (
+  deps: McpToolDeps,
+  limit: RateLimit,
+  subject: string | undefined,
+  run: () => Promise<CallToolResult>,
+): Promise<CallToolResult> => {
+  const r = await deps.checkRateLimit(limit, subject);
+  return r.allowed
+    ? run()
+    : toolError(
+        `回数の上限に達しました。${formatRetryAfter(r.retryAfter)}ほど待ってから、もう一度お試しください`,
+      );
+};
 
 const youtubeIdInput = {
   youtubeId: z
@@ -174,7 +197,7 @@ export const MCP_TOOLS: readonly McpTool[] = [
     name: "add_playlist",
     title: "プレイリストを追加する",
     description:
-      "YouTube のプレイリストを、soko が動画を取り込む対象に追加します。メンバー全員のホームに影響します。動画は次の同期で取り込まれます。プレイリスト ID（PL で始まる文字列）を渡してください。",
+      "YouTube のプレイリストを、soko が動画を取り込む対象に追加します。メンバー全員のホームに影響します。動画は次の同期で取り込まれます。プレイリスト ID（PL で始まる文字列）を渡してください（1 人 1 時間に 10 回まで）。",
     scope: "playlists:write",
     annotations: {
       readOnlyHint: false,
@@ -187,25 +210,27 @@ export const MCP_TOOLS: readonly McpTool[] = [
         .string()
         .describe("YouTube のプレイリスト ID（例: PLxxxxxxxxxxxxxxxx）"),
     },
-    run: (p, args, deps) => {
-      deps.log.info(
-        `mcp: add_playlist user=${p.userId} client=${p.clientId} playlistId=${String(args.playlistId)}`,
-      );
-      return respond(
-        deps.content.createPlaylist({
-          playlistId:
-            typeof args.playlistId === "string" ? args.playlistId : "",
-        }),
-        deps,
-        (evt) => evt,
-      );
-    },
+    // 1 人 1 時間に 10 回まで
+    run: (p, args, deps) =>
+      limited(deps, MCP_LIMITS.addPlaylist, p.userId, () => {
+        deps.log.info(
+          `mcp: add_playlist user=${p.userId} client=${p.clientId} playlistId=${String(args.playlistId)}`,
+        );
+        return respond(
+          deps.content.createPlaylist({
+            playlistId:
+              typeof args.playlistId === "string" ? args.playlistId : "",
+          }),
+          deps,
+          (evt) => evt,
+        );
+      }),
   },
   {
     name: "sync_new_videos",
     title: "新着を取り込む",
     description:
-      "登録しているプレイリストに増えた動画を、今すぐ soko に取り込みます（差分の同期）。新しい動画があると、メンバー全員にプッシュ通知が届きます。定期的にも自動で実行されているので、急ぐときだけ使ってください。",
+      "登録しているプレイリストに増えた動画を、今すぐ soko に取り込みます（差分の同期）。新しい動画があると、メンバー全員にプッシュ通知が届きます。定期的にも自動で実行されているので、急ぐときだけ使ってください（全員で 10 分に 1 回まで）。",
     scope: "sync:run",
     annotations: {
       readOnlyHint: false,
@@ -214,17 +239,19 @@ export const MCP_TOOLS: readonly McpTool[] = [
       openWorldHint: true,
     },
     inputSchema: {},
-    run: async (p, _args, deps) => {
-      deps.log.info(
-        `mcp: sync_new_videos user=${p.userId} client=${p.clientId}`,
-      );
-      try {
-        return toolOk(await deps.syncNew());
-      } catch {
-        // runSyncNew は失敗を例外にし, 中身はそこでログに残している
-        return toolError(INTERNAL_MESSAGE);
-      }
-    },
+    // 全員で 10 分に 1 回まで（YouTube の割り当てを守る）
+    run: (p, _args, deps) =>
+      limited(deps, MCP_LIMITS.sync, undefined, async () => {
+        deps.log.info(
+          `mcp: sync_new_videos user=${p.userId} client=${p.clientId}`,
+        );
+        try {
+          return toolOk(await deps.syncNew());
+        } catch {
+          // runSyncNew は失敗を例外にし, 中身はそこでログに残している
+          return toolError(INTERNAL_MESSAGE);
+        }
+      }),
   },
 ];
 

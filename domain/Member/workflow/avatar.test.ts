@@ -45,6 +45,7 @@ const newFakes = (
 
   const repo: ProfileRepositoryPort = {
     countPasskeys: () => okAsync(0),
+    existsUser: () => okAsync(true),
     readImage: (user) => okAsync(images.get(user) ?? null),
     updateImage: (user, image, now) => {
       images.set(user, image);
@@ -92,6 +93,7 @@ const body = new ReadableStream();
 const newQueryFakes = (passkeys = 0, failGet = false) => {
   const repo: ProfileRepositoryPort = {
     countPasskeys: (user) => okAsync(user === "user1" ? passkeys : 0),
+    existsUser: (user) => okAsync(user === "user1"),
     readImage: notUsed,
     updateImage: notUsed,
     deleteUserData: notUsed,

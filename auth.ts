@@ -209,6 +209,11 @@ export default defineAuth(({ defaults }) => {
       // OAuth のアクセストークン（JWT）の署名。鍵は DB（jwks）に暗号化して保存される（暗号化は外さない）
       jwt({
         jwt: { issuer: oauthIssuer(origin) },
+        // 署名の鍵を 30 日ごとに作り直す。古い鍵は 7 日だけ検証に使える（アクセストークンは 1 時間なので足りる）
+        jwks: {
+          rotationInterval: 30 * 24 * 60 * 60,
+          gracePeriod: 7 * 24 * 60 * 60,
+        },
         // ログイン中のセッションに JWT を付けない（使わないので、作らない）
         disableSettingJwtHeader: true,
       }),
