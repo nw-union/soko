@@ -21,7 +21,6 @@ export const POST = defineHandler(async (c) => {
       requestOrigin: c.req.header("origin"),
       contentLength: c.req.header("content-length"),
       authorization: c.req.header("authorization"),
-      ip: c.req.header("cf-connecting-ip"),
     },
     {
       verify: newAccessTokenVerifier(origin, () => auth.api.getJwks()),

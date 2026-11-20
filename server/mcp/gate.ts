@@ -19,8 +19,6 @@ export type GateRequest = {
   requestOrigin: string | undefined;
   contentLength: string | undefined;
   authorization: string | undefined;
-  // クライアントの IP（Cloudflare の cf-connecting-ip）。わからなければ undefined
-  ip: string | undefined;
 };
 
 export type GateDeps = {
@@ -68,12 +66,7 @@ export const gateMcpRequest = async (
   const token = parseBearer(req.authorization);
   const principal = token ? await deps.verify(token) : null;
   if (!principal) {
-    // 失敗は IP ごとに数える（総当たりと、鍵を読む D1 の負担を抑える）
-    const limited = await deps.checkRateLimit(
-      MCP_LIMITS.authFailure,
-      req.ip ?? "unknown",
-    );
-    if (!limited.allowed) return tooMany(limited.retryAfter);
+    // 失敗は数えない（トークンは署名付きで、総当たりでは当たらないため）
     if (token) deps.log.info("mcp: アクセストークンを検証できませんでした");
     return reject(
       401,

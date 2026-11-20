@@ -18,7 +18,6 @@ const request = (over: Partial<GateRequest> = {}): GateRequest => ({
   requestOrigin: undefined,
   contentLength: "100",
   authorization: "Bearer good",
-  ip: "203.0.113.1",
   ...over,
 });
 
@@ -85,7 +84,7 @@ describe("gateMcpRequest", () => {
     ["トークンなし", undefined, false],
     ["正しくないトークン", "Bearer bad", true],
   ])(
-    "%s は 401 で, 認可の流れへの案内を付け, IP ごとに数える",
+    "%s は 401 で, 認可の流れへの案内を付け, 回数は数えない",
     async (_, authorization, invalid) => {
       const { deps, counted } = newFakes();
       const r = await gateMcpRequest(request({ authorization }), deps);
@@ -96,23 +95,9 @@ describe("gateMcpRequest", () => {
         `resource_metadata="${ORIGIN}/.well-known/oauth-protected-resource/api/mcp"`,
       );
       expect(header.includes('error="invalid_token"')).toBe(invalid);
-      expect(counted).toEqual(["mcp:auth-failure:203.0.113.1"]);
+      expect(counted).toEqual([]);
     },
   );
-
-  test("認証の失敗が多すぎる IP は 429", async () => {
-    const { deps } = newFakes({ blocked: ["mcp:auth-failure"] });
-    const r = await gateMcpRequest(
-      request({ authorization: "Bearer bad" }),
-      deps,
-    );
-    expect(r).toEqual({
-      type: "Reject",
-      status: 429,
-      body: { message: "Too Many Requests" },
-      headers: { "Retry-After": "42" },
-    });
-  });
 
   test("退会したユーザーのトークンは 401", async () => {
     const { deps, counted } = newFakes({ active: false });

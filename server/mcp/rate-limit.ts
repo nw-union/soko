@@ -17,8 +17,6 @@ export type RateLimit = {
 export const MCP_LIMITS = {
   // 1 人あたりの MCP のリクエスト（ツールの一覧・呼び出しなど）
   user: { name: "mcp:user", max: 60, windowSeconds: 60 },
-  // IP あたりの、認証に失敗したリクエスト（トークンの総当たりと、鍵を読む D1 の負担を抑える）
-  authFailure: { name: "mcp:auth-failure", max: 20, windowSeconds: 60 },
   // 新着の取り込み（全員で）。YouTube の割り当てを守る。定期の取り込みは cron が別に行う
   sync: { name: "mcp:sync", max: 1, windowSeconds: 10 * 60 },
   // 1 人あたりのプレイリストの追加
@@ -33,7 +31,7 @@ export type RateLimitResult =
 /** 1 回数えて、許すか決める */
 export type CheckRateLimit = (
   limit: RateLimit,
-  // 誰の回数か（ユーザー ID・IP など）。全員で数えるものは省く
+  // 誰の回数か（ユーザー ID など）。全員で数えるものは省く
   subject?: string,
 ) => Promise<RateLimitResult>;
 
