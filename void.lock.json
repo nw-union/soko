@@ -1,12 +1,12 @@
 {
   "version": 1,
   "source": {
-    "workers_dev": true,
+    "workers_dev": false,
     "preview_urls": false,
     "routes": []
   },
   "resolved": {
-    "workers_dev": true,
+    "workers_dev": false,
     "preview_urls": false,
     "routes": [],
     "d1_databases": [
@@ -27,5 +27,5 @@
     ],
     "account_id": "de4fb9e6068c5316ec2332e738698b44"
   },
-  "text": "{\n  \"workers_dev\": true,\n  \"preview_urls\": false,\n  \"routes\": [],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"migrations_dir\": \"./db/migrations\",\n      \"database_id\": \"80ac3304-0d44-455d-8bbe-169fa7a1c6c8\"\n    }\n  ],\n  \"name\": \"soko\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"r2_buckets\": [\n    {\n      \"binding\": \"STORAGE\",\n      \"bucket_name\": \"soko-storage\"\n    }\n  ],\n  \"account_id\": \"de4fb9e6068c5316ec2332e738698b44\"\n}\n"
+  "text": "{\n  \"workers_dev\": false,\n  \"preview_urls\": false,\n  \"routes\": [],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"soko-db\",\n      \"migrations_dir\": \"./db/migrations\",\n      \"database_id\": \"80ac3304-0d44-455d-8bbe-169fa7a1c6c8\"\n    }\n  ],\n  \"name\": \"soko\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"r2_buckets\": [\n    {\n      \"binding\": \"STORAGE\",\n      \"bucket_name\": \"soko-storage\"\n    }\n  ],\n  \"account_id\": \"de4fb9e6068c5316ec2332e738698b44\"\n}\n"
 }

@@ -61,9 +61,7 @@
       "indexes": {
         "invites_token_hash_unique": {
           "name": "invites_token_hash_unique",
-          "columns": [
-            "token_hash"
-          ],
+          "columns": ["token_hash"],
           "isUnique": true
         }
       },
@@ -101,9 +99,7 @@
       "indexes": {
         "playlist_videos_video_idx": {
           "name": "playlist_videos_video_idx",
-          "columns": [
-            "video_id"
-          ],
+          "columns": ["video_id"],
           "isUnique": false
         }
       },
@@ -112,12 +108,8 @@
           "name": "playlist_videos_playlist_id_playlists_id_fk",
           "tableFrom": "playlist_videos",
           "tableTo": "playlists",
-          "columnsFrom": [
-            "playlist_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["playlist_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -125,22 +117,15 @@
           "name": "playlist_videos_video_id_videos_id_fk",
           "tableFrom": "playlist_videos",
           "tableTo": "videos",
-          "columnsFrom": [
-            "video_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["video_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "playlist_videos_playlist_id_video_id_pk": {
-          "columns": [
-            "playlist_id",
-            "video_id"
-          ],
+          "columns": ["playlist_id", "video_id"],
           "name": "playlist_videos_playlist_id_video_id_pk"
         }
       },
@@ -200,9 +185,7 @@
       "indexes": {
         "playlists_playlist_id_unique": {
           "name": "playlists_playlist_id_unique",
-          "columns": [
-            "playlist_id"
-          ],
+          "columns": ["playlist_id"],
           "isUnique": true
         }
       },
@@ -261,16 +244,12 @@
       "indexes": {
         "push_subscriptions_endpoint_unique": {
           "name": "push_subscriptions_endpoint_unique",
-          "columns": [
-            "endpoint"
-          ],
+          "columns": ["endpoint"],
           "isUnique": true
         },
         "push_subscriptions_user_idx": {
           "name": "push_subscriptions_user_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -340,10 +319,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "video_watches_user_id_youtube_id_pk": {
-          "columns": [
-            "user_id",
-            "youtube_id"
-          ],
+          "columns": ["user_id", "youtube_id"],
           "name": "video_watches_user_id_youtube_id_pk"
         }
       },
@@ -429,9 +405,7 @@
       "indexes": {
         "videos_youtube_id_unique": {
           "name": "videos_youtube_id_unique",
-          "columns": [
-            "youtube_id"
-          ],
+          "columns": ["youtube_id"],
           "isUnique": true
         }
       },
@@ -538,9 +512,7 @@
       "indexes": {
         "account_userId_idx": {
           "name": "account_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -549,12 +521,8 @@
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -734,44 +702,32 @@
       "indexes": {
         "oauthAccessToken_token_unique": {
           "name": "oauthAccessToken_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "oauthAccessToken_clientId_idx": {
           "name": "oauthAccessToken_clientId_idx",
-          "columns": [
-            "clientId"
-          ],
+          "columns": ["clientId"],
           "isUnique": false
         },
         "oauthAccessToken_sessionId_idx": {
           "name": "oauthAccessToken_sessionId_idx",
-          "columns": [
-            "sessionId"
-          ],
+          "columns": ["sessionId"],
           "isUnique": false
         },
         "oauthAccessToken_userId_idx": {
           "name": "oauthAccessToken_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         },
         "oauthAccessToken_authorizationCodeId_idx": {
           "name": "oauthAccessToken_authorizationCodeId_idx",
-          "columns": [
-            "authorizationCodeId"
-          ],
+          "columns": ["authorizationCodeId"],
           "isUnique": false
         },
         "oauthAccessToken_refreshId_idx": {
           "name": "oauthAccessToken_refreshId_idx",
-          "columns": [
-            "refreshId"
-          ],
+          "columns": ["refreshId"],
           "isUnique": false
         }
       },
@@ -780,12 +736,8 @@
           "name": "oauthAccessToken_clientId_oauthClient_clientId_fk",
           "tableFrom": "oauthAccessToken",
           "tableTo": "oauthClient",
-          "columnsFrom": [
-            "clientId"
-          ],
-          "columnsTo": [
-            "clientId"
-          ],
+          "columnsFrom": ["clientId"],
+          "columnsTo": ["clientId"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -793,12 +745,8 @@
           "name": "oauthAccessToken_sessionId_session_id_fk",
           "tableFrom": "oauthAccessToken",
           "tableTo": "session",
-          "columnsFrom": [
-            "sessionId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sessionId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -806,12 +754,8 @@
           "name": "oauthAccessToken_userId_user_id_fk",
           "tableFrom": "oauthAccessToken",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -819,12 +763,8 @@
           "name": "oauthAccessToken_refreshId_oauthRefreshToken_id_fk",
           "tableFrom": "oauthAccessToken",
           "tableTo": "oauthRefreshToken",
-          "columnsFrom": [
-            "refreshId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["refreshId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -899,24 +839,17 @@
       "indexes": {
         "oauthClientResource_clientId_idx": {
           "name": "oauthClientResource_clientId_idx",
-          "columns": [
-            "clientId"
-          ],
+          "columns": ["clientId"],
           "isUnique": false
         },
         "oauthClientResource_resourceId_idx": {
           "name": "oauthClientResource_resourceId_idx",
-          "columns": [
-            "resourceId"
-          ],
+          "columns": ["resourceId"],
           "isUnique": false
         },
         "oauthClientResource_clientId_resourceId_uidx": {
           "name": "oauthClientResource_clientId_resourceId_uidx",
-          "columns": [
-            "clientId",
-            "resourceId"
-          ],
+          "columns": ["clientId", "resourceId"],
           "isUnique": true
         }
       },
@@ -925,12 +858,8 @@
           "name": "oauthClientResource_clientId_oauthClient_clientId_fk",
           "tableFrom": "oauthClientResource",
           "tableTo": "oauthClient",
-          "columnsFrom": [
-            "clientId"
-          ],
-          "columnsTo": [
-            "clientId"
-          ],
+          "columnsFrom": ["clientId"],
+          "columnsTo": ["clientId"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -938,12 +867,8 @@
           "name": "oauthClientResource_resourceId_oauthResource_identifier_fk",
           "tableFrom": "oauthClientResource",
           "tableTo": "oauthResource",
-          "columnsFrom": [
-            "resourceId"
-          ],
-          "columnsTo": [
-            "identifier"
-          ],
+          "columnsFrom": ["resourceId"],
+          "columnsTo": ["identifier"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1211,16 +1136,12 @@
       "indexes": {
         "oauthClient_clientId_unique": {
           "name": "oauthClient_clientId_unique",
-          "columns": [
-            "clientId"
-          ],
+          "columns": ["clientId"],
           "isUnique": true
         },
         "oauthClient_userId_idx": {
           "name": "oauthClient_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -1229,12 +1150,8 @@
           "name": "oauthClient_userId_user_id_fk",
           "tableFrom": "oauthClient",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1313,16 +1230,12 @@
       "indexes": {
         "oauthConsent_clientId_idx": {
           "name": "oauthConsent_clientId_idx",
-          "columns": [
-            "clientId"
-          ],
+          "columns": ["clientId"],
           "isUnique": false
         },
         "oauthConsent_userId_idx": {
           "name": "oauthConsent_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -1331,12 +1244,8 @@
           "name": "oauthConsent_clientId_oauthClient_clientId_fk",
           "tableFrom": "oauthConsent",
           "tableTo": "oauthClient",
-          "columnsFrom": [
-            "clientId"
-          ],
-          "columnsTo": [
-            "clientId"
-          ],
+          "columnsFrom": ["clientId"],
+          "columnsTo": ["clientId"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1344,12 +1253,8 @@
           "name": "oauthConsent_userId_user_id_fk",
           "tableFrom": "oauthConsent",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1491,37 +1396,27 @@
       "indexes": {
         "oauthRefreshToken_token_unique": {
           "name": "oauthRefreshToken_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "oauthRefreshToken_clientId_idx": {
           "name": "oauthRefreshToken_clientId_idx",
-          "columns": [
-            "clientId"
-          ],
+          "columns": ["clientId"],
           "isUnique": false
         },
         "oauthRefreshToken_sessionId_idx": {
           "name": "oauthRefreshToken_sessionId_idx",
-          "columns": [
-            "sessionId"
-          ],
+          "columns": ["sessionId"],
           "isUnique": false
         },
         "oauthRefreshToken_userId_idx": {
           "name": "oauthRefreshToken_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         },
         "oauthRefreshToken_authorizationCodeId_idx": {
           "name": "oauthRefreshToken_authorizationCodeId_idx",
-          "columns": [
-            "authorizationCodeId"
-          ],
+          "columns": ["authorizationCodeId"],
           "isUnique": false
         }
       },
@@ -1530,12 +1425,8 @@
           "name": "oauthRefreshToken_clientId_oauthClient_clientId_fk",
           "tableFrom": "oauthRefreshToken",
           "tableTo": "oauthClient",
-          "columnsFrom": [
-            "clientId"
-          ],
-          "columnsTo": [
-            "clientId"
-          ],
+          "columnsFrom": ["clientId"],
+          "columnsTo": ["clientId"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1543,12 +1434,8 @@
           "name": "oauthRefreshToken_sessionId_session_id_fk",
           "tableFrom": "oauthRefreshToken",
           "tableTo": "session",
-          "columnsFrom": [
-            "sessionId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sessionId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1556,12 +1443,8 @@
           "name": "oauthRefreshToken_userId_user_id_fk",
           "tableFrom": "oauthRefreshToken",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1682,9 +1565,7 @@
       "indexes": {
         "oauthResource_identifier_unique": {
           "name": "oauthResource_identifier_unique",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": true
         }
       },
@@ -1777,16 +1658,12 @@
       "indexes": {
         "passkey_userId_idx": {
           "name": "passkey_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         },
         "passkey_credentialID_idx": {
           "name": "passkey_credentialID_idx",
-          "columns": [
-            "credentialID"
-          ],
+          "columns": ["credentialID"],
           "isUnique": false
         }
       },
@@ -1795,12 +1672,8 @@
           "name": "passkey_userId_user_id_fk",
           "tableFrom": "passkey",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1872,16 +1745,12 @@
       "indexes": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "session_userId_idx": {
           "name": "session_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -1890,12 +1759,8 @@
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1974,9 +1839,7 @@
       "indexes": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -2034,9 +1897,7 @@
       "indexes": {
         "verification_identifier_idx": {
           "name": "verification_identifier_idx",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": false
         }
       },
