@@ -569,7 +569,7 @@ const bodySwipe = {
       {#each slideList as video, i (video.youtubeId)}
         <a class="hero" href={video.url} target="_blank" rel="noopener noreferrer" onclick={(e) => heroClick(e, video)}>
           <span class="hero-thumb">
-            <img use:thumbnailFallback src={video.thumbnail} alt="" decoding="async" loading={i === 0 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : "auto"} />
+            <img class="hero-img" use:thumbnailFallback src={video.thumbnail} alt="" decoding="async" loading={i === 0 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : "auto"} />
             {#if previewOn && !playing && !playlistOpen && video.youtubeId === previewId}
               <iframe
                 class="preview"
@@ -1024,7 +1024,14 @@ const bodySwipe = {
     -webkit-tap-highlight-color: transparent;
   }
 
-  .hero:active img {
+  .hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hero:active .hero-img {
     opacity: 0.85;
   }
 
@@ -1108,13 +1115,6 @@ const bodySwipe = {
   /* New と動画時間のラベルの行 */
   .hero-labels {
     margin-top: 0.2rem;
-  }
-
-  .hero img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
   }
 
   /* スマホでは、左右の余白を他の場所よりかなり狭くして、大きな動画を広く出す（画面の端には付けない） */
@@ -1624,7 +1624,7 @@ const bodySwipe = {
     background: #fff;
   }
 
-  .control.skip svg {
+  .skip svg {
     width: 1.6rem;
     height: 1.6rem;
     stroke-width: 1.6;
