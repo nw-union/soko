@@ -1040,6 +1040,7 @@ const bodySwipe = {
     flex: none;
     display: block;
     aspect-ratio: 16 / 9;
+    overflow: hidden; /* maxresdefault が無く 4:3 の hqdefault になっても、枠が伸びて黒帯が出ない */
     background: rgb(0 0 0 / 0.35); /* 画像が届くまでの下地 */
   }
 

@@ -83,6 +83,7 @@ const click = (e: MouseEvent) => {
     position: relative;
     display: block;
     aspect-ratio: 16 / 9;
+    overflow: hidden; /* 無いと画像の元の比率（4:3）まで枠が伸びて、上下の黒帯が見える */
     background: rgb(0 0 0 / 0.35); /* 画像が届くまでの下地 */
   }
 
