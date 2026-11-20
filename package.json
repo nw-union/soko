@@ -13,25 +13,25 @@
     "check": "biome format . && biome lint . && tsc --noEmit && bun test"
   },
   "dependencies": {
-    "@better-auth/oauth-provider": "1.7.25",
-    "@better-auth/passkey": "1.7.25",
+    "@better-auth/oauth-provider": "1.7.27",
+    "@better-auth/passkey": "1.7.27",
     "@cfworker/json-schema": "^4.1.6",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@nw-union/nw-utils": "^0.0.11",
-    "better-auth": "1.7.25",
+    "better-auth": "1.7.27",
     "hono": "^4.13.19",
-    "jose": "6.2.17",
-    "svelte": "^5.58.0",
+    "jose": "6.2.18",
+    "svelte": "^5.59.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
-    "@types/bun": "^1.4.4",
-    "@void/svelte": "1.10.0",
+    "@types/bun": "^1.4.5",
+    "@void/svelte": "1.11.0",
     "typescript": "^7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@^8.3.8000",
     "vite-plus": "^1.7.0",
-    "void": "^1.10.0"
+    "void": "^1.11.0"
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@^8.3.8000"
