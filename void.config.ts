@@ -7,7 +7,7 @@ export default defineConfig({
   },
   // 公開先を明示する。これがないと、ダッシュボードで secret を足した版が本番のときに void deploy が止まる
   cloudflare: {
-    workers_dev: true,
+    workers_dev: false,
     preview_urls: false,
     routes: [],
   },

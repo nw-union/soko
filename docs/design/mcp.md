@@ -285,8 +285,8 @@ LLM に渡す動画のタイトル・概要欄・プレイリストの説明は�
 - [ ] 退会したユーザーのトークンが 401 になる → しない（9 章の C6）
 - [x] スコープのないツールが `tools/list` に出ず、`tools/call` でも拒否される（単体・E2E）
 - [x] 許可リストにないリダイレクト先の認可リクエストが拒否される（E2E: `invalid_redirect`）
-- [ ] PKCE なし・`resource` 違いの認可リクエストが拒否される（プラグインの設定に任せている。手では未確認）
-- [ ] リフレッシュトークンの再利用で一族ごと失効する（プラグインの既定 `refreshTokenReuseInterval: 0` に任せている。手では未確認）
+- [ ] PKCE なし・`resource` 違いの認可リクエストが拒否される（プラグインの設定に任せている。手では確かめないと決めた）
+- [ ] リフレッシュトークンの再利用で一族ごと失効する（プラグインの既定 `refreshTokenReuseInterval: 0` に任せている。手では確かめないと決めた）
 - [x] 同意画面で、書き込みのスコープが既定でオフになっている（E2E）
 - [x] 接続を解除すると、リフレッシュトークンが使えなくなる（E2E: `invalid_grant`）
 - [x] 退会で、OAuth の同意とトークンが消える（マイグレーションの外部キー）
@@ -373,9 +373,9 @@ src/lib/components/ProfileSheet.svelte    接続中のアプリの一覧と解�
 
 | # | 懸念 | 状態 | 内容・次にやること |
 | :-- | :-- | :-- | :-- |
-| C1 | 本番のドメイン以外（プレビュー版の URL・`*.workers.dev`）からも MCP と認可サーバーに届く | **一部対策済み・要対応** | `void.config.ts` の `preview_urls` を `false` にした。**これで CI のデプロイが止まるようになった**（C14）。`workers_dev` は `true` のまま。発行者とリソースはリクエストの origin から作るので、ホストごとに別の認可サーバーになり、本番のドメインで発行したトークンは `*.workers.dev` では使えない（逆も同じ） |
+| C1 | 本番のドメイン以外（プレビュー版の URL・`*.workers.dev`）からも MCP と認可サーバーに届く | **対策済み** | `void.config.ts` の `preview_urls` と `workers_dev` を、どちらも `false` にした。本番のドメインからしか届かない |
 | C2 | ログイン後の戻り先によるオープンリダイレクト | **対策済み** | `/login` に戻り先の引数（`?next=` など）を作らなかった。認可の続きは、プラグインが署名したクエリ（`sig`）からサーバーが決め、送り先は `validateRedirectUri` の許可リストで絞る。画面はサーバーの応答（`{ redirect, url }`）にだけ従う |
-| C3 | プロンプトインジェクションで、他のメンバーに被害が広がる | 後回し | `playlists:write` を持つ AI が概要欄の指示に従ってプレイリストを足すと、攻撃者の文章が soko に入り、他のメンバーの AI に届く。同期で全員に通知も飛ぶ。いまは「書き込みは同意画面で既定でオフ」「ツールの説明に注意書き」だけ。案: MCP から足したプレイリストは承認待ちにする、プレイリストの数と動画の数に上限を付ける |
+| C3 | プロンプトインジェクションで、他のメンバーに被害が広がる | **受け入れる**（承認待ちにはしない） | `playlists:write` を持つ AI が概要欄の指示に従ってプレイリストを足すと、攻撃者の文章が soko に入り、他のメンバーの AI に届く。同期で全員に通知も飛ぶ。対策は「書き込みは同意画面で既定でオフ」「ツールの説明に注意書き」「`add_playlist` は 1 人 1 時間に 10 回まで」だけにする（承認待ちにはしないと決めた） |
 | C4 | CIMD を入れると、soko が任意の URL を取りに行く | 未使用 | 初期リリースは DCR だけ。CIMD を入れるときは、取りに行くホストを事業者のものに限り、サイズとタイムアウトに上限を付ける |
 | C5 | JWT の署名鍵が D1 にある | **対策済み** | 鍵は jwt プラグインの既定で暗号化して保存している（外していない）。`jwks.rotationInterval` で 30 日ごとに作り直し、古い鍵は 7 日だけ検証に使う（アクセストークンは 1 時間なので足りる）。D1 と `BETTER_AUTH_SECRET` の両方が漏れたときの備えは変わらない。`BETTER_AUTH_SECRET` を作り直すときは、全員が接続し直す |
 | C6 | 退会しても、アクセストークンは最長 1 時間使える | **対策済み** | `/api/mcp` の入口（`server/mcp/gate.ts`）で、毎回 `memberUsecase.getMemberStatus` でユーザーがいるかを確かめ、いなければ 401 にする（D1 の読み出しが 1 回増える）。確かめられなかったときは 500 |
@@ -384,9 +384,9 @@ src/lib/components/ProfileSheet.svelte    接続中のアプリの一覧と解�
 | C9 | 依存が増えた | 受け入れる | `@modelcontextprotocol/sdk` は `express`・`ajv` などに依存し、サーバー側の出力（`dist/ssr`、ソースマップ込み）が 12MB から 13MB に増えた。`ajv` はコード生成（`new Function`）を使うので Workers では動かないが、検証器に `CfWorkerJsonSchemaValidator` を渡しているので使われない（開発サーバーの workerd で MCP の呼び出しが通ることを確かめた）。バージョンは固定し、上げたら E2E で確かめる |
 | C10 | `resource` を送らないクライアントは使えない | 受け入れる | プラグインは `resource` がないと不透明なトークンを出し、`/api/mcp` はそれを受け付けない。MCP の仕様に従うクライアントは送る |
 | C11 | ログアウトしても MCP は使い続けられる | 受け入れる | soko の Web でログアウトしても、`offline_access` のリフレッシュトークンは残る（OIDC の決まり）。止めるには、プロフィールの「接続中のアプリ」で解除する |
-| C12 | リダイレクト先の許可リストのホストが正しいか | 一部確認 | 本番の claude.ai からつながることを確かめた。ChatGPT（`chatgpt.com`・`chat.openai.com`）はまだ。Muse（Meta の AI エージェント）は、ホストではなくコールバックの URL `https://agent.meta.ai/api/hatch/oauth/callback` を完全一致で許可した（`ALLOWED_REDIRECT_URIS`）。Muse が認可とトークンのリクエストに `resource` を付けないと、`/api/mcp` は 401 になる（C10） |
+| C12 | リダイレクト先の許可リストのホストが正しいか | 一部確認（これ以上は確認しない） | 本番の claude.ai からつながることを確かめた。ChatGPT（`chatgpt.com`・`chat.openai.com`）は確かめないと決めた。つながらなかったら `server/mcp/redirect.ts` を直す。Muse（Meta の AI エージェント）は、ホストではなくコールバックの URL `https://agent.meta.ai/api/hatch/oauth/callback` を完全一致で許可した（`ALLOWED_REDIRECT_URIS`）。Muse が認可とトークンのリクエストに `resource` を付けないと、`/api/mcp` は 401 になる（C10） |
 | C13 | 監査ログの置き場所 | 受け入れる | `log()` の info で出している（Workers のログ）。保存期間は Workers のログの設定による |
-| C14 | `preview_urls: false` で、CI のデプロイが失敗する | **要対応** | Void はアップロードした Worker をプレビュー版の URL で確かめてから本番に出す。プレビュー版の URL がないと、`CLOUDFLARE_WORKERS_SUBDOMAIN`（アカウントの workers.dev のサブドメイン）が必要になる。ワークフローは `vars.CLOUDFLARE_WORKERS_SUBDOMAIN` を渡しているので、リポジトリの変数に設定すれば直る。#26・#27 のマージ後のデプロイはこれで止まった（マイグレーションは適用済み。テーブルを足しただけなので、古い版のままでも動く） |
+| C14 | `preview_urls: false` で、CI のデプロイが失敗する | **対策済み** | Void はアップロードした Worker を、プレビュー版の URL か `*.workers.dev` で確かめてから本番に出す。`preview_urls: false` で `workers_dev: true` だと `CLOUDFLARE_WORKERS_SUBDOMAIN` が必要になり、#26〜#30 のマージ後のデプロイが止まった。`workers_dev` も `false` にしたので、`CLOUDFLARE_WORKERS_SUBDOMAIN` は使われない。`routes` が空なので、Void は動作を確かめずに新しい版を有効にする（Void のドキュメントのとおり）。確かめさせたいなら、本番のドメインを `routes` に書く |
 
 ## 参考
 
