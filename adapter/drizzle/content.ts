@@ -18,7 +18,7 @@ import { type Database, query } from "./util.ts";
 // D1 は 1 文のバインド変数が 100 個までなので, まとめて渡すときは分ける
 export const chunk = <T>(items: readonly T[], size: number): T[][] => {
   const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size)
+  for (let i = 0; i < items.length; i +=
     out.push(items.slice(i, i + size));
   return out;
 };
