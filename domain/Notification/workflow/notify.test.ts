@@ -135,9 +135,9 @@ const storedSub: StoredSubscription = {
 };
 
 // ----------------------------------------------------------------------------
-// notifyNew
+// notify
 // ----------------------------------------------------------------------------
-describe("notifyNew", () => {
+describe("notify", () => {
   it("最近の新着がなければ, 送らない (動画は通知済みにする)", async () => {
     // Arrange:
     const { wf, sent, claimedAt } = newFakes({
@@ -146,7 +146,7 @@ describe("notifyNew", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNew();
+    const actual = await wf.notify();
 
     // Assert:
     expect(unwrap(actual)).toEqual({ type: "NoRecentVideos" });
@@ -163,7 +163,7 @@ describe("notifyNew", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNew();
+    const actual = await wf.notify();
 
     // Assert:
     expect(unwrap(actual)).toEqual({ type: "NoVapidKeys", videos: 1 });
@@ -178,7 +178,7 @@ describe("notifyNew", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNew();
+    const actual = await wf.notify();
 
     // Assert:
     expect(unwrap(actual)).toEqual({
@@ -221,7 +221,7 @@ describe("notifyNew", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNew();
+    const actual = await wf.notify();
 
     // Assert:
     expect(unwrap(actual)).toMatchObject({
@@ -243,7 +243,7 @@ describe("notifyNew", () => {
     });
 
     // Act:
-    const actual = await wf.notifyNew();
+    const actual = await wf.notify();
 
     // Assert:
     expect(unwrap(actual)).toMatchObject({

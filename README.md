@@ -87,7 +87,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | :-- | :-- | :-- |
 | WF | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | WF | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
-| WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。全件・差分の同期で動画が増えたとき、ポリシー（`server/process/policy.ts` の `onVideosSynced`）が呼ぶ。未通知の動画はすべて対象にするので、前回の取りこぼしも次の新着と一緒に拾う |
+| WF | `notify` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。全件・差分の同期で動画が増えたとき、ポリシー（`server/process/policy.ts` の `onVideosSynced`）が呼ぶ。未通知の動画はすべて対象にするので、前回の取りこぼしも次の新着と一緒に拾う |
 | Qry | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 
 <br/>
