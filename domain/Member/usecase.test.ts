@@ -14,7 +14,7 @@ describe("newMemberUsecase", () => {
     expect(Object.keys(uc).sort()).toEqual(
       [
         // Commands: 招待
-        "issueInvite",
+        "invite",
         "revokeInvite",
         "startInvite",
         "claimInvite",

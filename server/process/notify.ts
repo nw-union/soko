@@ -4,8 +4,8 @@ import { container } from "../container.ts";
 import { valueOrThrow } from "../http/error.ts";
 import { log } from "../log/log.ts";
 
-export const notifyNew = async () => {
-  const evt = await valueOrThrow(container().notificationUsecase.notifyNew());
+export const notify = async () => {
+  const evt = await valueOrThrow(container().notificationUsecase.notify());
   match(evt)
     .with({ type: "NoRecentVideos" }, () => {})
     .with({ type: "NoVapidKeys" }, ({ videos }) =>

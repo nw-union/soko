@@ -45,7 +45,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 
 | 種類 | 名前 | 内容 |
 | :-- | :-- | :-- |
-| WF | `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
+| WF | `invite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
 | WF | `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
 | WF | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
 | WF | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
@@ -87,7 +87,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | :-- | :-- | :-- |
 | WF | `subscribe` | 購読を保存する。1 人 10 件まで（超えたら古いものから削除） |
 | WF | `unsubscribe` | 購読を消す（通知オフ・ログアウト時） |
-| WF | `notifyNew` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。全件・差分の同期で動画が増えたとき、ポリシー（`server/process/policy.ts` の `onVideosSynced`）が呼ぶ。未通知の動画はすべて対象にするので、前回の取りこぼしも次の新着と一緒に拾う |
+| WF | `notify` | 未通知の動画を通知済みにして、最近のものを全購読者に 1 通で知らせる。全件・差分の同期で動画が増えたとき、ポリシー（`server/process/policy.ts` の `onVideosSynced`）が呼ぶ。未通知の動画はすべて対象にするので、前回の取りこぼしも次の新着と一緒に拾う |
 | Qry | `getPublicKey` | 購読用の VAPID 公開鍵を取得。鍵がなければ null |
 
 <br/>

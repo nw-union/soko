@@ -1,4 +1,4 @@
-// ワークフロー: 招待 (IssueInvite 招待を発行する・RevokeInvite 招待を取り消す・StartInvite 登録を始める・
+// ワークフロー: 招待 (Invite 招待を発行する・RevokeInvite 招待を取り消す・StartInvite 登録を始める・
 // ClaimInvite 招待を使う・LinkInvitedUser 招待にユーザーを結び付ける・招待の一覧)
 import {
   err,
@@ -146,7 +146,7 @@ export const newInviteWorkflow = (
   random: RandomPort,
 ): Pick<
   MemberUsecase,
-  | "issueInvite"
+  | "invite"
   | "revokeInvite"
   | "startInvite"
   | "claimInvite"
@@ -156,7 +156,7 @@ export const newInviteWorkflow = (
   /**
    * 招待を発行する
    */
-  issueInvite: ({ userId }) => {
+  invite: ({ userId }) => {
     const now = clock.now();
     const token = createInviteToken(random.bytes(TOKEN_LENGTH));
     return stepAsync(

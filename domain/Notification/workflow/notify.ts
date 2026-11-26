@@ -1,4 +1,4 @@
-// ワークフロー: 新着の通知 (NotifyNew 新着を通知する)
+// ワークフロー: 新着の通知 (Notify 新着を通知する)
 import {
   ok,
   type ResultAsync,
@@ -8,7 +8,7 @@ import {
 } from "@nw-union/nw-utils/lib/rslt";
 import type { AppError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
-import type { NewNotifiedEvt, NotificationUsecase } from "../api.ts";
+import type { NotifyEvt, NotificationUsecase } from "../api.ts";
 import type {
   BadgeCounterPort,
   PushRepositoryPort,
@@ -98,7 +98,7 @@ export const newNotifyWorkflow = (
   badge: BadgeCounterPort,
   clock: ClockPort,
   vapid: VapidKeys | null,
-): Pick<NotificationUsecase, "notifyNew"> => {
+): Pick<NotificationUsecase, "notify"> => {
   /**
    * 全購読者に送る. 1 件ずつの失敗では止めない
    */
@@ -143,7 +143,7 @@ export const newNotifyWorkflow = (
         );
         return stepAsync(
           gone.length > 0 ? r.deleteSubscriptions(gone) : ok(),
-          (): NewNotifiedEvt => ({
+          (): NotifyEvt => ({
             type: "Notified",
             videos: recent.length,
             sent: results.filter((res) => res.type === "Sent").length,
@@ -176,7 +176,7 @@ export const newNotifyWorkflow = (
     /**
      * 新着動画を通知する
      */
-    notifyNew: () => {
+    notify: () => {
       const now = clock.now();
       return stepAsync(
         // Step 1. まだ通知していない動画を, 通知済みにする
@@ -184,7 +184,7 @@ export const newNotifyWorkflow = (
         // Step 2. 通知する動画を選ぶ (最近のものだけ)
         (claimed) => selectRecent(claimed, now),
         // Step 3. 送る (鍵がなければ送らない)
-        (recent): NewNotifiedEvt | ResultAsync<NewNotifiedEvt, AppError> => {
+        (recent): NotifyEvt | ResultAsync<NotifyEvt, AppError> => {
           if (recent.length === 0) return { type: "NoRecentVideos" };
           if (!vapid) return { type: "NoVapidKeys", videos: recent.length };
           return sendAll(buildPayload(recent), vapid, recent);

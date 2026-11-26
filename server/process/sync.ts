@@ -5,7 +5,7 @@ import type { AllSyncedEvt, NewSyncedEvt } from "../../domain/Content/api.ts";
 import { container } from "../container.ts";
 import { valueOrThrow } from "../http/error.ts";
 import { log } from "../log/log.ts";
-import { notifyNew } from "./notify.ts";
+import { notify } from "./notify.ts";
 import { onVideosSynced } from "./policy.ts";
 
 /** 全件の同期. 動画が増えたら, ポリシーが新着を通知する */
@@ -32,7 +32,7 @@ export const runSyncAll = async (): Promise<AllSyncedEvt> => {
       );
     })
     .exhaustive();
-  await onVideosSynced(evt, notifyNew);
+  await onVideosSynced(evt, notify);
   return evt;
 };
 
@@ -45,6 +45,6 @@ export const runSyncNew = async (): Promise<NewSyncedEvt> => {
     log().info(
       `sync-new-videos: 動画 ${evt.addedVideoIds.length} 件、紐付け ${evt.links} 件を追加しました`,
     );
-  await onVideosSynced(evt, notifyNew);
+  await onVideosSynced(evt, notify);
   return evt;
 };

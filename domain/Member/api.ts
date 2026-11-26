@@ -9,17 +9,15 @@ import type { AppError } from "../shared/error.ts";
 // Commands: 招待 (workflow/invite.ts)
 // ----------------------------------------------------------------------------
 /**
- * IssueInvite 招待を発行する
+ * Invite 招待を発行する
  *
  * 上限に達していれば ConflictError.
  * トークンはここで 1 回だけ返す (DB にはハッシュしか残らない)
  */
-type IssueInvite = (
-  cmd: IssueInviteCmd,
-) => ResultAsync<IssueInviteEvt, AppError>;
+type Invite = (cmd: InviteCmd) => ResultAsync<InviteEvt, AppError>;
 
-export type IssueInviteCmd = { userId: string };
-export type IssueInviteEvt = {
+export type InviteCmd = { userId: string };
+export type InviteEvt = {
   // 画面に出す形 (XXXX-XXXX-XXXX-XXXX)
   token: string;
   // 有効日数
@@ -270,7 +268,7 @@ export type ConnectedAppsView = { apps: ConnectedAppDto[] };
 // ----------------------------------------------------------------------------
 export interface MemberUsecase {
   // Commands: 招待
-  issueInvite: IssueInvite;
+  invite: Invite;
   revokeInvite: RevokeInvite;
   startInvite: StartInvite;
   claimInvite: ClaimInvite;
