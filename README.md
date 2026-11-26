@@ -39,7 +39,7 @@ Web 層（`pages/`・`routes/`・`middleware/`・`crons/`・`auth.ts`）は、`d
 - **コマンド**（表の WF）: 状態を変える。イベストの「〜する」。実装は `domain/<Context>/workflow/` のワークフローのファイル。全 20 本
 - **Query**（表の Qry）: 読むだけ（Read Model）。戻り値は `…View` / `…Dto`。コマンドと同じワークフローのファイルに置く。全 9 本
 
-better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `startInvite` は、書き込みの前提を確かめるコマンドの一部なのでコマンドに置く。
+better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）と登録の入口の `checkInvite` は、書き込みの前提を確かめるコマンドの一部なのでコマンドに置く。
 
 ### Member / Invite（招待）
 
@@ -47,7 +47,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 | :-- | :-- | :-- |
 | WF | `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
 | WF | `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
-| WF | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
+| WF | `checkInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
 | WF | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |
 | WF | `linkInvitedUser` | 登録の直後に、使用済みにした招待へ作られたユーザーを結び付ける |
 | Qry | `listInvites` | 自分が発行した招待の一覧と、あと何回発行できるか |
