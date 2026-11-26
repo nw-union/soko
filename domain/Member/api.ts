@@ -40,17 +40,17 @@ export type RevokeInviteCmd = {
 };
 
 /**
- * StartInvite 登録を始める
+ * CheckInvite 招待を確かめる
  *
  * 登録の入口. 招待トークンが今使えるか確かめ, 正規化したトークンを返す (Web 層が Cookie に入れる).
  * 使えない理由は教えない (形式違い・存在しない・使用済み・期限切れは, すべて同じ ValidationError)
  */
-type StartInvite = (
-  cmd: StartInviteCmd,
-) => ResultAsync<StartInviteEvt, AppError>;
+type CheckInvite = (
+  cmd: CheckInviteCmd,
+) => ResultAsync<CheckInviteEvt, AppError>;
 
-export type StartInviteCmd = { token: unknown };
-export type StartInviteEvt = {
+export type CheckInviteCmd = { token: unknown };
+export type CheckInviteEvt = {
   // 正規化したトークン (大文字・ハイフンなし)
   token: string;
 };
@@ -59,7 +59,7 @@ export type StartInviteEvt = {
  * ClaimInvite 招待を使う
  *
  * 登録 (ユーザー作成) の直前に, 招待を使用済みにする.
- * 同じトークンで同時に登録されても, 成功するのは 1 回だけ. 失敗の理由は startInvite と同じく教えない
+ * 同じトークンで同時に登録されても, 成功するのは 1 回だけ. 失敗の理由は checkInvite と同じく教えない
  */
 type ClaimInvite = (cmd: ClaimInviteCmd) => ResultAsync<void, AppError>;
 
@@ -272,7 +272,7 @@ export interface MemberUsecase {
   // Commands: 招待
   issueInvite: IssueInvite;
   revokeInvite: RevokeInvite;
-  startInvite: StartInvite;
+  checkInvite: CheckInvite;
   claimInvite: ClaimInvite;
   linkInvitedUser: LinkInvitedUser;
 

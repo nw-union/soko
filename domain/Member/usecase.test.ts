@@ -16,7 +16,7 @@ describe("newMemberUsecase", () => {
         // Commands: 招待
         "issueInvite",
         "revokeInvite",
-        "startInvite",
+        "checkInvite",
         "claimInvite",
         "linkInvitedUser",
         // Commands: プロフィール・ログイン

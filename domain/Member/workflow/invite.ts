@@ -1,4 +1,4 @@
-// ワークフロー: 招待 (IssueInvite 招待を発行する・RevokeInvite 招待を取り消す・StartInvite 登録を始める・
+// ワークフロー: 招待 (IssueInvite 招待を発行する・RevokeInvite 招待を取り消す・CheckInvite 招待を確かめる・
 // ClaimInvite 招待を使う・LinkInvitedUser 招待にユーザーを結び付ける・招待の一覧)
 import {
   err,
@@ -138,7 +138,7 @@ export const ensureUsable = (usable: boolean): Result<void, ValidationError> =>
 // 実装
 // ----------------------------------------------------------------------------
 /**
- * 招待. 登録の手前のチェック (startInvite) もここに置く
+ * 招待. 登録の手前のチェック (checkInvite) もここに置く
  */
 export const newInviteWorkflow = (
   r: InviteRepositoryPort,
@@ -148,7 +148,7 @@ export const newInviteWorkflow = (
   MemberUsecase,
   | "issueInvite"
   | "revokeInvite"
-  | "startInvite"
+  | "checkInvite"
   | "claimInvite"
   | "linkInvitedUser"
   | "listInvites"
@@ -188,7 +188,7 @@ export const newInviteWorkflow = (
   /**
    * 登録の入口. 招待トークンが今使えるか確かめる
    */
-  startInvite: ({ token }) =>
+  checkInvite: ({ token }) =>
     stepAsync(
       // Step 1. バリデーション: unknown -> InviteToken
       validateToken(token),

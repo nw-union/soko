@@ -217,12 +217,12 @@ describe("revokeInvite", () => {
 });
 
 // ----------------------------------------------------------------------------
-// startInvite
+// checkInvite
 // ----------------------------------------------------------------------------
-describe("startInvite", () => {
+describe("checkInvite", () => {
   it("使える招待の場合, 正規化したトークンを返す", async () => {
     // Act:
-    const actual = await newFakes().wf.startInvite({
+    const actual = await newFakes().wf.checkInvite({
       token: "abcd-efgh-jkmn-pqrs",
     });
 
@@ -235,7 +235,7 @@ describe("startInvite", () => {
     ["存在しない (使用済み・期限切れも含む)", "ZZZZ-ZZZZ-ZZZZ-ZZZZ"],
   ])("%s場合, 同じ ValidationError となる", async (_, token) => {
     // Act:
-    const actual = await newFakes().wf.startInvite({ token });
+    const actual = await newFakes().wf.checkInvite({ token });
 
     // Assert:
     expect(unwrapErr(actual)).toMatchObject({

@@ -13,7 +13,7 @@ export const POST = defineHandler(async (c) => {
   const body = await c.req.json().catch(() => ({}));
   return respond(
     c,
-    container().memberUsecase.startInvite({ token: body?.token }),
+    container().memberUsecase.checkInvite({ token: body?.token }),
     ({ token }) => {
       setCookie(c, INVITE_COOKIE, token, {
         httpOnly: true,
