@@ -8,7 +8,7 @@ import {
 } from "@nw-union/nw-utils/lib/rslt";
 import type { AppError } from "../../shared/error.ts";
 import type { ClockPort } from "../../shared/port.ts";
-import type { NotifyEvt, NotificationUsecase } from "../api.ts";
+import type { NotificationUsecase, NotifyEvt } from "../api.ts";
 import type {
   BadgeCounterPort,
   PushRepositoryPort,
