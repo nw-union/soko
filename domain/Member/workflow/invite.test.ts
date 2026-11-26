@@ -132,15 +132,15 @@ const usage = (limit: number | null, used: number): InviteUsage => ({
 });
 
 // ----------------------------------------------------------------------------
-// invite
+// issueInvite
 // ----------------------------------------------------------------------------
-describe("invite", () => {
+describe("issueInvite", () => {
   it("トークンのハッシュと 7 日後の期限で保存し, 画面に出す形のトークンを返す", async () => {
     // Arrange:
     const { wf, inserted } = newFakes();
 
     // Act:
-    const actual = await wf.invite({ userId: "user1" });
+    const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
     expect(unwrap(actual)).toEqual({
@@ -160,7 +160,7 @@ describe("invite", () => {
     const { wf, inserted } = newFakes({ used: 3 });
 
     // Act:
-    const actual = await wf.invite({ userId: "user1" });
+    const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
     expect(unwrapErr(actual).type).toBe("ConflictError");
@@ -180,7 +180,7 @@ describe("invite", () => {
     );
 
     // Act:
-    const actual = await wf.invite({ userId: "user1" });
+    const actual = await wf.issueInvite({ userId: "user1" });
 
     // Assert:
     expect(unwrapErr(actual).type).toBe("DatabaseError");

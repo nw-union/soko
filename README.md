@@ -45,7 +45,7 @@ better-auth の手前のチェック（`validate〜`・`checkPasskeyDeletion`）
 
 | 種類 | 名前 | 内容 |
 | :-- | :-- | :-- |
-| WF | `invite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
+| WF | `issueInvite` | 招待を発行する。上限なら ConflictError。トークンはここで 1 回だけ返す |
 | WF | `revokeInvite` | 未使用の招待を取り消す（枠が戻る）。使用済み・他人の招待・存在しない ID は何もしない |
 | WF | `startInvite` | 登録の入口。トークンが今使えるか確かめ、正規化したトークンを返す |
 | WF | `claimInvite` | 登録（ユーザー作成）の直前に招待を使用済みにする。同時に使っても成功は 1 回だけ |

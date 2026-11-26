@@ -128,7 +128,7 @@
 
 | 操作 | 理由 |
 | :-- | :-- |
-| 招待（`invite`・`revokeInvite`・`listInvites`） | 招待は「限定公開の動画を見られる人を増やす」権限そのもの。トークンが漏れたとき、外部の人がメンバーになれてしまう |
+| 招待（`issueInvite`・`revokeInvite`・`listInvites`） | 招待は「限定公開の動画を見られる人を増やす」権限そのもの。トークンが漏れたとき、外部の人がメンバーになれてしまう |
 | プロフィール・アイコン（`changeAvatar`・`removeAvatar`、名前・色の更新） | 実害は小さいが、なりすましの見た目を作れる。LLM から変える必要もない |
 | パスキー・退会・登録（`checkPasskeyDeletion`・`cleanupDeletedUser`・`validateSignUp`・`claimInvite` など） | アカウントの乗っ取り・消去につながる。いまも「ログインし直したばかりのセッション」でしかできないようにしているので、トークンで迂回させない |
 | 通知（`subscribe`・`unsubscribe`・`notify`） | 購読はブラウザのもの。`notify` は全員に通知を送る |

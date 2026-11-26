@@ -18,7 +18,7 @@ export const POST = defineHandler(async (c) => {
   const user = requireAuth(c);
   return respond(
     c,
-    container().memberUsecase.invite({ userId: user.id }),
+    container().memberUsecase.issueInvite({ userId: user.id }),
     (evt) => evt,
   );
 });

@@ -315,7 +315,7 @@ async function loadInvites() {
 	invites = data.invites;
 }
 
-async function invite() {
+async function issueInvite() {
 	inviteError = "";
 	copyStatus = "";
 	const res = await fetch("/api/invites", { method: "POST" }).catch(
@@ -721,7 +721,7 @@ const bodySwipe = {
         {/each}
       </ul>
     {/if}
-    <button type="button" class="btn" onclick={invite} disabled={remaining <= 0}>招待コードを発行</button>
+    <button type="button" class="btn" onclick={issueInvite} disabled={remaining <= 0}>招待コードを発行</button>
     {#if inviteError}
       <p role="alert" class="error">{inviteError}</p>
     {/if}
