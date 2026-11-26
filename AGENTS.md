@@ -54,7 +54,7 @@ usecase → workflow/* → api・converter・type・vo・port → shared → lib
   - 操作ごとに関数の型を 1 つ書き（例: `type CreatePlaylist = (cmd: CreatePlaylistCmd) => ResultAsync<CreatePlaylistEvt, AppError>`）、そのすぐ後に、その操作の Cmd / Evt / Query / View を置く。関数の型には、何をするかと失敗の条件をコメントで書く
   - `// Commands` と `// Queries` の区切りで分け、最後に `…Usecase` の interface（`// Commands`・`// Queries` の順に、操作の名前と関数の型を並べる）と、複数の操作で使う DTO を置く
 - 各ワークフローは `Pick<…Usecase, "…">` を返し、`usecase.ts` がまとめる（`…Usecase` をすべて実装していることを型で確かめる）
-- better-auth の手前のチェック（`validateProfileUpdate`・`validateSignUp`・`checkPasskeyDeletion`）と、登録の入口のチェック（`startInvite`）は、書き込み（登録・更新・削除）の前提を確かめるコマンドの一部なのでコマンドに置く
+- better-auth の手前のチェック（`validateProfileUpdate`・`validateSignUp`・`checkPasskeyDeletion`）と、登録の入口のチェック（`checkInvite`）は、書き込み（登録・更新・削除）の前提を確かめるコマンドの一部なのでコマンドに置く
 - 名前: コマンドの入力は `…Cmd`、結果は `…Evt`（起きたこと）か `void`。DTO を返すときも `…Evt` で包む（例: `CreatePlaylistEvt = { playlist: PlaylistSettingDto }`）。Query の入力は `…Query`、戻り値は `…View`（画面 1 つ分などのまとまり）か `…Dto`（その中の 1 件）
 - 別の集約の Read Model を使うときは（例: 通知のバッジの本数）、`server/container.ts` で `…Usecase` の Query を Port に渡す
 
